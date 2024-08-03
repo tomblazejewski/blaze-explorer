@@ -6,7 +6,7 @@ use ratatui::{
     },
     layout::Constraint,
     prelude::*,
-    widgets::{Row, Table},
+    widgets::{Block, Borders, Row, Table},
 };
 use std::{
     error::Error,
@@ -28,7 +28,9 @@ fn obtain_filenames_table<'a>() -> io::Result<Option<Table<'a>>> {
         .into_iter()
         .map(|path_str| Row::new([path_str]))
         .collect::<Vec<Row>>();
-    let t = Table::new(rows, widths).style(Style::new().blue());
+    let t = Table::new(rows, widths)
+        .style(Style::new().blue())
+        .block(Block::new().borders(Borders::ALL));
     Ok(Some(t))
 }
 
