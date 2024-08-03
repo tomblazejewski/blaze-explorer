@@ -13,6 +13,7 @@ use std::{
     fs,
     io::{self, stdout},
 };
+use style::palette::tailwind;
 
 fn obtain_filenames_table<'a>() -> io::Result<Option<Table<'a>>> {
     let paths = fs::read_dir("./").unwrap();
@@ -28,9 +29,13 @@ fn obtain_filenames_table<'a>() -> io::Result<Option<Table<'a>>> {
         .into_iter()
         .map(|path_str| Row::new([path_str]))
         .collect::<Vec<Row>>();
+    let selected_style = Style::default()
+        .add_modifier(Modifier::REVERSED)
+        .fg(tailwind::BLUE.c400);
     let t = Table::new(rows, widths)
         .style(Style::new().blue())
-        .block(Block::new().borders(Borders::ALL));
+        .block(Block::new().borders(Borders::ALL))
+        .highlight_style(selected_style);
     Ok(Some(t))
 }
 
