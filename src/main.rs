@@ -71,6 +71,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     enable_raw_mode()?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
     terminal.clear()?;
+    let mut app = App::new();
+    app.update_path(String::from("./"));
     loop {
         let t = obtain_filenames_table().unwrap().unwrap();
         terminal.draw(|frame| {
