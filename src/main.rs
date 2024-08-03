@@ -6,7 +6,7 @@ use ratatui::{
     },
     layout::Constraint,
     prelude::*,
-    widgets::{Block, Borders, Row, Table, TableState},
+    widgets::{Block, Borders, Cell, Row, Table, TableState},
 };
 use std::{
     error::Error,
@@ -100,10 +100,12 @@ fn ui(f: &mut Frame, app: &mut App) {
 
 fn render_table(f: &mut Frame, app: &mut App, area: Rect) {
     let str_paths = app.elements_list.clone();
-    let widths = str_paths
-        .iter()
-        .map(|_path_entry| Constraint::Length(15))
-        .collect::<Vec<Constraint>>();
+    let widths = [Constraint::Percentage(60)];
+    let header = ["Name"]
+        .into_iter()
+        .map(Cell::from)
+        .collect::<Row>()
+        .height(1);
     let rows = str_paths
         .into_iter()
         .map(|path_str| Row::new([path_str]))
@@ -114,7 +116,8 @@ fn render_table(f: &mut Frame, app: &mut App, area: Rect) {
     let t = Table::new(rows, widths)
         .style(Style::new().blue())
         .block(Block::new().borders(Borders::ALL))
-        .highlight_style(selected_style);
+        .highlight_style(selected_style)
+        .header(header);
 
     f.render_stateful_widget(t, area, &mut app.table_state);
 }
