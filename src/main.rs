@@ -6,71 +6,13 @@ use ratatui::{
     },
     layout::Constraint,
     prelude::*,
-    widgets::{Block, Borders, Cell, Row, Table, TableState},
+    widgets::{Block, Borders, Cell, Row, Table},
 };
-use std::{
-    error::Error,
-    fs,
-    io::{self, stdout},
-};
+use std::error::Error;
+use std::io::stdout;
 use style::palette::tailwind;
-
-struct App {
-    current_path: String,
-    elements_list: Vec<String>,
-    selected_elements_list: Vec<String>,
-    table_state: TableState,
-}
-
-impl App {
-    fn new() -> Self {
-        Self {
-            current_path: String::from("./"),
-            elements_list: Vec::new(),
-            selected_elements_list: Vec::new(),
-            table_state: TableState::default().with_selected(0),
-        }
-    }
-
-    fn update_path(&mut self, path: String) {
-        self.current_path = path.clone();
-        let paths = fs::read_dir(path).unwrap();
-
-        let str_paths = paths
-            .map(|entry| entry.unwrap().path().to_str().unwrap().to_string())
-            .collect::<Vec<String>>();
-        self.elements_list = str_paths;
-        self.selected_elements_list = Vec::new();
-    }
-
-    fn next(&mut self) {
-        let i = match self.table_state.selected() {
-            Some(i) => {
-                if i >= self.elements_list.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.table_state.select(Some(i));
-    }
-
-    fn previous(&mut self) {
-        let i = match self.table_state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.elements_list.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.table_state.select(Some(i));
-    }
-}
+mod app;
+use app::App;
 
 fn main() -> Result<(), Box<dyn Error>> {
     stdout().execute(EnterAlternateScreen)?;
