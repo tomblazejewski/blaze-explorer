@@ -6,7 +6,7 @@ use ratatui::{
     },
     layout::Constraint,
     prelude::*,
-    widgets::{Block, Borders, Row, Table},
+    widgets::{Block, Borders, Row, Table, TableState},
 };
 use std::{
     error::Error,
@@ -19,6 +19,7 @@ struct App {
     current_path: String,
     elements_list: Vec<String>,
     selected_elements_list: Vec<String>,
+    table_state: TableState,
 }
 
 impl App {
@@ -27,6 +28,7 @@ impl App {
             current_path: String::from("./"),
             elements_list: Vec::new(),
             selected_elements_list: Vec::new(),
+            table_state: TableState::default().with_selected(0);
         }
     }
 
