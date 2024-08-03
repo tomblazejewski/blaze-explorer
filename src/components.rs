@@ -1,3 +1,5 @@
+pub mod explorer_table;
+
 use crate::action::Action;
 use color_eyre::Result;
 use ratatui::{crossterm::event::KeyEvent, layout::Rect, Frame};
