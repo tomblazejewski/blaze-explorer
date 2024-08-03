@@ -20,27 +20,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     enable_raw_mode()?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
     terminal.clear()?;
-    let mut app = App::new();
+    let mut app = App::new().unwrap();
     app.update_path(String::from("./"));
-    loop {
-        terminal.draw(|frame| ui(frame, &mut app))?;
+    let _ = app.run();
 
-        if event::poll(std::time::Duration::from_millis(16))? {
-            if let event::Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press {
-                    match key.code {
-                        KeyCode::Char('q') => break,
-                        KeyCode::Char('j') => app.next(),
-                        KeyCode::Char('k') => app.previous(),
-                        _ => {}
-                    }
-                }
-            }
-        }
-    }
-
-    stdout().execute(LeaveAlternateScreen);
-    disable_raw_mode()?;
     Ok(())
 }
 fn ui(f: &mut Frame, app: &mut App) {
