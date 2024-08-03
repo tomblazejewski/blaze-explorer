@@ -20,10 +20,14 @@ fn obtain_filenames_table<'a>() -> io::Result<Option<Table<'a>>> {
     let str_paths = paths
         .map(|entry| entry.unwrap().path().to_str().unwrap().to_string())
         .collect::<Vec<String>>();
+    let widths = str_paths
+        .iter()
+        .map(|_path_entry| Constraint::Length(15))
+        .collect::<Vec<Constraint>>();
     let file_name_row = Row::new(str_paths);
     let rows = [file_name_row];
-    let widths = [Constraint::Length(5)];
-    Ok(Some(Table::new(rows, widths)))
+    let t = Table::new(rows, widths).style(Style::new().blue());
+    Ok(Some(t))
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
