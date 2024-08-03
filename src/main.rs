@@ -42,6 +42,20 @@ impl App {
         self.elements_list = str_paths;
         self.selected_elements_list = Vec::new();
     }
+
+    fn next(&mut self) {
+        let i = match self.table_state.selected() {
+            Some(i) => {
+                if i >= self.elements_list.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.table_state.select(Some(i));
+    }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -56,8 +70,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         if event::poll(std::time::Duration::from_millis(16))? {
             if let event::Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
-                    break;
+                if key.kind == KeyEventKind::Press {
+                    match key.code {
+                        KeyCode::Char('q') => break,
+                        KeyCode::Char('j') => app.next(),
+                        _ => {}
+                    }
                 }
             }
         }
