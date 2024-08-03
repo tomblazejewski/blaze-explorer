@@ -24,8 +24,10 @@ fn obtain_filenames_table<'a>() -> io::Result<Option<Table<'a>>> {
         .iter()
         .map(|_path_entry| Constraint::Length(15))
         .collect::<Vec<Constraint>>();
-    let file_name_row = Row::new(str_paths);
-    let rows = [file_name_row];
+    let rows = str_paths
+        .into_iter()
+        .map(|path_str| Row::new([path_str]))
+        .collect::<Vec<Row>>();
     let t = Table::new(rows, widths).style(Style::new().blue());
     Ok(Some(t))
 }
