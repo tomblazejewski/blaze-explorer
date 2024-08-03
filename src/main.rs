@@ -56,6 +56,20 @@ impl App {
         };
         self.table_state.select(Some(i));
     }
+
+    fn previous(&mut self) {
+        let i = match self.table_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.elements_list.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.table_state.select(Some(i));
+    }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -74,6 +88,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     match key.code {
                         KeyCode::Char('q') => break,
                         KeyCode::Char('j') => app.next(),
+                        KeyCode::Char('k') => app.previous(),
                         _ => {}
                     }
                 }
