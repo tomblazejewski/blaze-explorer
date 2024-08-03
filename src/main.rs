@@ -13,6 +13,8 @@ use std::io::stdout;
 use style::palette::tailwind;
 mod app;
 use app::App;
+mod action;
+mod component;
 
 fn main() -> Result<(), Box<dyn Error>> {
     stdout().execute(EnterAlternateScreen)?;
