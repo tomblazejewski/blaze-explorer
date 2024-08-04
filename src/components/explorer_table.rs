@@ -1,4 +1,7 @@
-use std::{fs, path::Path};
+use std::{
+    fs::{self, Metadata, ReadDir},
+    path::Path,
+};
 
 use color_eyre::eyre::Result;
 use ratatui::{
@@ -13,6 +16,28 @@ use crate::action::Action;
 
 use super::Component;
 
+pub struct FileData {
+    filename: String,
+    size: u64,
+}
+
+pub fn get_file_data(path: String) -> Vec<FileData> {
+    let paths = fs::read_dir(path).unwrap();
+    let dir_entries = paths.map(|entry| entry.unwrap());
+    let data = dir_entries
+        .map(|entry| {
+            (
+                entry.file_name().to_str().unwrap().to_string(),
+                entry.metadata().unwrap().len(),
+            )
+        })
+        .map(|(file_name, file_size)| FileData {
+            filename: file_name,
+            size: file_size,
+        })
+        .collect::<Vec<FileData>>();
+    data
+}
 pub struct ExplorerTable {
     state: TableState,
     current_path: String,
@@ -89,15 +114,15 @@ impl ExplorerTable {
 impl Component for ExplorerTable {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let str_paths = self.elements_list.clone();
-        let widths = [Constraint::Percentage(60)];
-        let header = ["Name"]
+        let widths = [Constraint::Percentage(40), Constraint::Percentage(40)];
+        let header = ["Name", "Name2"]
             .into_iter()
             .map(Cell::from)
             .collect::<Row>()
             .height(1);
         let rows = str_paths
             .into_iter()
-            .map(|path_str| Row::new([path_str]))
+            .map(|path_str| Row::new([path_str.clone(), path_str]))
             .collect::<Vec<Row>>();
         let selected_style = Style::default()
             .add_modifier(Modifier::REVERSED)
