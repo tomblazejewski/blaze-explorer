@@ -1,4 +1,4 @@
-use std::path;
+use std::path::{self, Path};
 
 use color_eyre::eyre::Result;
 use ratatui::prelude::*;
@@ -46,6 +46,15 @@ impl Component for PathDisplay {
             }
             Action::Key(key) => {
                 self.handle_key_events(key);
+            }
+            Action::ParentDirectory => {
+                let new_path = Path::new(&self.current_path)
+                    .parent()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string();
+                self.update_absolute_path(new_path);
             }
             _ => {}
         }

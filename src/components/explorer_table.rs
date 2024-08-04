@@ -28,6 +28,25 @@ impl ExplorerTable {
         }
     }
 
+    pub fn go_up(&mut self) {
+        let prev_path = Path::new(&self.current_path)
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+        let new_path = Path::new(&self.current_path)
+            .parent()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+        self.update_path(new_path);
+
+        let position_of_prev = self.elements_list.iter().position(|x| x == &prev_path);
+        self.state.select(position_of_prev);
+    }
+
     pub fn update_path(&mut self, path: String) {
         self.current_path = path.clone();
         let paths = fs::read_dir(path).unwrap();
@@ -97,6 +116,9 @@ impl Component for ExplorerTable {
             Action::ChangeDirectory(path) => {
                 self.update_path(path);
             }
+            Action::ParentDirectory => {
+                self.go_up();
+            }
             Action::SelectUp => self.previous(),
             Action::SelectDown => self.next(),
             Action::Key(key) => {
@@ -111,12 +133,8 @@ impl Component for ExplorerTable {
 
     fn handle_key_events(&mut self, key: KeyEvent) -> Result<Option<Action>> {
         match key.code {
-            KeyCode::Char('j') => {
-                self.update(Action::SelectDown);
-            }
-            KeyCode::Char('k') => {
-                self.update(Action::SelectUp);
-            }
+            KeyCode::Char('j') => return Ok(Some(Action::SelectDown)),
+            KeyCode::Char('k') => return Ok(Some(Action::SelectUp)),
             KeyCode::Enter => {
                 if let Some(index) = self.state.selected() {
                     let chosen_element = &self.elements_list[index];
@@ -128,12 +146,9 @@ impl Component for ExplorerTable {
                 }
             }
             KeyCode::Backspace => {
-                let created_path = Path::new(&self.current_path).join("..");
-                if created_path.is_dir() {
-                    let new_path_str = created_path.to_str().unwrap().to_string();
-                    return Ok(Some(Action::ChangeDirectory(new_path_str)));
-                }
+                return Ok(Some(Action::ParentDirectory));
             }
+
             _ => {}
         };
         Ok(None)

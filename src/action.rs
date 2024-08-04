@@ -4,6 +4,7 @@ use ratatui::crossterm::event::KeyEvent;
 pub enum Action {
     Quit,
     ChangeDirectory(String),
+    ParentDirectory,
     Key(KeyEvent),
     Noop,
     SelectUp,
