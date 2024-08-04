@@ -41,7 +41,7 @@ pub fn get_file_data(path: String) -> Vec<FileData> {
 pub struct ExplorerTable {
     state: TableState,
     current_path: String,
-    elements_list: Vec<String>,
+    elements_list: Vec<FileData>,
 }
 
 impl ExplorerTable {
@@ -69,18 +69,16 @@ impl ExplorerTable {
 
         self.update_path(new_path);
 
-        let position_of_prev = self.elements_list.iter().position(|x| x == &prev_path);
+        let position_of_prev = self
+            .elements_list
+            .iter()
+            .position(|x| &x.filename == &prev_path);
         self.state.select(position_of_prev);
     }
 
     pub fn update_path(&mut self, path: String) {
-        self.current_path = path.clone();
-        let paths = fs::read_dir(path).unwrap();
-
-        let str_paths = paths
-            .map(|entry| entry.unwrap().file_name().to_str().unwrap().to_string())
-            .collect::<Vec<String>>();
-        self.elements_list = str_paths;
+        let elements = get_file_data(path);
+        self.elements_list = elements;
         self.state = TableState::default().with_selected(0);
     }
     pub fn next(&mut self) {
@@ -113,16 +111,16 @@ impl ExplorerTable {
 
 impl Component for ExplorerTable {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let str_paths = self.elements_list.clone();
         let widths = [Constraint::Percentage(40), Constraint::Percentage(40)];
         let header = ["Name", "Name2"]
             .into_iter()
             .map(Cell::from)
             .collect::<Row>()
             .height(1);
-        let rows = str_paths
-            .into_iter()
-            .map(|path_str| Row::new([path_str.clone(), path_str]))
+        let rows = self
+            .elements_list
+            .iter()
+            .map(|element| Row::new([element.filename.clone(), element.size.to_string()]))
             .collect::<Vec<Row>>();
         let selected_style = Style::default()
             .add_modifier(Modifier::REVERSED)
@@ -164,7 +162,7 @@ impl Component for ExplorerTable {
             KeyCode::Enter => {
                 if let Some(index) = self.state.selected() {
                     let chosen_element = &self.elements_list[index];
-                    let created_path = Path::new(&self.current_path).join(chosen_element);
+                    let created_path = Path::new(&self.current_path).join(&chosen_element.filename);
                     if created_path.is_dir() {
                         let new_path_str = created_path.to_str().unwrap().to_string();
                         return Ok(Some(Action::ChangeDirectory(new_path_str)));
