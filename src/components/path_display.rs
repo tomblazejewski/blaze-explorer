@@ -14,25 +14,25 @@ use crate::action::Action;
 use super::Component;
 
 pub struct PathDisplay {
-    absolute_path: String,
+    current_path: String,
 }
 
 impl PathDisplay {
     pub fn new() -> Self {
         Self {
-            absolute_path: String::new(),
+            current_path: String::new(),
         }
     }
 
     pub fn update_absolute_path(&mut self, absolute_path: String) {
-        self.absolute_path = absolute_path;
+        self.current_path = absolute_path;
     }
 }
 
 impl Component for PathDisplay {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let path_paragraph =
-            Paragraph::new(self.absolute_path.clone()).block(Block::new().borders(Borders::ALL));
+            Paragraph::new(self.current_path.clone()).block(Block::new().borders(Borders::ALL));
         let area = self.get_area(frame).unwrap().unwrap();
         frame.render_widget(path_paragraph, area);
         Ok(())

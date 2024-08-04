@@ -30,7 +30,7 @@ impl ExplorerTable {
         let paths = fs::read_dir(path).unwrap();
 
         let str_paths = paths
-            .map(|entry| entry.unwrap().path().to_str().unwrap().to_string())
+            .map(|entry| entry.unwrap().file_name().to_str().unwrap().to_string())
             .collect::<Vec<String>>();
         self.elements_list = str_paths;
         self.state = TableState::default().with_selected(0);
