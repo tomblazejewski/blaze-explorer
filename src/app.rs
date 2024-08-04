@@ -21,6 +21,7 @@ pub struct App {
     pub current_path: String,
     pub components: Vec<Box<dyn Component>>,
     pub terminal: Terminal<CrosstermBackend<Stdout>>,
+    pub action_list: Vec<Action>,
 }
 
 impl App {
@@ -29,13 +30,13 @@ impl App {
             current_path: String::from("./"),
             components: vec![Box::new(ExplorerTable::new()), Box::new(PathDisplay::new())],
             terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
+            action_list: Vec::new(),
         })
     }
 
     pub fn update_path(&mut self, path: String) {
         self.current_path = path.clone();
     }
-
     pub fn run(&mut self) -> Result<()> {
         self.terminal.clear()?;
         let path = "./";
@@ -48,14 +49,23 @@ impl App {
                     if key.code == KeyCode::Char('q') {
                         break;
                     }
-                    let _ = self.handle_actions(Action::Key(key));
+                    self.action_list.push(Action::Key(key));
                 }
             }
+            self.manage_actions();
         }
         stdout().execute(LeaveAlternateScreen)?;
         disable_raw_mode()?;
 
         Ok(())
+    }
+
+    pub fn manage_actions(&mut self) {
+        if let Some(action) = self.action_list.pop() {
+            if let Ok(new_action) = self.handle_actions(action) {
+                self.action_list.push(new_action)
+            }
+        }
     }
 
     pub fn handle_self_actions(&mut self, action: Action) -> Result<()> {
@@ -65,12 +75,14 @@ impl App {
         }
         Ok(())
     }
-    pub fn handle_actions(&mut self, action: Action) -> Result<()> {
+    pub fn handle_actions(&mut self, action: Action) -> Result<Action> {
         self.handle_self_actions(action.clone());
         for component in self.components.iter_mut() {
-            component.update(action.clone());
+            if let Ok(Some(new_action)) = component.update(action.clone()) {
+                return Ok(new_action);
+            }
         }
-        Ok(())
+        Ok(Action::Noop)
     }
     pub fn render(&mut self) -> Result<()> {
         self.terminal.draw(|frame| {
