@@ -1,7 +1,4 @@
-use std::{
-    fs,
-    io::{stdout, Stdout},
-};
+use std::io::{stdout, Stdout};
 
 use color_eyre::Result;
 use ratatui::{
@@ -11,7 +8,6 @@ use ratatui::{
         ExecutableCommand,
     },
     prelude::CrosstermBackend,
-    widgets::TableState,
     Terminal,
 };
 
@@ -22,11 +18,7 @@ use crate::{
 
 pub struct App {
     pub current_path: String,
-    pub elements_list: Vec<String>,
-    pub selected_elements_list: Vec<String>,
-    pub table_state: TableState,
     pub components: Vec<Box<dyn Component>>,
-    pub should_quit: bool,
     pub terminal: Terminal<CrosstermBackend<Stdout>>,
 }
 
@@ -34,11 +26,7 @@ impl App {
     pub fn new() -> Result<Self> {
         Ok(Self {
             current_path: String::from("./"),
-            elements_list: Vec::new(),
-            selected_elements_list: Vec::new(),
-            table_state: TableState::default().with_selected(0),
             components: vec![Box::new(ExplorerTable::new()), Box::new(PathDisplay::new())],
-            should_quit: false,
             terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
         })
     }

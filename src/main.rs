@@ -1,16 +1,12 @@
 use ratatui::{
     crossterm::{
-        event::{self, KeyCode, KeyEventKind},
-        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+        terminal::{enable_raw_mode, EnterAlternateScreen},
         ExecutableCommand,
     },
-    layout::Constraint,
     prelude::*,
-    widgets::{Block, Borders, Cell, Row, Table},
 };
 use std::error::Error;
 use std::io::stdout;
-use style::palette::tailwind;
 mod app;
 use app::App;
 mod action;
@@ -25,40 +21,4 @@ fn main() -> Result<(), Box<dyn Error>> {
     let _ = app.run();
 
     Ok(())
-}
-fn ui(f: &mut Frame, app: &mut App) {
-    let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(vec![
-            Constraint::Percentage(20),
-            Constraint::Percentage(60),
-            Constraint::Percentage(20),
-        ])
-        .split(f.size());
-
-    render_table(f, app, chunks[1]);
-}
-
-fn render_table(f: &mut Frame, app: &mut App, area: Rect) {
-    let str_paths = app.elements_list.clone();
-    let widths = [Constraint::Percentage(60)];
-    let header = ["Name"]
-        .into_iter()
-        .map(Cell::from)
-        .collect::<Row>()
-        .height(1);
-    let rows = str_paths
-        .into_iter()
-        .map(|path_str| Row::new([path_str]))
-        .collect::<Vec<Row>>();
-    let selected_style = Style::default()
-        .add_modifier(Modifier::REVERSED)
-        .fg(tailwind::BLUE.c400);
-    let t = Table::new(rows, widths)
-        .style(Style::new().blue())
-        .block(Block::new().borders(Borders::ALL))
-        .highlight_style(selected_style)
-        .header(header);
-
-    f.render_stateful_widget(t, area, &mut app.table_state);
 }
