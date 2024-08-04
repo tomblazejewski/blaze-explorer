@@ -1,4 +1,5 @@
 pub mod explorer_table;
+pub mod path_display;
 
 use crate::action::Action;
 use color_eyre::Result;
@@ -21,4 +22,6 @@ pub trait Component {
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
+
+    fn get_area(&mut self, frame: &mut Frame) -> Result<Option<Rect>>;
 }

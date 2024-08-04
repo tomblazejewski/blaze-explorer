@@ -85,6 +85,7 @@ impl Component for ExplorerTable {
             .highlight_style(selected_style)
             .header(header);
 
+        let area = self.get_area(frame).unwrap().unwrap();
         frame.render_stateful_widget(t, area, &mut self.state);
         Ok(())
     }
@@ -95,6 +96,9 @@ impl Component for ExplorerTable {
             }
             Action::SelectUp => self.previous(),
             Action::SelectDown => self.next(),
+            Action::Key(key) => {
+                self.handle_key_events(key);
+            }
             _ => {}
         }
         Ok(None)
@@ -111,5 +115,17 @@ impl Component for ExplorerTable {
             _ => {}
         };
         Ok(None)
+    }
+
+    fn get_area(&mut self, frame: &mut Frame) -> Result<Option<Rect>> {
+        let main_box = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![
+                Constraint::Percentage(85),
+                Constraint::Percentage(5),
+                Constraint::Percentage(10),
+            ])
+            .split(frame.size());
+        Ok(Some(main_box[0]))
     }
 }

@@ -17,7 +17,7 @@ use ratatui::{
 
 use crate::{
     action::Action,
-    components::{explorer_table::ExplorerTable, Component},
+    components::{explorer_table::ExplorerTable, path_display::PathDisplay, Component},
 };
 
 pub struct App {
@@ -37,7 +37,7 @@ impl App {
             elements_list: Vec::new(),
             selected_elements_list: Vec::new(),
             table_state: TableState::default().with_selected(0),
-            components: vec![Box::new(ExplorerTable::new())],
+            components: vec![Box::new(ExplorerTable::new()), Box::new(PathDisplay::new())],
             should_quit: false,
             terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
         })
@@ -45,11 +45,12 @@ impl App {
 
     pub fn update_path(&mut self, path: String) {
         self.current_path = path.clone();
-        self.components[0].update(Action::ChangeDirectory(path));
+        self.handle_actions(Action::ChangeDirectory(path));
     }
 
     pub fn run(&mut self) -> Result<()> {
         self.terminal.clear()?;
+        self.handle_actions(Action::ChangeDirectory(String::from("./")));
         loop {
             self.render();
             if let event::Event::Key(key) = event::read()? {
@@ -68,10 +69,8 @@ impl App {
     }
 
     pub fn handle_actions(&mut self, action: Action) -> Result<()> {
-        if let Action::Key(key) = action {
-            for component in self.components.iter_mut() {
-                let _ = component.handle_key_events(key);
-            }
+        for component in self.components.iter_mut() {
+            component.update(action.clone());
         }
         Ok(())
     }
