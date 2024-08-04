@@ -14,8 +14,6 @@ mod components;
 fn main() -> Result<(), Box<dyn Error>> {
     stdout().execute(EnterAlternateScreen)?;
     enable_raw_mode()?;
-    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
-    terminal.clear()?;
     let mut app = App::new().unwrap();
     app.update_path(String::from("./"));
     let _ = app.run();
