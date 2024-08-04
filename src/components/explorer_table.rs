@@ -100,7 +100,9 @@ impl Component for ExplorerTable {
             Action::SelectUp => self.previous(),
             Action::SelectDown => self.next(),
             Action::Key(key) => {
-                self.handle_key_events(key);
+                if let Ok(Some(action)) = self.handle_key_events(key) {
+                    return Ok(Some(action));
+                }
             }
             _ => {}
         }
@@ -123,6 +125,13 @@ impl Component for ExplorerTable {
                         let new_path_str = created_path.to_str().unwrap().to_string();
                         return Ok(Some(Action::ChangeDirectory(new_path_str)));
                     }
+                }
+            }
+            KeyCode::Backspace => {
+                let created_path = Path::new(&self.current_path).join("..");
+                if created_path.is_dir() {
+                    let new_path_str = created_path.to_str().unwrap().to_string();
+                    return Ok(Some(Action::ChangeDirectory(new_path_str)));
                 }
             }
             _ => {}
