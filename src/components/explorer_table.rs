@@ -41,6 +41,7 @@ impl ExplorerTable {
             .to_str()
             .unwrap()
             .to_string();
+
         self.update_path(new_path);
 
         let position_of_prev = self.elements_list.iter().position(|x| x == &prev_path);
