@@ -41,8 +41,10 @@ impl App {
         self.terminal.clear()?;
         let path = "./";
         let starting_path = path::absolute(path).unwrap().to_str().unwrap().to_string();
-        self.handle_actions(Action::ChangeDirectory(starting_path));
+        self.action_list
+            .push(Action::ChangeDirectory(starting_path));
         loop {
+            self.manage_actions();
             self.render();
             if let event::Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
@@ -52,7 +54,6 @@ impl App {
                     self.action_list.push(Action::Key(key));
                 }
             }
-            self.manage_actions();
         }
         stdout().execute(LeaveAlternateScreen)?;
         disable_raw_mode()?;

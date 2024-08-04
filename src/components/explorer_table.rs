@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, path::Path};
 
 use color_eyre::eyre::Result;
 use ratatui::{
@@ -15,6 +15,7 @@ use super::Component;
 
 pub struct ExplorerTable {
     state: TableState,
+    current_path: String,
     elements_list: Vec<String>,
 }
 
@@ -22,11 +23,13 @@ impl ExplorerTable {
     pub fn new() -> Self {
         Self {
             state: TableState::default().with_selected(0),
+            current_path: String::from(""),
             elements_list: Vec::new(),
         }
     }
 
-    pub fn update_elements(&mut self, path: String) {
+    pub fn update_path(&mut self, path: String) {
+        self.current_path = path.clone();
         let paths = fs::read_dir(path).unwrap();
 
         let str_paths = paths
@@ -92,7 +95,7 @@ impl Component for ExplorerTable {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
             Action::ChangeDirectory(path) => {
-                self.update_elements(path);
+                self.update_path(path);
             }
             Action::SelectUp => self.previous(),
             Action::SelectDown => self.next(),
@@ -111,6 +114,16 @@ impl Component for ExplorerTable {
             }
             KeyCode::Char('k') => {
                 self.update(Action::SelectUp);
+            }
+            KeyCode::Enter => {
+                if let Some(index) = self.state.selected() {
+                    let chosen_element = &self.elements_list[index];
+                    let created_path = Path::new(&self.current_path).join(chosen_element);
+                    if created_path.is_dir() {
+                        let new_path_str = created_path.to_str().unwrap().to_string();
+                        return Ok(Some(Action::ChangeDirectory(new_path_str)));
+                    }
+                }
             }
             _ => {}
         };
