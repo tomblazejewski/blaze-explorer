@@ -21,12 +21,13 @@ pub struct FileData {
 }
 
 pub(crate) const SUFFIXES: [&str; 5] = ["B", "K", "M", "G", "T"];
-pub fn format_file_size(mut size: u64) -> String {
+pub fn format_file_size(size: u64) -> String {
+    let mut size = size as f32;
     for suffix in SUFFIXES {
-        if size > 1024 {
-            size /= 1024;
+        if size > 1024.0 {
+            size /= 1024.0;
         } else {
-            return format!("{}{}", size, suffix.to_string());
+            return format!("{:.2}{}", size, suffix.to_string());
         }
     }
     String::from("0")
