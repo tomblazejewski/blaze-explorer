@@ -24,7 +24,7 @@ pub struct App {
     pub terminal: Terminal<CrosstermBackend<Stdout>>,
     pub action_list: VecDeque<Action>,
     pub last_tick_key_events: Vec<KeyEvent>,
-    pub multiplier: u16,
+    pub multiplier: u32,
 }
 
 impl App {
@@ -38,7 +38,21 @@ impl App {
         })
     }
 
-    pub fn check_multiplier(&mut self) {}
+    pub fn accept_digit(&mut self, digit_char: char) {
+        if self.multiplier == 1 {
+            self.multiplier = digit_char.to_digit(10).unwrap();
+        } else {
+            self.multiplier = self.multiplier * 10 + digit_char.to_digit(10).unwrap();
+        }
+    }
+
+    pub fn reset_multiplier(&mut self) {
+        self.multiplier = 1;
+    }
+
+    pub fn queue_key_event(&mut self, action: Action) {
+        self.action_list.push_back(action);
+    }
     pub fn run(&mut self) -> Result<()> {
         self.terminal.clear()?;
         let path = "./";
@@ -53,9 +67,14 @@ impl App {
                     if let KeyCode::Char(char_entered) = key.code {
                         if char_entered == 'q' {
                             break;
+                        } else if char_entered.is_ascii_digit() && char_entered != '0' {
+                            self.accept_digit(char_entered);
                         }
                     }
-                    self.action_list.push_back(Action::Key(key));
+                    if key.code == KeyCode::Esc {
+                        self.reset_multiplier();
+                    }
+                    self.queue_key_event(Action::Key(key));
                 }
             }
         }
