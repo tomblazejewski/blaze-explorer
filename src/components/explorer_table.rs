@@ -22,7 +22,7 @@ pub struct FileData {
     size: u64,
 }
 
-pub fn get_file_data(path: String) -> Vec<FileData> {
+pub fn get_file_data(path: &String) -> Vec<FileData> {
     let paths = fs::read_dir(path).unwrap();
     let dir_entries = paths.map(|entry| entry.unwrap());
     let data = dir_entries
@@ -55,7 +55,7 @@ impl ExplorerTable {
     }
 
     pub fn go_up(&mut self) {
-        info!("{}", self.current_path);
+        info!("{}", Path::new(&self.current_path).to_str().unwrap());
         let prev_path = Path::new(&self.current_path)
             .file_name()
             .unwrap()
@@ -79,7 +79,8 @@ impl ExplorerTable {
     }
 
     pub fn update_path(&mut self, path: String) {
-        let elements = get_file_data(path);
+        self.current_path = path;
+        let elements = get_file_data(&self.current_path);
         self.elements_list = elements;
         self.state = TableState::default().with_selected(0);
     }
