@@ -1,7 +1,4 @@
-use std::{
-    fs::{self},
-    path::Path,
-};
+use std::{fs, path::Path, time::SystemTime};
 
 use color_eyre::eyre::Result;
 use ratatui::{
@@ -19,6 +16,7 @@ use super::Component;
 pub struct FileData {
     filename: String,
     size: u64,
+    modified: Option<SystemTime>,
 }
 
 pub(crate) const SUFFIXES: [&str; 5] = ["B", "K", "M", "G", "T"];
@@ -40,11 +38,21 @@ pub fn get_file_data(path: &String) -> Vec<FileData> {
             (
                 entry.file_name().to_str().unwrap().to_string(),
                 entry.metadata().unwrap().len(),
+                entry.metadata().unwrap().modified(),
             )
         })
-        .map(|(file_name, file_size)| FileData {
-            filename: file_name,
-            size: file_size,
+        .map(|(file_name, file_size, modified)| {
+            let modified_time: Option<SystemTime>;
+            if let Ok(system_time) = modified {
+                modified_time = Some(system_time);
+            } else {
+                modified_time = None;
+            };
+            FileData {
+                filename: file_name,
+                size: file_size,
+                modified: modified_time,
+            }
         })
         .collect::<Vec<FileData>>();
     data
