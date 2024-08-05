@@ -1,3 +1,4 @@
+use chrono::{offset::Utc, DateTime};
 use std::{fs, path::Path, time::SystemTime};
 
 use color_eyre::eyre::Result;
@@ -16,7 +17,7 @@ use super::Component;
 pub struct FileData {
     filename: String,
     size: u64,
-    modified: Option<SystemTime>,
+    modified: Option<DateTime<Utc>>,
 }
 
 pub(crate) const SUFFIXES: [&str; 5] = ["B", "K", "M", "G", "T"];
@@ -30,6 +31,13 @@ pub fn format_file_size(mut size: u64) -> String {
     }
     String::from("0")
 }
+pub fn format_last_time(last_time: &Option<DateTime<Utc>>) -> String {
+    if let Some(datetime) = last_time {
+        datetime.format("%Y-%m-%d %H:%M:%S").to_string()
+    } else {
+        String::from("")
+    }
+}
 pub fn get_file_data(path: &String) -> Vec<FileData> {
     let paths = fs::read_dir(path).unwrap();
     let dir_entries = paths.map(|entry| entry.unwrap());
@@ -42,9 +50,9 @@ pub fn get_file_data(path: &String) -> Vec<FileData> {
             )
         })
         .map(|(file_name, file_size, modified)| {
-            let modified_time: Option<SystemTime>;
+            let modified_time: Option<DateTime<Utc>>;
             if let Ok(system_time) = modified {
-                modified_time = Some(system_time);
+                modified_time = Some(system_time.into());
             } else {
                 modified_time = None;
             };
@@ -131,8 +139,12 @@ impl ExplorerTable {
 
 impl Component for ExplorerTable {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let widths = [Constraint::Percentage(40), Constraint::Percentage(10)];
-        let header = ["Name", "Name2"]
+        let widths = [
+            Constraint::Percentage(40),
+            Constraint::Percentage(10),
+            Constraint::Percentage(10),
+        ];
+        let header = ["Name", "Size", "Last modified"]
             .into_iter()
             .map(Cell::from)
             .collect::<Row>()
@@ -140,7 +152,13 @@ impl Component for ExplorerTable {
         let rows = self
             .elements_list
             .iter()
-            .map(|element| Row::new([element.filename.clone(), format_file_size(element.size)]))
+            .map(|element| {
+                Row::new([
+                    element.filename.clone(),
+                    format_file_size(element.size),
+                    format_last_time(&element.modified),
+                ])
+            })
             .collect::<Vec<Row>>();
         let selected_style = Style::default()
             .add_modifier(Modifier::REVERSED)
