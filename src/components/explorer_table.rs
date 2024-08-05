@@ -11,7 +11,6 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Row, Table, TableState},
     Frame,
 };
-use tracing::info;
 
 use crate::action::Action;
 
@@ -22,6 +21,17 @@ pub struct FileData {
     size: u64,
 }
 
+pub(crate) const SUFFIXES: [&str; 5] = ["B", "K", "M", "G", "T"];
+pub fn format_file_size(mut size: u64) -> String {
+    for suffix in SUFFIXES {
+        if size > 1024 {
+            size /= 1024;
+        } else {
+            return format!("{}{}", size, suffix.to_string());
+        }
+    }
+    String::from("0")
+}
 pub fn get_file_data(path: &String) -> Vec<FileData> {
     let paths = fs::read_dir(path).unwrap();
     let dir_entries = paths.map(|entry| entry.unwrap());
@@ -113,7 +123,7 @@ impl ExplorerTable {
 
 impl Component for ExplorerTable {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let widths = [Constraint::Percentage(40), Constraint::Percentage(40)];
+        let widths = [Constraint::Percentage(40), Constraint::Percentage(10)];
         let header = ["Name", "Name2"]
             .into_iter()
             .map(Cell::from)
@@ -122,7 +132,7 @@ impl Component for ExplorerTable {
         let rows = self
             .elements_list
             .iter()
-            .map(|element| Row::new([element.filename.clone(), element.size.to_string()]))
+            .map(|element| Row::new([element.filename.clone(), format_file_size(element.size)]))
             .collect::<Vec<Row>>();
         let selected_style = Style::default()
             .add_modifier(Modifier::REVERSED)
