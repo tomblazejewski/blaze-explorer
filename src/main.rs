@@ -1,3 +1,4 @@
+use logging::initialize_logging;
 use ratatui::{
     crossterm::{
         terminal::{enable_raw_mode, EnterAlternateScreen},
@@ -11,7 +12,9 @@ mod app;
 use app::App;
 mod action;
 mod components;
+mod logging;
 fn main() -> Result<(), Box<dyn Error>> {
+    initialize_logging()?;
     stdout().execute(EnterAlternateScreen)?;
     enable_raw_mode()?;
     let mut app = App::new().unwrap();

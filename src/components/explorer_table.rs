@@ -11,6 +11,7 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Row, Table, TableState},
     Frame,
 };
+use tracing::info;
 
 use crate::action::Action;
 
@@ -54,6 +55,7 @@ impl ExplorerTable {
     }
 
     pub fn go_up(&mut self) {
+        info!("{}", self.current_path);
         let prev_path = Path::new(&self.current_path)
             .file_name()
             .unwrap()
