@@ -55,7 +55,6 @@ impl ExplorerTable {
     }
 
     pub fn go_up(&mut self) {
-        info!("{}", Path::new(&self.current_path).to_str().unwrap());
         let prev_path = Path::new(&self.current_path)
             .file_name()
             .unwrap()
