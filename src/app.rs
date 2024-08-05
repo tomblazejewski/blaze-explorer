@@ -3,6 +3,7 @@ use std::io::{stdout, Stdout};
 use std::path;
 
 use color_eyre::Result;
+use ratatui::crossterm::event::KeyEvent;
 use ratatui::{
     crossterm::{
         event::{self, KeyCode, KeyEventKind},
@@ -22,6 +23,8 @@ pub struct App {
     pub components: Vec<Box<dyn Component>>,
     pub terminal: Terminal<CrosstermBackend<Stdout>>,
     pub action_list: VecDeque<Action>,
+    pub last_tick_key_events: Vec<KeyEvent>,
+    pub multiplier: u16,
 }
 
 impl App {
@@ -30,9 +33,12 @@ impl App {
             components: vec![Box::new(ExplorerTable::new()), Box::new(PathDisplay::new())],
             terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
             action_list: VecDeque::new(),
+            last_tick_key_events: Vec::new(),
+            multiplier: 0,
         })
     }
 
+    pub fn check_multiplier(&mut self) {}
     pub fn run(&mut self) -> Result<()> {
         self.terminal.clear()?;
         let path = "./";
@@ -44,8 +50,10 @@ impl App {
             self.render();
             if let event::Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
-                    if key.code == KeyCode::Char('q') {
-                        break;
+                    if let KeyCode::Char(char_entered) = key.code {
+                        if char_entered == 'q' {
+                            break;
+                        }
                     }
                     self.action_list.push_back(Action::Key(key));
                 }
@@ -56,6 +64,8 @@ impl App {
 
         Ok(())
     }
+
+    pub fn accept_keys(&self) {}
 
     pub fn handle_self_actions(&mut self, action: Action) -> Result<()> {
         match action {
