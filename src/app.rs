@@ -144,7 +144,9 @@ impl App {
         while let Some(action) = self.action_list.pop_front() {
             self.handle_self_actions(action.clone());
             for component in self.components.iter_mut() {
-                component.update(action.clone());
+                if let Ok(Some(resulting_action)) = component.update(action.clone()) {
+                    self.action_list.push_back(resulting_action);
+                }
             }
         }
         Ok(())

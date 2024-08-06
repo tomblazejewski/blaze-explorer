@@ -137,14 +137,18 @@ impl ExplorerTable {
         self.state.select(Some(i));
     }
 
-    pub fn select_directory(&mut self) {
+    pub fn select_directory(&mut self) -> Option<String> {
         if let Some(index) = self.state.selected() {
             let chosen_element = &self.elements_list[index];
             let created_path = Path::new(&self.current_path).join(&chosen_element.filename);
             if created_path.is_dir() {
                 let new_path_str = created_path.to_str().unwrap().to_string();
-                self.update_path(new_path_str);
+                Some(new_path_str)
+            } else {
+                None
             }
+        } else {
+            None
         }
     }
 }
@@ -188,7 +192,12 @@ impl Component for ExplorerTable {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
             Action::SelectDirectory => {
-                self.select_directory();
+                let target_directory = self.select_directory();
+                if let Some(found_directory) = target_directory {
+                    return Ok(Some(Action::ChangeDirectory(found_directory)));
+                } else {
+                    return Ok(None);
+                }
             }
             Action::ChangeDirectory(path) => {
                 self.update_path(path);
