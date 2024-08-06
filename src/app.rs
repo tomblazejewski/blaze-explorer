@@ -96,16 +96,16 @@ impl App {
             self.render();
             if let event::Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
-                    if let KeyCode::Char(char_entered) = key.code {
-                        if char_entered.is_ascii_digit() && char_entered != '0' {
-                            self.accept_digit(char_entered);
-                        } else {
-                            self.last_tick_key_events.push(key);
-                        }
-                    } else {
-                        self.last_tick_key_events.push(key);
+                    match key.code {
+                        KeyCode::Char(char_entered) => match char_entered {
+                            '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => {
+                                self.accept_digit(char_entered);
+                            }
+                            _ => self.last_tick_key_events.push(key),
+                        },
+                        _ => self.last_tick_key_events.push(key),
                     }
-                }
+                };
                 if let Some(action) = self.handle_key_event() {
                     self.action_list.push_back(action);
                 }
