@@ -25,9 +25,19 @@ pub struct App {
     pub action_list: VecDeque<Action>,
     pub last_tick_key_events: Vec<KeyEvent>,
     pub multiplier: u32,
+    pub keymap:HashMap<Vec<KeyEvent>, Action>,
 }
 
-pub(crate) const keymap: HashMap<Vec<KeyEvent>, Action> = HashMap::from([
+pub(crate) static keymap: HashMap<Vec<KeyEvent>, Action> = 
+impl App {
+    pub fn new() -> Result<Self> {
+        Ok(Self {
+            components: vec![Box::new(ExplorerTable::new()), Box::new(PathDisplay::new())],
+            terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
+            action_list: VecDeque::new(),
+            last_tick_key_events: Vec::new(),
+            multiplier: 0,
+            keymap: HashMap::from([
     (
         vec![KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE)],
         Action::Quit,
@@ -40,16 +50,8 @@ pub(crate) const keymap: HashMap<Vec<KeyEvent>, Action> = HashMap::from([
         vec![KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)],
         Action::SelectDown,
     ),
-]);
-
-impl App {
-    pub fn new() -> Result<Self> {
-        Ok(Self {
-            components: vec![Box::new(ExplorerTable::new()), Box::new(PathDisplay::new())],
-            terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
-            action_list: VecDeque::new(),
-            last_tick_key_events: Vec::new(),
-            multiplier: 0,
+])
+ 
         })
     }
 
