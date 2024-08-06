@@ -99,6 +99,8 @@ impl App {
                     match key.code {
                         KeyCode::Char(char_entered) => match char_entered {
                             '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => {
+                                self.reset_keys_stored(); //if a digit, automatically cancel any
+                                                          //possible multi keymaps
                                 self.accept_digit(char_entered);
                             }
                             _ => self.last_tick_key_events.push(key),
