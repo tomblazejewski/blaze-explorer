@@ -1,9 +1,9 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::io::{stdout, Stdout};
 use std::path;
 
 use color_eyre::Result;
-use ratatui::crossterm::event::KeyEvent;
+use ratatui::crossterm::event::{KeyEvent, KeyModifiers};
 use ratatui::{
     crossterm::{
         event::{self, KeyCode, KeyEventKind},
@@ -26,6 +26,21 @@ pub struct App {
     pub last_tick_key_events: Vec<KeyEvent>,
     pub multiplier: u32,
 }
+
+pub(crate) const keymap: HashMap<Vec<KeyEvent>, Action> = HashMap::from([
+    (
+        vec![KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE)],
+        Action::Quit,
+    ),
+    (
+        vec![KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE)],
+        Action::SelectUp,
+    ),
+    (
+        vec![KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)],
+        Action::SelectDown,
+    ),
+]);
 
 impl App {
     pub fn new() -> Result<Self> {
