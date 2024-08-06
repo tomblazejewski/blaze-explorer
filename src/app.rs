@@ -25,10 +25,10 @@ pub struct App {
     pub action_list: VecDeque<Action>,
     pub last_tick_key_events: Vec<KeyEvent>,
     pub multiplier: u32,
-    pub keymap:HashMap<Vec<KeyEvent>, Action>,
+    pub keymap: HashMap<Vec<KeyEvent>, Action>,
+    pub should_quit: bool,
 }
 
-pub(crate) static keymap: HashMap<Vec<KeyEvent>, Action> = 
 impl App {
     pub fn new() -> Result<Self> {
         Ok(Self {
@@ -38,20 +38,28 @@ impl App {
             last_tick_key_events: Vec::new(),
             multiplier: 0,
             keymap: HashMap::from([
-    (
-        vec![KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE)],
-        Action::Quit,
-    ),
-    (
-        vec![KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE)],
-        Action::SelectUp,
-    ),
-    (
-        vec![KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)],
-        Action::SelectDown,
-    ),
-])
- 
+                (
+                    vec![KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE)],
+                    Action::Quit,
+                ),
+                (
+                    vec![KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE)],
+                    Action::SelectUp,
+                ),
+                (
+                    vec![KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)],
+                    Action::SelectDown,
+                ),
+                (
+                    vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
+                    Action::EscapeSequence,
+                ),
+                (
+                    vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
+                    Action::ParentDirectory,
+                ),
+            ]),
+            should_quit: false,
         })
     }
 
@@ -61,6 +69,9 @@ impl App {
         } else {
             self.multiplier = self.multiplier * 10 + digit_char.to_digit(10).unwrap();
         }
+    }
+    pub fn reset_keys_stored(&mut self) {
+        self.last_tick_key_events = Vec::new();
     }
 
     pub fn reset_multiplier(&mut self) {
@@ -76,23 +87,26 @@ impl App {
         let starting_path = path::absolute(path).unwrap().to_str().unwrap().to_string();
         self.action_list
             .push_back(Action::ChangeDirectory(starting_path));
+        self.handle_actions();
         loop {
-            self.handle_actions();
             self.render();
             if let event::Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
                     if let KeyCode::Char(char_entered) = key.code {
-                        if char_entered == 'q' {
-                            break;
-                        } else if char_entered.is_ascii_digit() && char_entered != '0' {
+                        if char_entered.is_ascii_digit() && char_entered != '0' {
                             self.accept_digit(char_entered);
+                        } else {
+                            self.last_tick_key_events.push(key);
                         }
                     }
-                    if key.code == KeyCode::Esc {
-                        self.reset_multiplier();
-                    }
-                    self.queue_key_event(Action::Key(key));
                 }
+                if let Some(action) = self.handle_key_event() {
+                    self.action_list.push_back(action);
+                }
+                if self.should_quit {
+                    break;
+                }
+                self.handle_actions();
             }
         }
         stdout().execute(LeaveAlternateScreen)?;
@@ -101,10 +115,21 @@ impl App {
         Ok(())
     }
 
-    pub fn accept_keys(&self) {}
+    pub fn handle_key_event(&mut self) -> Option<Action> {
+        let action_found = self.keymap.get(&self.last_tick_key_events).cloned();
+        self.reset_keys_stored();
+        match action_found {
+            Some(action) => Some(action),
+            _ => Some(Action::EscapeSequence),
+        }
+    }
 
     pub fn handle_self_actions(&mut self, action: Action) -> Result<()> {
         match action {
+            Action::EscapeSequence => {
+                self.reset_keys_stored();
+            }
+            Action::Quit => self.should_quit = true,
             _ => {}
         }
         Ok(())
@@ -113,9 +138,7 @@ impl App {
         while let Some(action) = self.action_list.pop_front() {
             self.handle_self_actions(action.clone());
             for component in self.components.iter_mut() {
-                if let Ok(Some(new_action)) = component.update(action.clone()) {
-                    self.action_list.push_back(new_action);
-                }
+                component.update(action.clone());
             }
         }
         Ok(())

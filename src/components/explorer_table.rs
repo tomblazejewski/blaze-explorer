@@ -136,6 +136,17 @@ impl ExplorerTable {
         };
         self.state.select(Some(i));
     }
+
+    pub fn select_directory(&mut self) {
+        if let Some(index) = self.state.selected() {
+            let chosen_element = &self.elements_list[index];
+            let created_path = Path::new(&self.current_path).join(&chosen_element.filename);
+            if created_path.is_dir() {
+                let new_path_str = created_path.to_str().unwrap().to_string();
+                self.update_path(new_path_str);
+            }
+        }
+    }
 }
 
 impl Component for ExplorerTable {
@@ -176,6 +187,9 @@ impl Component for ExplorerTable {
     }
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
+            Action::SelectDirectory => {
+                self.select_directory();
+            }
             Action::ChangeDirectory(path) => {
                 self.update_path(path);
             }
@@ -184,36 +198,8 @@ impl Component for ExplorerTable {
             }
             Action::SelectUp => self.previous(),
             Action::SelectDown => self.next(),
-            Action::Key(key) => {
-                if let Ok(Some(action)) = self.handle_key_events(key) {
-                    return Ok(Some(action));
-                }
-            }
             _ => {}
         }
-        Ok(None)
-    }
-
-    fn handle_key_events(&mut self, key: KeyEvent) -> Result<Option<Action>> {
-        match key.code {
-            KeyCode::Char('j') => return Ok(Some(Action::SelectDown)),
-            KeyCode::Char('k') => return Ok(Some(Action::SelectUp)),
-            KeyCode::Enter => {
-                if let Some(index) = self.state.selected() {
-                    let chosen_element = &self.elements_list[index];
-                    let created_path = Path::new(&self.current_path).join(&chosen_element.filename);
-                    if created_path.is_dir() {
-                        let new_path_str = created_path.to_str().unwrap().to_string();
-                        return Ok(Some(Action::ChangeDirectory(new_path_str)));
-                    }
-                }
-            }
-            KeyCode::Backspace => {
-                return Ok(Some(Action::ParentDirectory));
-            }
-
-            _ => {}
-        };
         Ok(None)
     }
 

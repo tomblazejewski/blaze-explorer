@@ -9,4 +9,6 @@ pub enum Action {
     Noop,
     SelectUp,
     SelectDown,
+    EscapeSequence,
+    SelectDirectory,
 }
