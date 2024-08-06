@@ -55,6 +55,10 @@ impl App {
                     Action::EscapeSequence,
                 ),
                 (
+                    vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
+                    Action::SelectDirectory,
+                ),
+                (
                     vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
                     Action::ParentDirectory,
                 ),
@@ -98,6 +102,8 @@ impl App {
                         } else {
                             self.last_tick_key_events.push(key);
                         }
+                    } else {
+                        self.last_tick_key_events.push(key);
                     }
                 }
                 if let Some(action) = self.handle_key_event() {
