@@ -9,6 +9,7 @@ use ratatui::{
 use std::error::Error;
 use std::io::stdout;
 mod app;
+mod key_combination;
 use app::App;
 mod action;
 mod components;

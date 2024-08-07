@@ -21,6 +21,7 @@ use crate::{
         explorer_table::ExplorerTable, key_tracker::KeyTracker, path_display::PathDisplay,
         Component,
     },
+    key_combination::NumberCombination,
 };
 
 pub struct App {

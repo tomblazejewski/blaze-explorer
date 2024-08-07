@@ -11,4 +11,5 @@ pub enum Action {
     SelectDown,
     EscapeSequence,
     SelectDirectory,
+    ClearAndKey(KeyEvent),
 }
