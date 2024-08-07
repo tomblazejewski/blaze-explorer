@@ -6,6 +6,8 @@ use ratatui::{
     Frame,
 };
 
+use crate::action::Action;
+
 use super::Component;
 
 pub struct KeyTracker {
@@ -18,6 +20,12 @@ impl KeyTracker {
             keys_entered: Vec::new(),
         }
     }
+    fn append_key(&mut self, key: KeyEvent) {
+        self.keys_entered.push(key)
+    }
+    fn clear_keys(&mut self) {
+        self.keys_entered = Vec::new();
+    }
     pub fn get_key_chain(&self) -> String {
         let key_chain = self
             .keys_entered
@@ -27,8 +35,7 @@ impl KeyTracker {
                 _ => '!',
             })
             .collect::<String>();
-        key_chain;
-        String::from("Mock keychain")
+        key_chain
     }
 }
 
@@ -47,6 +54,19 @@ impl Component for KeyTracker {
             .constraints(vec![Constraint::Percentage(80), Constraint::Percentage(20)])
             .split(main_box[2]);
         Ok(Some(key_box[1]))
+    }
+
+    fn update(&mut self, action: Action) -> Result<Option<Action>> {
+        match action {
+            Action::Key(key) => {
+                self.append_key(key);
+            }
+            Action::EscapeSequence => {
+                self.clear_keys();
+            }
+            _ => {}
+        }
+        Ok(None)
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
