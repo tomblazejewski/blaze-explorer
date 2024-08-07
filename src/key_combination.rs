@@ -21,7 +21,7 @@ pub enum KeyEnterResult {
     ClearAndAppend(KeyEvent),
 }
 
-pub struct KeyTracker {
+pub struct KeyManager {
     number_combination: NumberCombination,
     key_combination: KeyCombination,
     last_digit: bool,
@@ -36,7 +36,7 @@ pub fn is_multiplier_digit(char_: &char) -> bool {
     return false;
 }
 
-impl KeyTracker {
+impl KeyManager {
     pub fn new() -> Self {
         let keyboard_keymaps = HashMap::from([
             (
@@ -73,8 +73,16 @@ impl KeyTracker {
         }
     }
 
-    pub fn clear_key_combination(&mut self) {
+    pub fn clear_keys_stored(&mut self) {
         self.key_combination = KeyCombination::None;
+        self.number_combination = NumberCombination::None;
+        self.last_digit = false;
+        self.last_key_event = None;
+    }
+
+    pub fn clear_and_enter(&mut self, new_event: KeyEvent) {
+        self.clear_keys_stored();
+        self.append_key_event(new_event);
     }
 
     pub fn accept_digit(&mut self, digit_char: char) {
