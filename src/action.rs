@@ -1,6 +1,6 @@
 use ratatui::crossterm::event::KeyEvent;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Action {
     Quit,
     ChangeDirectory(String),

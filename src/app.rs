@@ -13,6 +13,7 @@ use ratatui::{
     prelude::CrosstermBackend,
     Terminal,
 };
+use tracing::info;
 
 use crate::{
     action::Action,
@@ -26,7 +27,9 @@ pub struct App {
     pub components: Vec<Box<dyn Component>>,
     pub terminal: Terminal<CrosstermBackend<Stdout>>,
     pub action_list: VecDeque<Action>,
-    pub last_tick_key_events: Vec<KeyEvent>,
+    pub last_command_keys: Vec<KeyEvent>,
+    pub last_multiplier_keys: Vec<KeyEvent>,
+    pub last_sequence_keys: Vec<KeyEvent>,
     pub multiplier: u32,
     pub keymap: HashMap<Vec<KeyEvent>, Action>,
     pub should_quit: bool,
@@ -34,6 +37,44 @@ pub struct App {
 
 impl App {
     pub fn new() -> Result<Self> {
+        let numerical_keymaps = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+            .iter()
+            .map(|char_| {
+                vec![KeyEvent::new(
+                    KeyCode::Char(char_.to_owned()),
+                    KeyModifiers::NONE,
+                )]
+            })
+            .zip(vec![Action::Noop; 9])
+            .collect::<HashMap<Vec<KeyEvent>, Action>>();
+        let mut keyboard_keymaps = HashMap::from([
+            (
+                vec![KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE)],
+                Action::Quit,
+            ),
+            (
+                vec![KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE)],
+                Action::SelectUp,
+            ),
+            (
+                vec![KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)],
+                Action::SelectDown,
+            ),
+            (
+                vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
+                Action::EscapeSequence,
+            ),
+            (
+                vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
+                Action::SelectDirectory,
+            ),
+            (
+                vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
+                Action::ParentDirectory,
+            ),
+        ]);
+        keyboard_keymaps.extend(numerical_keymaps);
+
         Ok(Self {
             components: vec![
                 Box::new(ExplorerTable::new()),
@@ -42,47 +83,45 @@ impl App {
             ],
             terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
             action_list: VecDeque::new(),
-            last_tick_key_events: Vec::new(),
+            last_command_keys: Vec::new(),
+            last_sequence_keys: Vec::new(),
+            last_multiplier_keys: Vec::new(),
             multiplier: 0,
-            keymap: HashMap::from([
-                (
-                    vec![KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE)],
-                    Action::Quit,
-                ),
-                (
-                    vec![KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE)],
-                    Action::SelectUp,
-                ),
-                (
-                    vec![KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)],
-                    Action::SelectDown,
-                ),
-                (
-                    vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
-                    Action::EscapeSequence,
-                ),
-                (
-                    vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
-                    Action::SelectDirectory,
-                ),
-                (
-                    vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
-                    Action::ParentDirectory,
-                ),
-            ]),
+            keymap: keyboard_keymaps,
             should_quit: false,
         })
     }
 
-    pub fn accept_digit(&mut self, digit_char: char) {
-        if self.multiplier == 1 {
-            self.multiplier = digit_char.to_digit(10).unwrap();
+    pub fn reset_keys_stored(&mut self) {
+        self.last_command_keys = Vec::new();
+    }
+    pub fn reset_command_keys(&mut self) {
+        self.last_command_keys = Vec::new();
+    }
+
+    pub fn add_digit_key(&mut self, key: KeyEvent) {
+        if self.last_sequence_keys.is_empty() {
+            self.last_multiplier_keys.push(key);
+            self.last_sequence_keys.push(key);
         } else {
-            self.multiplier = self.multiplier * 10 + digit_char.to_digit(10).unwrap();
+            let last_key_entered = self.last_sequence_keys.pop();
+            if let Some(last_key) = last_key_entered {
+                match last_key{
+                    KeyEvent::Ch
+                }
+            }
         }
     }
-    pub fn reset_keys_stored(&mut self) {
-        self.last_tick_key_events = Vec::new();
+
+    pub fn append_multiplier_key(&mut self, key: KeyEvent) {
+        self.last_multiplier_keys.push(key);
+        self.last_sequence_keys.push(key);
+    }
+
+    pub fn escape_sequence(&mut self) {
+        self.last_multiplier_keys = Vec::new();
+        self.last_sequence_keys = Vec::new();
+        self.last_command_keys = Vec::new();
     }
 
     pub fn reset_multiplier(&mut self) {
@@ -104,17 +143,18 @@ impl App {
             if let event::Event::Key(key) = event::read()? {
                 self.action_list.push_back(Action::Key(key)); //need to push the key to get the
                                                               //keytracker to work?
+                info!("Pushed {:?}", key);
                 if key.kind == KeyEventKind::Press {
                     match key.code {
                         KeyCode::Char(char_entered) => match char_entered {
                             '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => {
                                 self.reset_keys_stored(); //if a digit, automatically cancel any
                                                           //possible multi keymaps
-                                self.accept_digit(char_entered);
+                                self.append_multiplier_key(key);
                             }
-                            _ => self.last_tick_key_events.push(key),
+                            _ => self.last_command_keys.push(key),
                         },
-                        _ => self.last_tick_key_events.push(key),
+                        _ => self.last_command_keys.push(key),
                     }
                 };
                 if let Some(action) = self.handle_key_event() {
@@ -133,12 +173,20 @@ impl App {
     }
 
     pub fn handle_key_event(&mut self) -> Option<Action> {
-        let action_found = self.keymap.get(&self.last_tick_key_events).cloned();
+        let action_found = self.keymap.get(&self.last_command_keys).cloned();
+        // need to store the numbers somehow as well!! given I am taking the data from last ticke
+        // key events - can I just not store them and put them somewhere else as soon as I get non
+        // -digit?
         self.reset_keys_stored();
-        match action_found {
+        let return_value = match action_found {
             Some(action) => Some(action),
             _ => Some(Action::EscapeSequence),
-        }
+        };
+        info!(
+            "Matching {:?} to {:?}",
+            &self.last_command_keys, return_value
+        );
+        return_value
     }
 
     pub fn handle_self_actions(&mut self, action: Action) -> Result<()> {

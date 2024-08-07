@@ -5,6 +5,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
+use tracing::info;
 
 use crate::action::Action;
 
@@ -21,9 +22,11 @@ impl KeyTracker {
         }
     }
     fn append_key(&mut self, key: KeyEvent) {
+        info!("Appending {:?}", key);
         self.keys_entered.push(key)
     }
     fn clear_keys(&mut self) {
+        info!("Clearing all keys");
         self.keys_entered = Vec::new();
     }
     pub fn get_key_chain(&self) -> String {
