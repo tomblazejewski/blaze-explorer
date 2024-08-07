@@ -8,7 +8,7 @@ use ratatui::{
 
 use super::Component;
 
-struct KeyTracker {
+pub struct KeyTracker {
     keys_entered: Vec<KeyEvent>,
 }
 
@@ -27,7 +27,8 @@ impl KeyTracker {
                 _ => '!',
             })
             .collect::<String>();
-        key_chain
+        key_chain;
+        String::from("Mock keychain")
     }
 }
 

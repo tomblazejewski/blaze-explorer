@@ -16,7 +16,10 @@ use ratatui::{
 
 use crate::{
     action::Action,
-    components::{explorer_table::ExplorerTable, path_display::PathDisplay, Component},
+    components::{
+        explorer_table::ExplorerTable, key_tracker::KeyTracker, path_display::PathDisplay,
+        Component,
+    },
 };
 
 pub struct App {
@@ -32,7 +35,11 @@ pub struct App {
 impl App {
     pub fn new() -> Result<Self> {
         Ok(Self {
-            components: vec![Box::new(ExplorerTable::new()), Box::new(PathDisplay::new())],
+            components: vec![
+                Box::new(ExplorerTable::new()),
+                Box::new(PathDisplay::new()),
+                Box::new(KeyTracker::new()),
+            ],
             terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
             action_list: VecDeque::new(),
             last_tick_key_events: Vec::new(),
