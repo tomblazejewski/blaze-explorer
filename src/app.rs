@@ -95,6 +95,8 @@ impl App {
         loop {
             self.render();
             if let event::Event::Key(key) = event::read()? {
+                self.action_list.push_back(Action::Key(key)); //need to push the key to get the
+                                                              //keytracker to work?
                 if key.kind == KeyEventKind::Press {
                     match key.code {
                         KeyCode::Char(char_entered) => match char_entered {

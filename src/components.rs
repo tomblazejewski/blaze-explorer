@@ -1,4 +1,5 @@
 pub mod explorer_table;
+pub mod key_tracker;
 pub mod path_display;
 
 use crate::action::Action;
