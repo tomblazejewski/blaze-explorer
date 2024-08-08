@@ -71,7 +71,6 @@ impl Component for KeyTracker {
                 self.clear_keys();
                 self.append_key(key);
             }
-            Action::Linger(n) => {}
             _ => {}
         }
         Ok(None)
