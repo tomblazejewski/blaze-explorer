@@ -88,20 +88,29 @@ impl App {
         None
     }
 
-    pub fn handle_self_actions(&mut self, action: Action) -> Result<()> {
+    pub fn handle_self_actions(&mut self, action: &Action) -> Option<Action> {
         match action {
             Action::EscapeSequence => {
                 self.key_manager.clear_keys_stored();
             }
-            Action::ClearAndKey(key_event) => self.key_manager.clear_and_enter(key_event),
+            Action::ClearAndKey(key_event) => self.key_manager.clear_and_enter(*key_event),
             Action::Quit => self.should_quit = true,
+            Action::Linger(n) => {
+                if *n > 0 {
+                    return Some(Action::Linger(n - 1));
+                } else {
+                    self.key_manager.clear_keys_stored();
+                }
+            }
             _ => {}
         }
-        Ok(())
+        None
     }
     pub fn handle_actions(&mut self) -> Result<()> {
         while let Some(action) = self.action_list.pop_front() {
-            self.handle_self_actions(action.clone());
+            if let Some(action_received) = self.handle_self_actions(&action) {
+                self.action_list.push_back(action_received);
+            }
             for component in self.components.iter_mut() {
                 if let Ok(Some(resulting_action)) = component.update(action.clone()) {
                     self.action_list.push_back(resulting_action);

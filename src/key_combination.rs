@@ -144,7 +144,8 @@ impl KeyManager {
             match action {
                 Action::Noop => {}
                 _ => {
-                    actions_returned.push(Action::EscapeSequence);
+                    actions_returned.push(Action::Linger(5)); //if found an action, keep the last
+                                                              //key visible for a while
                 }
             }
             info!("For {:?} returning {:?}", keymap, actions_returned);
