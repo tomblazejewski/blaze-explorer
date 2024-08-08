@@ -1,16 +1,17 @@
 use std::collections::HashMap;
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use tracing::info;
 
 use crate::action::Action;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum NumberCombination {
     Multiplier(u32),
     None,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum KeyCombination {
     Chain(Vec<KeyEvent>),
     None,
@@ -33,7 +34,7 @@ pub fn is_multiplier_digit(char_: &char) -> bool {
     if char_.is_ascii_digit() && *char_ != '0' {
         return true;
     }
-    return false;
+    false
 }
 
 impl KeyManager {
@@ -130,20 +131,24 @@ impl KeyManager {
         }
     }
 
-    pub fn find_action(&mut self, keymap: Vec<KeyEvent>, multiplier: u32) -> Option<Vec<Action>> {
+    pub fn find_action(&mut self, keymap: Vec<KeyEvent>, multiplier: u32) -> Vec<Action> {
         let search_result = self.key_hash_map.get(&keymap);
         if let Some(result_found) = search_result {
             let (action, is_repeatable) = result_found;
             match is_repeatable {
-                false => Some(vec![action.clone()]),
-                true => Some(vec![action.clone(); multiplier.try_into().unwrap()]),
+                false => vec![action.clone()],
+                true => vec![action.clone(); multiplier.try_into().unwrap()],
             }
         } else {
-            None
+            vec![Action::EscapeSequence]
         }
     }
 
-    pub fn handle_keymap(&mut self) -> Option<Vec<Action>> {
+    pub fn handle_keymap(&mut self) -> Vec<Action> {
+        info!(
+            "Searching for {:?}, {:?}, {:?}",
+            self.number_combination, self.key_combination, self.last_digit,
+        );
         match (
             self.number_combination.clone(),
             self.key_combination.clone(),
@@ -152,25 +157,25 @@ impl KeyManager {
             (NumberCombination::None, KeyCombination::Chain(keymap), _) => {
                 // simple keymap with no numbers in it - search for it
                 let result = self.find_action(keymap.clone(), 1);
-                return result;
+                result
             }
             (NumberCombination::Multiplier(_), KeyCombination::Chain(_), true) => {
                 //has some keymap but entered a digit
                 //clear and add a digit
-                return Some(vec![Action::ClearAndKey(self.last_key_event.unwrap())]);
+                vec![Action::ClearAndKey(self.last_key_event.unwrap())]
             }
             (NumberCombination::Multiplier(n), KeyCombination::Chain(keymap), false) => {
                 //keymap with some multiplier
                 let result = self.find_action(keymap.clone(), n);
-                return result;
+                result
             }
             (NumberCombination::Multiplier(_), KeyCombination::None, _) => {
                 //no key combination so can only do noop
-                return Some(vec![Action::Noop]);
+                vec![Action::Noop]
             }
             (NumberCombination::None, KeyCombination::None, _) => {
                 //no keys so far so can only noop
-                return Some(vec![Action::Noop]);
+                vec![Action::Noop]
             }
         }
     }
