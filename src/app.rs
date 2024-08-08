@@ -61,10 +61,11 @@ impl App {
         loop {
             self.render();
             if let event::Event::Key(key) = event::read()? {
-                self.action_list.push_back(Action::Key(key)); //need to push the key to get the
-                                                              //keytracker to work?
+                //need to push the key to get the
+                //keytracker to work?
                 info!("Pushed {:?}", key);
                 if key.kind == KeyEventKind::Press {
+                    self.action_list.push_back(Action::Key(key));
                     self.key_manager.append_key_event(key);
                 };
                 self.handle_key_event();
@@ -81,9 +82,9 @@ impl App {
     }
 
     pub fn handle_key_event(&mut self) -> Option<Action> {
-        if let Some(action) = self.key_manager.handle_keymap() {
-            self.action_list.extend(action);
-        }
+        let actions = self.key_manager.handle_keymap();
+        self.action_list.extend(actions);
+
         None
     }
 

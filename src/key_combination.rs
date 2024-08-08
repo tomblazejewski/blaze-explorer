@@ -135,10 +135,20 @@ impl KeyManager {
         let search_result = self.key_hash_map.get(&keymap);
         if let Some(result_found) = search_result {
             let (action, is_repeatable) = result_found;
-            match is_repeatable {
-                false => vec![action.clone()],
+            let mut actions_returned = match is_repeatable {
+                false => {
+                    vec![action.clone()]
+                }
                 true => vec![action.clone(); multiplier.try_into().unwrap()],
+            };
+            match action {
+                Action::Noop => {}
+                _ => {
+                    actions_returned.push(Action::EscapeSequence);
+                }
             }
+            info!("For {:?} returning {:?}", keymap, actions_returned);
+            actions_returned
         } else {
             vec![Action::EscapeSequence]
         }
