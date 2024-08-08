@@ -67,6 +67,10 @@ impl Component for KeyTracker {
             Action::EscapeSequence => {
                 self.clear_keys();
             }
+            Action::ClearAndKey(key) => {
+                self.clear_keys();
+                self.append_key(key);
+            }
             _ => {}
         }
         Ok(None)
