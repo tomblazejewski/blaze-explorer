@@ -1,5 +1,9 @@
 use chrono::{offset::Utc, DateTime};
-use std::{fs, path::Path, time::SystemTime};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    time::SystemTime,
+};
 
 use color_eyre::eyre::Result;
 use ratatui::{
@@ -39,7 +43,7 @@ pub fn format_last_time(last_time: &Option<DateTime<Utc>>) -> String {
         String::from("")
     }
 }
-pub fn get_file_data(path: &String) -> Vec<FileData> {
+pub fn get_file_data(path: &PathBuf) -> Vec<FileData> {
     let paths = fs::read_dir(path).unwrap();
     let dir_entries = paths.map(|entry| entry.unwrap());
     let data = dir_entries
@@ -68,7 +72,7 @@ pub fn get_file_data(path: &String) -> Vec<FileData> {
 }
 pub struct ExplorerTable {
     state: TableState,
-    current_path: String,
+    current_path: PathBuf,
     elements_list: Vec<FileData>,
 }
 
@@ -76,35 +80,26 @@ impl ExplorerTable {
     pub fn new() -> Self {
         Self {
             state: TableState::default().with_selected(0),
-            current_path: String::from(""),
+            current_path: PathBuf::from("./"),
             elements_list: Vec::new(),
         }
     }
 
     pub fn go_up(&mut self) {
-        let prev_path = Path::new(&self.current_path)
-            .file_name()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .to_string();
-        let new_path = Path::new(&self.current_path)
-            .parent()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .to_string();
-
-        self.update_path(new_path);
-
-        let position_of_prev = self
-            .elements_list
-            .iter()
-            .position(|x| &x.filename == &prev_path);
-        self.state.select(position_of_prev);
+        let prev_folder = &self.current_path.file_name();
+        if let &Some(prev_folder_name) = prev_folder {
+            let prev_folder_string = prev_folder_name.to_str().unwrap();
+            let new_absolute_path = self.current_path.parent().unwrap().to_owned();
+            let position_of_prev = self
+                .elements_list
+                .iter()
+                .position(|x| x.filename.as_str() == prev_folder_string);
+            self.state.select(position_of_prev);
+            self.update_path(new_absolute_path);
+        }
     }
 
-    pub fn update_path(&mut self, path: String) {
+    pub fn update_path(&mut self, path: PathBuf) {
         self.current_path = path;
         let elements = get_file_data(&self.current_path);
         self.elements_list = elements;
@@ -137,13 +132,12 @@ impl ExplorerTable {
         self.state.select(Some(i));
     }
 
-    pub fn select_directory(&mut self) -> Option<String> {
+    pub fn select_directory(&mut self) -> Option<PathBuf> {
         if let Some(index) = self.state.selected() {
             let chosen_element = &self.elements_list[index];
             let created_path = Path::new(&self.current_path).join(&chosen_element.filename);
             if created_path.is_dir() {
-                let new_path_str = created_path.to_str().unwrap().to_string();
-                Some(new_path_str)
+                Some(created_path)
             } else {
                 None
             }

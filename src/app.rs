@@ -54,7 +54,7 @@ impl App {
     pub fn run(&mut self) -> Result<()> {
         self.terminal.clear()?;
         let path = "./";
-        let starting_path = path::absolute(path).unwrap().to_str().unwrap().to_string();
+        let starting_path = path::absolute(path).unwrap();
         self.action_list
             .push_back(Action::ChangeDirectory(starting_path));
         self.handle_actions();

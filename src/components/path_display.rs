@@ -1,4 +1,4 @@
-use std::path::{self, Path};
+use std::path::{self, Path, PathBuf};
 
 use color_eyre::eyre::Result;
 use ratatui::prelude::*;
@@ -14,17 +14,17 @@ use crate::action::Action;
 use super::Component;
 
 pub struct PathDisplay {
-    current_path: String,
+    current_path: PathBuf,
 }
 
 impl PathDisplay {
     pub fn new() -> Self {
         Self {
-            current_path: String::new(),
+            current_path: PathBuf::from("./"),
         }
     }
 
-    pub fn update_absolute_path(&mut self, absolute_path: String) {
+    pub fn update_path(&mut self, absolute_path: PathBuf) {
         self.current_path = absolute_path;
     }
 }
@@ -32,7 +32,8 @@ impl PathDisplay {
 impl Component for PathDisplay {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let path_paragraph =
-            Paragraph::new(self.current_path.clone()).block(Block::new().borders(Borders::ALL));
+            Paragraph::new(self.current_path.clone().to_str().unwrap().to_string())
+                .block(Block::new().borders(Borders::ALL));
         let area = self.get_area(frame).unwrap().unwrap();
         frame.render_widget(path_paragraph, area);
         Ok(())
@@ -41,20 +42,16 @@ impl Component for PathDisplay {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
             Action::ChangeDirectory(path) => {
-                let absolute_path = path::absolute(path).unwrap().to_str().unwrap().to_string();
-                self.update_absolute_path(absolute_path);
+                self.update_path(path);
             }
             Action::Key(key) => {
                 self.handle_key_events(key);
             }
             Action::ParentDirectory => {
-                let new_path = Path::new(&self.current_path)
-                    .parent()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .to_string();
-                self.update_absolute_path(new_path);
+                let parent_path = self.current_path.parent();
+                if let Some(parent_path_found) = parent_path {
+                    self.update_path(parent_path_found.to_owned());
+                }
             }
             _ => {}
         }
