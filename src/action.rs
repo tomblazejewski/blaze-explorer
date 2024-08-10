@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use ratatui::crossterm::event::KeyEvent;
 
+use crate::mode::Mode;
+
 #[derive(Clone, Debug)]
 pub enum Action {
     Quit,
@@ -14,4 +16,5 @@ pub enum Action {
     EscapeSequence,
     SelectDirectory,
     ClearAndKey(KeyEvent),
+    SwitchMode(Mode),
 }

@@ -3,7 +3,6 @@ use std::io::{stdout, Stdout};
 use std::path;
 
 use color_eyre::Result;
-use ratatui::crossterm::event::{KeyEvent, KeyModifiers};
 use ratatui::{
     crossterm::{
         event::{self, KeyCode, KeyEventKind},
@@ -22,7 +21,7 @@ use crate::{
         explorer_table::ExplorerTable, key_tracker::KeyTracker, path_display::PathDisplay,
         Component,
     },
-    key_combination::NumberCombination,
+    mode::Mode,
 };
 
 pub struct App {
@@ -31,6 +30,7 @@ pub struct App {
     pub action_list: VecDeque<Action>,
     pub key_manager: KeyManager,
     pub should_quit: bool,
+    pub mode: Mode,
 }
 
 impl App {
@@ -45,6 +45,7 @@ impl App {
             action_list: VecDeque::new(),
             key_manager: KeyManager::new(),
             should_quit: false,
+            mode: Mode::Normal,
         })
     }
 

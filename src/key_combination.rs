@@ -172,8 +172,7 @@ impl KeyManager {
         ) {
             (NumberCombination::None, KeyCombination::Chain(keymap), _) => {
                 // simple keymap with no numbers in it - search for it
-                let result = self.find_action(keymap.clone(), 1);
-                result
+                self.find_action(keymap.clone(), 1)
             }
             (NumberCombination::Multiplier(_), KeyCombination::Chain(_), true) => {
                 //has some keymap but entered a digit
@@ -182,8 +181,7 @@ impl KeyManager {
             }
             (NumberCombination::Multiplier(n), KeyCombination::Chain(keymap), false) => {
                 //keymap with some multiplier
-                let result = self.find_action(keymap.clone(), n);
-                result
+                self.find_action(keymap.clone(), n)
             }
             (NumberCombination::Multiplier(_), KeyCombination::None, _) => {
                 //no key combination so can only do noop

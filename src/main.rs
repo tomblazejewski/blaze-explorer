@@ -14,6 +14,7 @@ use app::App;
 mod action;
 mod components;
 mod logging;
+mod mode;
 fn main() -> Result<(), Box<dyn Error>> {
     initialize_logging()?;
     stdout().execute(EnterAlternateScreen)?;
