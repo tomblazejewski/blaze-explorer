@@ -1,16 +1,18 @@
 use chrono::{offset::Utc, DateTime};
+use layout::Alignment;
 use std::{
     fs,
     path::{Path, PathBuf},
     time::SystemTime,
 };
+use style::Styled;
 
 use color_eyre::eyre::Result;
 use ratatui::{
     crossterm::event::{KeyCode, KeyEvent},
     prelude::*,
     style::{palette::tailwind, Modifier, Style},
-    widgets::{Block, Borders, Cell, Row, Table, TableState},
+    widgets::*,
     Frame,
 };
 
@@ -70,6 +72,21 @@ pub fn get_file_data(path: &PathBuf) -> Vec<FileData> {
         .collect::<Vec<FileData>>();
     data
 }
+
+fn get_line_numbers(n_lines: usize, current_line: usize) -> Vec<String> {
+    //create all string labels before the selected line
+    let before_selected = (1..current_line)
+        .rev()
+        .map(|number| number.to_string())
+        .collect::<Vec<String>>();
+    let mut current_lines = before_selected;
+    let n_lines_after = n_lines - current_line;
+    let after_selected_iter = (1..n_lines_after + 1).map(|number| number.to_string());
+    let current_line_string = format!("{} ", current_line);
+    current_lines.append(&mut vec![current_line_string]);
+    current_lines.extend(after_selected_iter);
+    current_lines
+}
 pub struct ExplorerTable {
     state: TableState,
     current_path: PathBuf,
@@ -83,6 +100,20 @@ impl ExplorerTable {
             current_path: PathBuf::from("./"),
             elements_list: Vec::new(),
         }
+    }
+
+    pub fn get_line_labels(&mut self) -> Vec<String> {
+        let selected_row = self.state.selected().unwrap() + 1;
+        let mut before_selected = (selected_row - 1..0)
+            .map(|number| number.to_string())
+            .collect::<Vec<String>>();
+        let list_length = self.elements_list.len();
+        let last_element = list_length - selected_row + 1;
+        let after_selected_iter = (1..last_element).map(|number| number.to_string());
+        let selected_row = format!("{} ", selected_row);
+        before_selected.append(&mut vec![selected_row]);
+        before_selected.extend(after_selected_iter);
+        before_selected
     }
 
     pub fn go_up(&mut self) {
@@ -150,23 +181,28 @@ impl ExplorerTable {
 impl Component for ExplorerTable {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let widths = [
+            Constraint::Percentage(5),
             Constraint::Percentage(40),
             Constraint::Percentage(10),
-            Constraint::Percentage(10),
+            Constraint::Percentage(20),
         ];
-        let header = ["Name", "Size", "Last modified"]
+        let header = ["", "Name", "Size", "Last modified"]
             .into_iter()
             .map(Cell::from)
             .collect::<Row>()
             .height(1);
+        let line_numbers =
+            get_line_numbers(self.elements_list.len(), self.state.selected().unwrap() + 1);
         let rows = self
             .elements_list
             .iter()
-            .map(|element| {
+            .zip(line_numbers)
+            .map(|(element, row_number)| {
                 Row::new([
-                    element.filename.clone(),
-                    format_file_size(element.size),
-                    format_last_time(&element.modified),
+                    Cell::from(Text::from(row_number).alignment(Alignment::Right)),
+                    element.filename.clone().into(),
+                    format_file_size(element.size).into(),
+                    format_last_time(&element.modified).into(),
                 ])
             })
             .collect::<Vec<Row>>();
@@ -216,5 +252,28 @@ impl Component for ExplorerTable {
             ])
             .split(frame.size());
         Ok(Some(main_box[0]))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_line_numbers() {
+        let current_line = 3_usize;
+        let line_length = 6_usize;
+
+        let result = get_line_numbers(line_length, current_line);
+
+        let expected_result = vec![
+            String::from("2"),
+            String::from("1"),
+            String::from("3 "),
+            String::from("1"),
+            String::from("2"),
+            String::from("3"),
+        ];
+        assert_eq!(result, expected_result);
     }
 }

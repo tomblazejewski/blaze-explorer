@@ -17,11 +17,6 @@ pub enum KeyCombination {
     None,
 }
 
-pub enum KeyEnterResult {
-    Append(KeyEvent),
-    ClearAndAppend(KeyEvent),
-}
-
 pub struct KeyManager {
     number_combination: NumberCombination,
     key_combination: KeyCombination,
@@ -119,6 +114,17 @@ impl KeyManager {
                 if is_multiplier_digit(&new_char) {
                     self.accept_digit(new_char);
                     self.last_digit = true;
+                } else if new_char == '0' {
+                    match self.number_combination {
+                        NumberCombination::None => {
+                            self.accept_non_digit(new_event);
+                            self.last_digit = false;
+                        }
+                        NumberCombination::Multiplier(_) => {
+                            self.accept_digit(new_char);
+                            self.last_digit = true;
+                        }
+                    }
                 } else {
                     self.accept_non_digit(new_event);
                     self.last_digit = false;
