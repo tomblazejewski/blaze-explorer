@@ -94,6 +94,10 @@ impl App {
             Action::EscapeSequence => {
                 self.key_manager.clear_keys_stored();
             }
+            Action::SwitchMode(mode) => {
+                self.key_manager.clear_keys_stored();
+                self.mode = mode;
+            }
             Action::ClearAndKey(key_event) => self.key_manager.clear_and_enter(key_event),
             Action::Quit => self.should_quit = true,
             _ => {}
