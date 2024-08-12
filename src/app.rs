@@ -14,6 +14,7 @@ use ratatui::{
 };
 use tracing::info;
 
+use crate::action::{AppAction, ExplorerAction, KeyAction};
 use crate::key_combination::KeyManager;
 use crate::{
     action::Action,
@@ -57,7 +58,9 @@ impl App {
         let path = "./";
         let starting_path = path::absolute(path).unwrap();
         self.action_list
-            .push_back(Action::ChangeDirectory(starting_path));
+            .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
+                starting_path,
+            )));
         self.handle_actions();
         loop {
             self.render();
@@ -66,7 +69,8 @@ impl App {
                 //keytracker to work?
                 info!("Pushed {:?}", key);
                 if key.kind == KeyEventKind::Press {
-                    self.action_list.push_back(Action::Key(key));
+                    self.action_list
+                        .push_back(Action::KeyAct(KeyAction::Key(key)));
                     self.key_manager.append_key_event(key);
                 };
                 self.handle_key_event();
@@ -91,15 +95,17 @@ impl App {
 
     pub fn handle_self_actions(&mut self, action: Action) -> Result<()> {
         match action {
-            Action::EscapeSequence => {
+            Action::KeyAct(KeyAction::EscapeSequence) => {
                 self.key_manager.clear_keys_stored();
             }
-            Action::SwitchMode(mode) => {
+            Action::AppAct(AppAction::SwitchMode(mode)) => {
                 self.key_manager.clear_keys_stored();
                 self.mode = mode;
             }
-            Action::ClearAndKey(key_event) => self.key_manager.clear_and_enter(key_event),
-            Action::Quit => self.should_quit = true,
+            Action::KeyAct(KeyAction::ClearAndKey(key_event)) => {
+                self.key_manager.clear_and_enter(key_event)
+            }
+            Action::AppAct(AppAction::Quit) => self.should_quit = true,
             _ => {}
         }
         Ok(())

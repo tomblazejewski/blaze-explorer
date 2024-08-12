@@ -7,7 +7,7 @@ use ratatui::{
 };
 use tracing::info;
 
-use crate::action::Action;
+use crate::action::{Action, KeyAction};
 
 use super::Component;
 
@@ -61,13 +61,13 @@ impl Component for KeyTracker {
 
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
-            Action::Key(key) => {
+            Action::KeyAct(KeyAction::Key(key)) => {
                 self.append_key(key);
             }
-            Action::EscapeSequence => {
+            Action::KeyAct(KeyAction::EscapeSequence) => {
                 self.clear_keys();
             }
-            Action::ClearAndKey(key) => {
+            Action::KeyAct(KeyAction::ClearAndKey(key)) => {
                 self.clear_keys();
                 self.append_key(key);
             }

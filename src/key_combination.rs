@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use tracing::info;
 
-use crate::action::Action;
+use crate::action::{Action, AppAction, ExplorerAction, KeyAction};
 
 #[derive(Clone, Debug)]
 pub enum NumberCombination {
@@ -34,30 +34,30 @@ pub fn is_multiplier_digit(char_: &char) -> bool {
 
 impl KeyManager {
     pub fn new() -> Self {
-        let keyboard_keymaps = HashMap::from([
+        let keyboard_keymaps: HashMap<Vec<KeyEvent>, (Action, bool)> = HashMap::from([
             (
                 vec![KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE)],
-                (Action::Quit, false),
+                (Action::AppAct(AppAction::Quit), false),
             ),
             (
                 vec![KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE)],
-                (Action::SelectUp, true),
+                (Action::ExplorerAct(ExplorerAction::SelectUp), true),
             ),
             (
                 vec![KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)],
-                (Action::SelectDown, true),
+                (Action::ExplorerAct(ExplorerAction::SelectDown), true),
             ),
             (
                 vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
-                (Action::EscapeSequence, false),
+                (Action::KeyAct(KeyAction::EscapeSequence), false),
             ),
             (
                 vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
-                (Action::SelectDirectory, false),
+                (Action::ExplorerAct(ExplorerAction::SelectDirectory), false),
             ),
             (
                 vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
-                (Action::ParentDirectory, false),
+                (Action::ExplorerAct(ExplorerAction::ParentDirectory), false),
             ),
         ]);
         Self {
@@ -150,13 +150,13 @@ impl KeyManager {
             match action {
                 Action::Noop => {}
                 _ => {
-                    actions_returned.push(Action::EscapeSequence);
+                    actions_returned.push(Action::KeyAct(KeyAction::EscapeSequence));
                 }
             }
             info!("For {:?} returning {:?}", keymap, actions_returned);
             actions_returned
         } else {
-            vec![Action::EscapeSequence]
+            vec![Action::KeyAct(KeyAction::EscapeSequence)]
         }
     }
 
@@ -177,7 +177,9 @@ impl KeyManager {
             (NumberCombination::Multiplier(_), KeyCombination::Chain(_), true) => {
                 //has some keymap but entered a digit
                 //clear and add a digit
-                vec![Action::ClearAndKey(self.last_key_event.unwrap())]
+                vec![Action::KeyAct(KeyAction::ClearAndKey(
+                    self.last_key_event.unwrap(),
+                ))]
             }
             (NumberCombination::Multiplier(n), KeyCombination::Chain(keymap), false) => {
                 //keymap with some multiplier
