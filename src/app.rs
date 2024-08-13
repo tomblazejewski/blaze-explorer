@@ -3,6 +3,8 @@ use std::io::{stdout, Stdout};
 use std::path;
 
 use color_eyre::Result;
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::Frame;
 use ratatui::{
     crossterm::{
         event::{self, KeyCode, KeyEventKind},
@@ -33,7 +35,23 @@ pub struct App {
     pub should_quit: bool,
     pub mode: Mode,
 }
+fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
+    let main_box = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(vec![Constraint::Percentage(85), Constraint::Percentage(15)])
+        .split(frame.size());
+    let bottom_bar = main_box[2];
+    let bottom_bar_parts = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(vec![Constraint::Percentage(80), Constraint::Percentage(20)])
+        .split(bottom_bar);
 
+    let mut areas = HashMap::new();
+    areas.insert("explorer_table".to_string(), main_box[0]);
+    areas.insert("key_tracker".to_string(), bottom_bar_parts[1]);
+    areas.insert("path_display".to_string(), bottom_bar_parts[0]);
+    areas
+}
 impl App {
     pub fn new() -> Result<Self> {
         Ok(Self {
