@@ -6,6 +6,7 @@ use std::{
     time::SystemTime,
 };
 use style::Styled;
+use tracing::info;
 
 use color_eyre::eyre::Result;
 use ratatui::{
@@ -20,6 +21,7 @@ use crate::action::{Action, ExplorerAction};
 
 use super::Component;
 
+#[derive(Debug)]
 pub struct FileData {
     filename: String,
     size: u64,
@@ -74,6 +76,7 @@ pub fn get_file_data(path: &PathBuf) -> Vec<FileData> {
 }
 
 fn get_line_numbers(n_lines: usize, current_line: usize) -> Vec<String> {
+    info!("{}, {}", n_lines, current_line);
     //create all string labels before the selected line
     let before_selected = (1..current_line)
         .rev()
@@ -117,16 +120,16 @@ impl ExplorerTable {
     }
 
     pub fn go_up(&mut self) {
-        let prev_folder = &self.current_path.file_name();
-        if let &Some(prev_folder_name) = prev_folder {
+        let prev_folder = self.current_path.file_name().map(|name| name.to_owned());
+        if let Some(prev_folder_name) = prev_folder {
             let prev_folder_string = prev_folder_name.to_str().unwrap();
             let new_absolute_path = self.current_path.parent().unwrap().to_owned();
+            self.update_path(new_absolute_path);
             let position_of_prev = self
                 .elements_list
                 .iter()
                 .position(|x| x.filename.as_str() == prev_folder_string);
             self.state.select(position_of_prev);
-            self.update_path(new_absolute_path);
         }
     }
 
