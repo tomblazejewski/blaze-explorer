@@ -17,6 +17,7 @@ use ratatui::{
 use tracing::info;
 
 use crate::action::{AppAction, ExplorerAction, KeyAction};
+use crate::components;
 use crate::key_combination::KeyManager;
 use crate::{
     action::Action,
@@ -27,14 +28,6 @@ use crate::{
     mode::Mode,
 };
 
-pub struct App {
-    pub components: Vec<Box<dyn Component>>,
-    pub terminal: Terminal<CrosstermBackend<Stdout>>,
-    pub action_list: VecDeque<Action>,
-    pub key_manager: KeyManager,
-    pub should_quit: bool,
-    pub mode: Mode,
-}
 fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
     let main_box = Layout::default()
         .direction(Direction::Vertical)
@@ -52,14 +45,26 @@ fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
     areas.insert("path_display".to_string(), bottom_bar_parts[0]);
     areas
 }
+pub struct App {
+    pub components: HashMap<String, Box<dyn Component>>,
+    pub terminal: Terminal<CrosstermBackend<Stdout>>,
+    pub action_list: VecDeque<Action>,
+    pub key_manager: KeyManager,
+    pub should_quit: bool,
+    pub mode: Mode,
+}
 impl App {
     pub fn new() -> Result<Self> {
+        let components_created: HashMap<String, Box<dyn Component>> = HashMap::from([
+            (
+                String::from("explorer_table"),
+                Box::new(ExplorerTable::new()) as Box<dyn Component>,
+            ),
+            (String::from("key_tracker"), Box::new(KeyTracker::new())),
+            (String::from("path_display"), Box::new(PathDisplay::new())),
+        ]);
         Ok(Self {
-            components: vec![
-                Box::new(ExplorerTable::new()),
-                Box::new(PathDisplay::new()),
-                Box::new(KeyTracker::new()),
-            ],
+            components: components_created,
             terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
             action_list: VecDeque::new(),
             key_manager: KeyManager::new(),
@@ -131,7 +136,7 @@ impl App {
     pub fn handle_actions(&mut self) -> Result<()> {
         while let Some(action) = self.action_list.pop_front() {
             self.handle_self_actions(action.clone());
-            for component in self.components.iter_mut() {
+            for (_component_name, component) in self.components.iter_mut() {
                 if let Ok(Some(resulting_action)) = component.update(action.clone()) {
                     self.action_list.push_back(resulting_action);
                 }
@@ -141,8 +146,10 @@ impl App {
     }
     pub fn render(&mut self) -> Result<()> {
         self.terminal.draw(|frame| {
-            for component in self.components.iter_mut() {
-                let _ = component.draw(frame, frame.size());
+            let areas = get_component_areas(frame);
+            for (component_name, component) in self.components.iter_mut() {
+                let area = areas.get(component_name).unwrap();
+                let _ = component.draw(frame, *area);
             }
         })?;
         Ok(())
