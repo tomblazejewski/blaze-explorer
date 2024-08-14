@@ -21,8 +21,4 @@ impl Component for ModeDisplay {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> color_eyre::eyre::Result<()> {
         todo!()
     }
-
-    fn get_area(&mut self, frame: &mut Frame) -> Result<Option<ratatui::prelude::Rect>> {
-        todo!()
-    }
 }

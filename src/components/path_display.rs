@@ -34,7 +34,6 @@ impl Component for PathDisplay {
         let path_paragraph =
             Paragraph::new(self.current_path.clone().to_str().unwrap().to_string())
                 .block(Block::new().borders(Borders::ALL));
-        let area = self.get_area(frame).unwrap().unwrap();
         frame.render_widget(path_paragraph, area);
         Ok(())
     }
@@ -57,17 +56,5 @@ impl Component for PathDisplay {
         }
 
         Ok(None)
-    }
-
-    fn get_area(&mut self, frame: &mut Frame) -> Result<Option<Rect>> {
-        let main_box = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(vec![
-                Constraint::Percentage(85),
-                Constraint::Percentage(5),
-                Constraint::Percentage(10),
-            ])
-            .split(frame.size());
-        Ok(Some(main_box[2]))
     }
 }

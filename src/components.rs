@@ -24,6 +24,4 @@ pub trait Component {
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
-
-    fn get_area(&mut self, frame: &mut Frame) -> Result<Option<Rect>>;
 }

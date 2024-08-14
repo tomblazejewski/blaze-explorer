@@ -43,22 +43,6 @@ impl KeyTracker {
 }
 
 impl Component for KeyTracker {
-    fn get_area(&mut self, frame: &mut Frame) -> Result<Option<Rect>> {
-        let main_box = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(vec![
-                Constraint::Percentage(85),
-                Constraint::Percentage(5),
-                Constraint::Percentage(10),
-            ])
-            .split(frame.size());
-        let key_box = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(vec![Constraint::Percentage(80), Constraint::Percentage(20)])
-            .split(main_box[2]);
-        Ok(Some(key_box[1]))
-    }
-
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
             Action::KeyAct(KeyAction::Key(key)) => {
@@ -79,7 +63,6 @@ impl Component for KeyTracker {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let key_chain = self.get_key_chain();
         let key_paragraph = Paragraph::new(key_chain).block(Block::new().borders(Borders::ALL));
-        let area = self.get_area(frame).unwrap().unwrap();
 
         frame.render_widget(key_paragraph, area);
         Ok(())
