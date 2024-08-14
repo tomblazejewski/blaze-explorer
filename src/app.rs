@@ -33,7 +33,7 @@ fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
         .direction(Direction::Vertical)
         .constraints(vec![Constraint::Percentage(85), Constraint::Percentage(15)])
         .split(frame.size());
-    let bottom_bar = main_box[2];
+    let bottom_bar = main_box[1];
     let bottom_bar_parts = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(vec![Constraint::Percentage(80), Constraint::Percentage(20)])
