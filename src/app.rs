@@ -18,6 +18,7 @@ use tracing::info;
 
 use crate::action::{AppAction, ExplorerAction, KeyAction};
 use crate::components;
+use crate::components::command_line::CommandLine;
 use crate::key_combination::KeyManager;
 use crate::{
     action::Action,
@@ -31,18 +32,24 @@ use crate::{
 fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
     let main_box = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(vec![Constraint::Percentage(85), Constraint::Percentage(15)])
+        .constraints(vec![
+            Constraint::Percentage(85),
+            Constraint::Percentage(10),
+            Constraint::Percentage(5),
+        ])
         .split(frame.size());
-    let bottom_bar = main_box[1];
-    let bottom_bar_parts = Layout::default()
+    let status_bar = main_box[1];
+    let status_bar_parts = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(vec![Constraint::Percentage(80), Constraint::Percentage(20)])
-        .split(bottom_bar);
+        .split(status_bar);
+    let command_bar = main_box[2];
 
     let mut areas = HashMap::new();
     areas.insert("explorer_table".to_string(), main_box[0]);
-    areas.insert("key_tracker".to_string(), bottom_bar_parts[1]);
-    areas.insert("path_display".to_string(), bottom_bar_parts[0]);
+    areas.insert("key_tracker".to_string(), status_bar_parts[1]);
+    areas.insert("path_display".to_string(), status_bar_parts[0]);
+    areas.insert("command_line".to_string(), command_bar);
     areas
 }
 pub struct App {
@@ -62,6 +69,7 @@ impl App {
             ),
             (String::from("key_tracker"), Box::new(KeyTracker::new())),
             (String::from("path_display"), Box::new(PathDisplay::new())),
+            (String::from("command_line"), Box::new(CommandLine::new())),
         ]);
         Ok(Self {
             components: components_created,

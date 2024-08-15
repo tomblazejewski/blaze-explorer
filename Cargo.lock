@@ -98,6 +98,7 @@ dependencies = [
  "tracing",
  "tracing-error",
  "tracing-subscriber",
+ "tui-textbox",
 ]
 
 [[package]]
@@ -831,6 +832,16 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "tui-textbox"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b79b6cd5bf60268d00a847563d0c09bc41bf6ad13c5c694778b2f52f6037a24"
+dependencies = [
+ "crossterm",
+ "ratatui",
 ]
 
 [[package]]
