@@ -72,7 +72,7 @@ impl KeyManager {
             ),
         ]);
         let search_keymaps = HashMap::from([(
-            vec![KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE)],
+            vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
             (Action::AppAct(AppAction::SwitchMode(Mode::Normal)), false),
         )]);
         let keyboard_keymaps = HashMap::from([
