@@ -131,7 +131,8 @@ impl App {
             }
             Action::AppAct(AppAction::SwitchMode(mode)) => {
                 self.key_manager.clear_keys_stored();
-                self.mode = mode;
+                self.mode = mode.clone();
+                self.key_manager.switch_mode(mode);
             }
             Action::KeyAct(KeyAction::ClearAndKey(key_event)) => {
                 self.key_manager.clear_and_enter(key_event)

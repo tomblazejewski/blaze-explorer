@@ -1,9 +1,15 @@
 use std::collections::HashMap;
 
-use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use ratatui::{
+    crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
+    symbols::line::NORMAL,
+};
 use tracing::info;
 
-use crate::action::{Action, AppAction, ExplorerAction, KeyAction};
+use crate::{
+    action::{Action, AppAction, ExplorerAction, KeyAction},
+    mode::Mode,
+};
 
 #[derive(Clone, Debug)]
 pub enum NumberCombination {
@@ -18,11 +24,12 @@ pub enum KeyCombination {
 }
 
 pub struct KeyManager {
+    mode: Mode,
     number_combination: NumberCombination,
     key_combination: KeyCombination,
     last_digit: bool,
     last_key_event: Option<KeyEvent>,
-    key_hash_map: HashMap<Vec<KeyEvent>, (Action, bool)>,
+    key_hash_map: HashMap<String, HashMap<Vec<KeyEvent>, (Action, bool)>>,
 }
 
 pub fn is_multiplier_digit(char_: &char) -> bool {
@@ -34,7 +41,7 @@ pub fn is_multiplier_digit(char_: &char) -> bool {
 
 impl KeyManager {
     pub fn new() -> Self {
-        let keyboard_keymaps: HashMap<Vec<KeyEvent>, (Action, bool)> = HashMap::from([
+        let normal_keymaps: HashMap<Vec<KeyEvent>, (Action, bool)> = HashMap::from([
             (
                 vec![KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE)],
                 (Action::AppAct(AppAction::Quit), false),
@@ -59,8 +66,21 @@ impl KeyManager {
                 vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
                 (Action::ExplorerAct(ExplorerAction::ParentDirectory), false),
             ),
+            (
+                vec![KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE)],
+                (Action::AppAct(AppAction::SwitchMode(Mode::Search)), false),
+            ),
+        ]);
+        let search_keymaps = HashMap::from([(
+            vec![KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE)],
+            (Action::AppAct(AppAction::SwitchMode(Mode::Normal)), false),
+        )]);
+        let keyboard_keymaps = HashMap::from([
+            (String::from("normal"), normal_keymaps),
+            (String::from("search"), search_keymaps),
         ]);
         Self {
+            mode: Mode::Normal,
             number_combination: NumberCombination::None,
             key_combination: KeyCombination::None,
             last_digit: false,
@@ -79,6 +99,10 @@ impl KeyManager {
     pub fn clear_and_enter(&mut self, new_event: KeyEvent) {
         self.clear_keys_stored();
         self.append_key_event(new_event);
+    }
+
+    pub fn switch_mode(&mut self, new_mode: Mode) {
+        self.mode = new_mode;
     }
 
     pub fn accept_digit(&mut self, digit_char: char) {
@@ -138,7 +162,11 @@ impl KeyManager {
     }
 
     pub fn find_action(&mut self, keymap: Vec<KeyEvent>, multiplier: u32) -> Vec<Action> {
-        let search_result = self.key_hash_map.get(&keymap);
+        let mode_keymap = match self.mode {
+            Mode::Normal => self.key_hash_map.get(&String::from("normal")).unwrap(),
+            Mode::Search => self.key_hash_map.get(&String::from("search")).unwrap(),
+        };
+        let search_result = mode_keymap.get(&keymap);
         if let Some(result_found) = search_result {
             let (action, is_repeatable) = result_found;
             let mut actions_returned = match is_repeatable {
