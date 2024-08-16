@@ -23,8 +23,8 @@ use crate::key_combination::KeyManager;
 use crate::{
     action::Action,
     components::{
-        explorer_table::ExplorerTable, key_tracker::KeyTracker, path_display::PathDisplay,
-        Component,
+        explorer_table::ExplorerTable, key_tracker::KeyTracker, mode_display::ModeDisplay,
+        path_display::PathDisplay, Component,
     },
     mode::Mode,
 };
@@ -41,14 +41,19 @@ fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
     let status_bar = main_box[1];
     let status_bar_parts = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints(vec![Constraint::Percentage(80), Constraint::Percentage(20)])
+        .constraints(vec![
+            Constraint::Percentage(10),
+            Constraint::Percentage(80),
+            Constraint::Percentage(10),
+        ])
         .split(status_bar);
     let command_bar = main_box[2];
 
     let mut areas = HashMap::new();
     areas.insert("explorer_table".to_string(), main_box[0]);
-    areas.insert("key_tracker".to_string(), status_bar_parts[1]);
-    areas.insert("path_display".to_string(), status_bar_parts[0]);
+    areas.insert("key_tracker".to_string(), status_bar_parts[2]);
+    areas.insert("path_display".to_string(), status_bar_parts[1]);
+    areas.insert("mode_display".to_string(), status_bar_parts[0]);
     areas.insert("command_line".to_string(), command_bar);
     areas
 }
@@ -70,6 +75,7 @@ impl App {
             (String::from("key_tracker"), Box::new(KeyTracker::new())),
             (String::from("path_display"), Box::new(PathDisplay::new())),
             (String::from("command_line"), Box::new(CommandLine::new())),
+            (String::from("mode_display"), Box::new(ModeDisplay::new())),
         ]);
         Ok(Self {
             components: components_created,
