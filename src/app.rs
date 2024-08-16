@@ -3,6 +3,7 @@ use std::io::{stdout, Stdout};
 use std::path;
 
 use color_eyre::Result;
+use ratatui::crossterm::event::KeyEvent;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
 use ratatui::{
@@ -17,9 +18,10 @@ use ratatui::{
 use tracing::info;
 
 use crate::action::{AppAction, ExplorerAction, KeyAction};
-use crate::components;
 use crate::components::command_line::CommandLine;
+use crate::components::{self, key_tracker};
 use crate::key_combination::KeyManager;
+use crate::key_handler::KeyHandler;
 use crate::{
     action::Action,
     components::{
@@ -64,6 +66,7 @@ pub struct App {
     pub key_manager: KeyManager,
     pub should_quit: bool,
     pub mode: Mode,
+    pub command_line_manager: CommandLine,
 }
 impl App {
     pub fn new() -> Result<Self> {
@@ -84,9 +87,21 @@ impl App {
             key_manager: KeyManager::new(),
             should_quit: false,
             mode: Mode::Normal,
+            command_line_manager: CommandLine::new(),
         })
     }
 
+    /// Send a key event to the appropriate component based on the current mode
+    pub fn redirect_key_event(&mut self, key_event: KeyEvent) {
+        match self.mode {
+            Mode::Normal => {
+                self.key_manager.append_key_event(key_event);
+            }
+            Mode::Search => {
+                self.command_line_manager.append_key_event(key_event);
+            }
+        }
+    }
     pub fn queue_key_event(&mut self, action: Action) {
         self.action_list.push_back(action);
     }

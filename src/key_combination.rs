@@ -8,6 +8,7 @@ use tracing::info;
 
 use crate::{
     action::{Action, AppAction, ExplorerAction, KeyAction},
+    key_handler::KeyHandler,
     mode::Mode,
 };
 
@@ -37,6 +38,42 @@ pub fn is_multiplier_digit(char_: &char) -> bool {
         return true;
     }
     false
+}
+
+impl KeyHandler for KeyManager {
+    fn append_key_event(&mut self, new_event: KeyEvent) {
+        // three options here: key is a digit char, key is another char or key is not a char at all
+        // if key is not a char at all just append it to key combination and sequence
+        // if key is a char, can always add it
+        // if key is a char digit, cancel any existing number combinations first
+        self.last_key_event = Some(new_event.clone());
+        match new_event.code {
+            KeyCode::Char(new_char) => {
+                if is_multiplier_digit(&new_char) {
+                    self.accept_digit(new_char);
+                    self.last_digit = true;
+                } else if new_char == '0' {
+                    match self.number_combination {
+                        NumberCombination::None => {
+                            self.accept_non_digit(new_event);
+                            self.last_digit = false;
+                        }
+                        NumberCombination::Multiplier(_) => {
+                            self.accept_digit(new_char);
+                            self.last_digit = true;
+                        }
+                    }
+                } else {
+                    self.accept_non_digit(new_event);
+                    self.last_digit = false;
+                }
+            }
+            _ => {
+                self.accept_non_digit(new_event);
+                self.last_digit = false;
+            }
+        }
+    }
 }
 
 impl KeyManager {

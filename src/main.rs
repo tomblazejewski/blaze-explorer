@@ -13,6 +13,7 @@ mod key_combination;
 use app::App;
 mod action;
 mod components;
+mod key_handler;
 mod logging;
 mod mode;
 fn main() -> Result<(), Box<dyn Error>> {
