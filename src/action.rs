@@ -17,19 +17,12 @@ pub enum ExplorerAction {
 pub enum AppAction {
     Quit,
     SwitchMode(Mode),
-}
-
-#[derive(Clone, Debug)]
-pub enum KeyAction {
-    Key(KeyEvent),
-    ClearAndKey(KeyEvent),
-    EscapeSequence,
+    CancelKeybind,
 }
 
 #[derive(Clone, Debug)]
 pub enum Action {
     ExplorerAct(ExplorerAction),
     AppAct(AppAction),
-    KeyAct(KeyAction),
     Noop,
 }

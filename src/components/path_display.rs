@@ -9,7 +9,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::action::{Action, ExplorerAction, KeyAction};
+use crate::action::{Action, ExplorerAction};
 
 use super::Component;
 
@@ -42,9 +42,6 @@ impl Component for PathDisplay {
         match action {
             Action::ExplorerAct(ExplorerAction::ChangeDirectory(path)) => {
                 self.update_path(path);
-            }
-            Action::KeyAct(KeyAction::Key(key)) => {
-                self.handle_key_events(key);
             }
             Action::ExplorerAct(ExplorerAction::ParentDirectory) => {
                 let parent_path = self.current_path.parent();

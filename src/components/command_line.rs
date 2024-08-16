@@ -8,10 +8,7 @@ use ratatui::{
 use tracing::info;
 use tui_textbox::{Textbox, TextboxState};
 
-use crate::{
-    action::{Action, KeyAction},
-    key_handler::KeyHandler,
-};
+use crate::{action::Action, key_handler::KeyHandler};
 
 use super::Component;
 
@@ -38,9 +35,6 @@ impl KeyHandler for CommandLine {
 impl Component for CommandLine {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
-            Action::KeyAct(KeyAction::Key(key)) => {
-                self.state.handle_events(key.code, key.modifiers);
-            }
             _ => {}
         }
         Ok(None)

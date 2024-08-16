@@ -7,7 +7,7 @@ use ratatui::{
 use tracing::info;
 
 use crate::{
-    action::{Action, AppAction, ExplorerAction, KeyAction},
+    action::{Action, AppAction, ExplorerAction},
     key_handler::KeyHandler,
     mode::Mode,
 };
@@ -93,7 +93,7 @@ impl KeyManager {
             ),
             (
                 vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
-                (Action::KeyAct(KeyAction::EscapeSequence), false),
+                (Action::AppAct(AppAction::CancelKeybind), false),
             ),
             (
                 vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
@@ -215,13 +215,14 @@ impl KeyManager {
             match action {
                 Action::Noop => {}
                 _ => {
-                    actions_returned.push(Action::KeyAct(KeyAction::EscapeSequence));
+                    self.clear_keys_stored();
                 }
             }
             info!("For {:?} returning {:?}", keymap, actions_returned);
             actions_returned
         } else {
-            vec![Action::KeyAct(KeyAction::EscapeSequence)]
+            self.clear_keys_stored();
+            vec![]
         }
     }
 
@@ -242,9 +243,8 @@ impl KeyManager {
             (NumberCombination::Multiplier(_), KeyCombination::Chain(_), true) => {
                 //has some keymap but entered a digit
                 //clear and add a digit
-                vec![Action::KeyAct(KeyAction::ClearAndKey(
-                    self.last_key_event.unwrap(),
-                ))]
+                self.clear_and_enter(self.last_key_event.unwrap());
+                vec![]
             }
             (NumberCombination::Multiplier(n), KeyCombination::Chain(keymap), false) => {
                 //keymap with some multiplier
