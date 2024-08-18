@@ -84,6 +84,8 @@ pub fn default_key_map() -> KeyMapNode {
 
 #[cfg(test)]
 mod tests {
+    use crate::action::TextAction;
+
     use super::*;
 
     #[test]
@@ -99,6 +101,20 @@ mod tests {
                 KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
             ],
             Action::ExplorerAct(ExplorerAction::SelectDown),
+        );
+        root.add_sequence(
+            vec![
+                KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE),
+                KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE),
+            ],
+            Action::ExplorerAct(ExplorerAction::SelectDown),
+        );
+        root.add_sequence(
+            vec![
+                KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
+                KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
+            ],
+            Action::AppAct(AppAction::CancelKeybind),
         );
         root.add_sequence(
             vec![
@@ -122,7 +138,15 @@ mod tests {
         let result = process_keys(&root, &mut current_sequence, j_event);
         assert_eq!(
             result,
-            KeyProcessingResult::Complete(Action::ExplorerAct(ExplorerAction::SelectDown))
+            KeyProcessingResult::Complete(Action::ExplorerAct(ExplorerAction::SelectDirectory))
+        );
+        assert_eq!(current_sequence.len(), 0);
+        let result = process_keys(&root, &mut current_sequence, b_event);
+        let result = process_keys(&root, &mut current_sequence, j_event);
+        let result = process_keys(&root, &mut current_sequence, j_event);
+        assert_eq!(
+            result,
+            KeyProcessingResult::Complete(Action::AppAct(AppAction::CancelKeybind))
         );
     }
 }
