@@ -209,6 +209,7 @@ impl ExplorerTable {
 
 impl Component for ExplorerTable {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
+        // get table block
         let widths = [
             Constraint::Percentage(5),
             Constraint::Percentage(40),
@@ -244,7 +245,19 @@ impl Component for ExplorerTable {
             .highlight_style(selected_style)
             .header(header);
 
-        frame.render_stateful_widget(t, area, &mut self.state);
+        // get paragraph block
+        let path_paragraph =
+            Paragraph::new(self.current_path.clone().to_str().unwrap().to_string())
+                .block(Block::new().borders(Borders::ALL));
+
+        //divide the available area into one for the table and one for the paragraph
+        let explorer_area_blocks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Percentage(90), Constraint::Percentage(10)])
+            .split(area);
+        frame.render_stateful_widget(t, explorer_area_blocks[0], &mut self.state);
+        frame.render_widget(path_paragraph, explorer_area_blocks[1]);
+
         Ok(())
     }
 }

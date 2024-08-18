@@ -51,7 +51,6 @@ fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
     let mut areas = HashMap::new();
     areas.insert("explorer_table".to_string(), main_box[0]);
     areas.insert("key_tracker".to_string(), status_bar_parts[2]);
-    areas.insert("path_display".to_string(), status_bar_parts[1]);
     areas.insert("mode_display".to_string(), status_bar_parts[0]);
     areas.insert("command_line".to_string(), command_bar);
     areas
@@ -63,7 +62,6 @@ pub struct App {
     pub should_quit: bool,
     pub mode: Mode,
     pub command_line_manager: CommandLine,
-    pub key_tracker: KeyTracker,
     pub explorer_table: ExplorerTable,
     pub command_line: CommandLine,
     pub focus: Focus,
@@ -77,7 +75,6 @@ impl App {
             should_quit: false,
             mode: Mode::Normal,
             command_line_manager: CommandLine::new(),
-            key_tracker: KeyTracker::new(),
             explorer_table: ExplorerTable::new(),
             command_line: CommandLine::new(),
             focus: Focus::ExplorerTable,
