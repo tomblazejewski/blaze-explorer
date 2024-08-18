@@ -15,6 +15,7 @@ mod action;
 mod action_agent;
 mod components;
 mod focus;
+mod input_machine;
 mod key_handler;
 mod logging;
 mod mode;
