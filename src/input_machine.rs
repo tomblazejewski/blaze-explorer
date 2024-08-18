@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use tracing::info;
 
-use crate::action::{Action, AppAction, ExplorerAction};
+use crate::{
+    action::{Action, AppAction, ExplorerAction},
+    mode::Mode,
+};
 
 #[derive(Debug)]
 pub struct KeyMapNode {
@@ -90,6 +93,10 @@ pub fn default_key_map() -> KeyMapNode {
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::SelectDirectory),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE)],
+        Action::AppAct(AppAction::SwitchMode(Mode::Search)),
     );
     root
 }
