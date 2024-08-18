@@ -5,7 +5,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::mode::Mode;
+use crate::{action_agent::ActionAgent, mode::Mode};
 
 use super::Component;
 
@@ -29,7 +29,8 @@ impl Component for ModeDisplay {
         frame.render_widget(mode_paragraph, area);
         Ok(())
     }
-
+}
+impl ActionAgent for ModeDisplay {
     fn update(&mut self, action: crate::action::Action) -> Result<Option<crate::action::Action>> {
         match action {
             crate::action::Action::AppAct(crate::action::AppAction::SwitchMode(mode)) => {

@@ -4,7 +4,7 @@ use std::{path::PathBuf, time::Duration};
 use color_eyre::eyre::{Context, Result};
 use directories::ProjectDirs;
 use lazy_static::lazy_static;
-use tracing::error;
+use tracing::{error, info};
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{self, layer::SubscriberExt, util::SubscriberInitExt, Layer};
 
@@ -37,7 +37,11 @@ pub fn initialize_logging() -> Result<()> {
     let directory = get_data_dir();
     std::fs::create_dir_all(directory.clone())?;
     let log_path = directory.join(LOG_FILE.clone());
+    println!("Logging to {:?}", log_path.clone());
     let log_file = std::fs::File::create(log_path)?;
+
+    sleep(Duration::from_secs(5));
+
     std::env::set_var(
         "RUST_LOG",
         std::env::var("RUST_LOG")

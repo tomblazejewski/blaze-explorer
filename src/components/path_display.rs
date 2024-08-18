@@ -10,6 +10,7 @@ use ratatui::{
 };
 
 use crate::action::{Action, ExplorerAction};
+use crate::action_agent::ActionAgent;
 
 use super::Component;
 
@@ -37,7 +38,9 @@ impl Component for PathDisplay {
         frame.render_widget(path_paragraph, area);
         Ok(())
     }
+}
 
+impl ActionAgent for PathDisplay {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
             Action::ExplorerAct(ExplorerAction::ChangeDirectory(path)) => {

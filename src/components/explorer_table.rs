@@ -17,7 +17,10 @@ use ratatui::{
     Frame,
 };
 
-use crate::action::{Action, ExplorerAction};
+use crate::{
+    action::{Action, ExplorerAction},
+    action_agent::ActionAgent,
+};
 
 use super::Component;
 
@@ -179,6 +182,29 @@ impl ExplorerTable {
             None
         }
     }
+    pub fn explorer_action(&mut self, explorer_act: ExplorerAction) -> Option<Action> {
+        match explorer_act {
+            ExplorerAction::SelectDirectory => {
+                let target_directory = self.select_directory();
+                if let Some(found_directory) = target_directory {
+                    return Some(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
+                        found_directory,
+                    )));
+                } else {
+                    return None;
+                }
+            }
+            ExplorerAction::ChangeDirectory(path) => {
+                self.update_path(path);
+            }
+            ExplorerAction::ParentDirectory => {
+                self.go_up();
+            }
+            ExplorerAction::SelectUp => self.previous(),
+            ExplorerAction::SelectDown => self.next(),
+        }
+        None
+    }
 }
 
 impl Component for ExplorerTable {
@@ -221,6 +247,8 @@ impl Component for ExplorerTable {
         frame.render_stateful_widget(t, area, &mut self.state);
         Ok(())
     }
+}
+impl ActionAgent for ExplorerTable {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
             Action::ExplorerAct(ExplorerAction::SelectDirectory) => {

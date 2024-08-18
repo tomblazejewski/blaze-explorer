@@ -21,8 +21,13 @@ pub enum AppAction {
 }
 
 #[derive(Clone, Debug)]
+pub enum TextAction {
+    InsertKey(KeyEvent),
+}
+#[derive(Clone, Debug)]
 pub enum Action {
     ExplorerAct(ExplorerAction),
     AppAct(AppAction),
+    TextAct(TextAction),
     Noop,
 }

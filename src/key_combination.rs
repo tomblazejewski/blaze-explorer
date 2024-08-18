@@ -1,13 +1,20 @@
 use std::collections::HashMap;
 
+use color_eyre::eyre::Result;
 use ratatui::{
     crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
+    layout::{Alignment, Rect},
+    prelude::*,
     symbols::line::NORMAL,
+    text::Text,
+    widgets::{Cell, Paragraph},
+    Frame,
 };
 use tracing::info;
 
 use crate::{
-    action::{Action, AppAction, ExplorerAction},
+    action::{Action, AppAction, ExplorerAction, TextAction},
+    components::Component,
     key_handler::KeyHandler,
     mode::Mode,
 };
@@ -24,13 +31,17 @@ pub enum KeyCombination {
     None,
 }
 
+/// A struct to track all keys entered when using the app
+/// The display function is used to display current command/keymap in progress.
 pub struct KeyManager {
     mode: Mode,
+    command_repr: String,
     number_combination: NumberCombination,
     key_combination: KeyCombination,
     last_digit: bool,
     last_key_event: Option<KeyEvent>,
     key_hash_map: HashMap<String, HashMap<Vec<KeyEvent>, (Action, bool)>>,
+    default_action_hash_map: HashMap<String, (Action, bool)>,
 }
 
 pub fn is_multiplier_digit(char_: &char) -> bool {
@@ -38,42 +49,6 @@ pub fn is_multiplier_digit(char_: &char) -> bool {
         return true;
     }
     false
-}
-
-impl KeyHandler for KeyManager {
-    fn append_key_event(&mut self, new_event: KeyEvent) {
-        // three options here: key is a digit char, key is another char or key is not a char at all
-        // if key is not a char at all just append it to key combination and sequence
-        // if key is a char, can always add it
-        // if key is a char digit, cancel any existing number combinations first
-        self.last_key_event = Some(new_event.clone());
-        match new_event.code {
-            KeyCode::Char(new_char) => {
-                if is_multiplier_digit(&new_char) {
-                    self.accept_digit(new_char);
-                    self.last_digit = true;
-                } else if new_char == '0' {
-                    match self.number_combination {
-                        NumberCombination::None => {
-                            self.accept_non_digit(new_event);
-                            self.last_digit = false;
-                        }
-                        NumberCombination::Multiplier(_) => {
-                            self.accept_digit(new_char);
-                            self.last_digit = true;
-                        }
-                    }
-                } else {
-                    self.accept_non_digit(new_event);
-                    self.last_digit = false;
-                }
-            }
-            _ => {
-                self.accept_non_digit(new_event);
-                self.last_digit = false;
-            }
-        }
-    }
 }
 
 impl KeyManager {
@@ -123,6 +98,11 @@ impl KeyManager {
             last_digit: false,
             last_key_event: None,
             key_hash_map: keyboard_keymaps,
+            command_repr: String::from(""),
+            default_action_hash_map: HashMap::from([
+                (String::from("normal"), (Action::Noop, false)),
+                (String::from("search"), (Action::Noop, false)),
+            ]),
         }
     }
 
@@ -140,6 +120,28 @@ impl KeyManager {
 
     pub fn switch_mode(&mut self, new_mode: Mode) {
         self.mode = new_mode;
+    }
+
+    pub fn keymap_repr(&self) -> String {
+        let mut keymap_vec: Vec<char> = match &self.number_combination {
+            NumberCombination::None => {
+                vec![]
+            }
+            NumberCombination::Multiplier(multiplier_value) => {
+                multiplier_value.to_string().chars().collect()
+            }
+        };
+
+        match &self.key_combination {
+            KeyCombination::None => {}
+            KeyCombination::Chain(key_vec) => {
+                keymap_vec.extend(key_vec.iter().map(|key_event| match key_event.code {
+                    KeyCode::Char(char) => char,
+                    _ => ' ',
+                }));
+            }
+        }
+        keymap_vec.iter().collect::<String>()
     }
 
     pub fn accept_digit(&mut self, digit_char: char) {
@@ -164,12 +166,45 @@ impl KeyManager {
         }
     }
 
+    pub fn append_key(&mut self, new_event: KeyEvent) {
+        match self.mode {
+            Mode::Normal => match new_event {
+                KeyEvent {
+                    code: KeyCode::Char(new_char),
+                    modifiers: KeyModifiers::NONE,
+                    kind,
+                    state,
+                } => {
+                    self.keymap_repr().push(new_char);
+                }
+                _ => {
+                    self.keymap_repr().push('!');
+                }
+            },
+            Mode::Search => match new_event {
+                KeyEvent {
+                    code: KeyCode::Char(new_char),
+                    modifiers: KeyModifiers::NONE,
+                    kind,
+                    state,
+                } => {
+                    self.command_repr.push(new_char);
+                }
+                _ => {
+                    self.command_repr.push('!');
+                }
+            },
+        }
+    }
+
     pub fn append_key_event(&mut self, new_event: KeyEvent) {
         // three options here: key is a digit char, key is another char or key is not a char at all
         // if key is not a char at all just append it to key combination and sequence
         // if key is a char, can always add it
         // if key is a char digit, cancel any existing number combinations first
         self.last_key_event = Some(new_event.clone());
+        self.append_key(new_event);
+        // decide if the key is added to a command or to a keymap
         match new_event.code {
             KeyCode::Char(new_char) => {
                 if is_multiplier_digit(&new_char) {
@@ -204,6 +239,7 @@ impl KeyManager {
             Mode::Search => self.key_hash_map.get(&String::from("search")).unwrap(),
         };
         let search_result = mode_keymap.get(&keymap);
+        info!("Searching in the hashmap yielded {:?}", search_result);
         if let Some(result_found) = search_result {
             let (action, is_repeatable) = result_found;
             let mut actions_returned = match is_repeatable {
@@ -221,15 +257,24 @@ impl KeyManager {
             info!("For {:?} returning {:?}", keymap, actions_returned);
             actions_returned
         } else {
-            self.clear_keys_stored();
-            vec![]
+            match self.mode {
+                Mode::Normal => {
+                    self.clear_keys_stored();
+                    vec![]
+                }
+                Mode::Search => {
+                    self.clear_keys_stored();
+                    let key_event = self.last_key_event.unwrap();
+                    vec![Action::TextAct(TextAction::InsertKey(key_event))]
+                }
+            }
         }
     }
 
     pub fn handle_keymap(&mut self) -> Vec<Action> {
         info!(
-            "Searching for {:?}, {:?}, {:?}",
-            self.number_combination, self.key_combination, self.last_digit,
+            "Searching for {:?}, {:?}, {:?} in mode {:?}",
+            self.number_combination, self.key_combination, self.last_digit, self.mode
         );
         match (
             self.number_combination.clone(),
@@ -259,5 +304,18 @@ impl KeyManager {
                 vec![Action::Noop]
             }
         }
+    }
+}
+impl Component for KeyManager {
+    fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
+        let text = Text::from(vec![
+            Line::from(self.command_repr.clone()).left_aligned(),
+            Line::from(self.keymap_repr().clone()).right_aligned(),
+        ]);
+
+        let paragraph = Paragraph::new(text);
+        frame.render_widget(paragraph, area);
+
+        Ok(())
     }
 }

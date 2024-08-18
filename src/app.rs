@@ -8,7 +8,7 @@ use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
 use ratatui::{
     crossterm::{
-        event::{self, KeyCode, KeyEventKind},
+        event::{self, KeyEventKind},
         terminal::{disable_raw_mode, LeaveAlternateScreen},
         ExecutableCommand,
     },
@@ -19,15 +19,12 @@ use tracing::info;
 
 use crate::action::{AppAction, ExplorerAction};
 use crate::components::command_line::CommandLine;
-use crate::components::{self, key_tracker};
+use crate::focus::Focus;
 use crate::key_combination::KeyManager;
 use crate::key_handler::KeyHandler;
 use crate::{
     action::Action,
-    components::{
-        explorer_table::ExplorerTable, key_tracker::KeyTracker, mode_display::ModeDisplay,
-        path_display::PathDisplay, Component,
-    },
+    components::{explorer_table::ExplorerTable, key_tracker::KeyTracker, Component},
     mode::Mode,
 };
 
@@ -60,47 +57,36 @@ fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
     areas
 }
 pub struct App {
-    pub components: HashMap<String, Box<dyn Component>>,
     pub terminal: Terminal<CrosstermBackend<Stdout>>,
     pub action_list: VecDeque<Action>,
     pub key_manager: KeyManager,
     pub should_quit: bool,
     pub mode: Mode,
     pub command_line_manager: CommandLine,
+    pub key_tracker: KeyTracker,
+    pub explorer_table: ExplorerTable,
+    pub command_line: CommandLine,
+    pub focus: Focus,
 }
 impl App {
     pub fn new() -> Result<Self> {
-        let components_created: HashMap<String, Box<dyn Component>> = HashMap::from([
-            (
-                String::from("explorer_table"),
-                Box::new(ExplorerTable::new()) as Box<dyn Component>,
-            ),
-            (String::from("key_tracker"), Box::new(KeyTracker::new())),
-            (String::from("path_display"), Box::new(PathDisplay::new())),
-            (String::from("command_line"), Box::new(CommandLine::new())),
-            (String::from("mode_display"), Box::new(ModeDisplay::new())),
-        ]);
         Ok(Self {
-            components: components_created,
             terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
             action_list: VecDeque::new(),
             key_manager: KeyManager::new(),
             should_quit: false,
             mode: Mode::Normal,
             command_line_manager: CommandLine::new(),
+            key_tracker: KeyTracker::new(),
+            explorer_table: ExplorerTable::new(),
+            command_line: CommandLine::new(),
+            focus: Focus::ExplorerTable,
         })
     }
 
     /// Send a key event to the appropriate component based on the current mode
     pub fn redirect_key_event(&mut self, key_event: KeyEvent) {
-        match self.mode {
-            Mode::Normal => {
-                self.key_manager.append_key_event(key_event);
-            }
-            Mode::Search => {
-                self.command_line_manager.append_key_event(key_event);
-            }
-        }
+        self.key_manager.append_key_event(key_event);
     }
     pub fn queue_key_event(&mut self, action: Action) {
         self.action_list.push_back(action);
@@ -143,28 +129,32 @@ impl App {
         None
     }
 
-    pub fn handle_self_actions(&mut self, action: Action) -> Result<()> {
+    pub fn handle_self_actions(&mut self, action: AppAction) -> Option<Action> {
         match action {
-            Action::AppAct(AppAction::SwitchMode(mode)) => {
+            AppAction::SwitchMode(mode) => {
                 self.key_manager.clear_keys_stored();
+                self.command_line_manager.clear_key_events();
                 self.mode = mode.clone();
                 self.key_manager.switch_mode(mode);
             }
-            Action::AppAct(AppAction::Quit) => self.should_quit = true,
-            Action::AppAct(AppAction::CancelKeybind) => {
+            AppAction::Quit => self.should_quit = true,
+            AppAction::CancelKeybind => {
                 self.key_manager.clear_keys_stored();
             }
-            _ => {}
         }
-        Ok(())
+        None
     }
     pub fn handle_actions(&mut self) -> Result<()> {
         while let Some(action) = self.action_list.pop_front() {
-            self.handle_self_actions(action.clone());
-            for (_component_name, component) in self.components.iter_mut() {
-                if let Ok(Some(resulting_action)) = component.update(action.clone()) {
-                    self.action_list.push_back(resulting_action);
+            if let Some(resulting_action) = match action {
+                Action::ExplorerAct(explorer_action) => {
+                    self.explorer_table.explorer_action(explorer_action)
                 }
+                Action::AppAct(app_action) => self.handle_self_actions(app_action),
+                Action::TextAct(text_action) => self.command_line.handle_text_action(text_action),
+                _ => None,
+            } {
+                self.action_list.push_back(resulting_action);
             }
         }
         Ok(())
@@ -172,10 +162,10 @@ impl App {
     pub fn render(&mut self) -> Result<()> {
         self.terminal.draw(|frame| {
             let areas = get_component_areas(frame);
-            for (component_name, component) in self.components.iter_mut() {
-                let area = areas.get(component_name).unwrap();
-                let _ = component.draw(frame, *area);
-            }
+            self.explorer_table
+                .draw(frame, *areas.get("explorer_table").unwrap());
+            self.command_line
+                .draw(frame, *areas.get("command_line").unwrap());
         })?;
         Ok(())
     }

@@ -7,9 +7,10 @@ use ratatui::{
 };
 use tracing::info;
 
-use crate::action::Action;
+use crate::{action::Action, action_agent::ActionAgent};
 
 use super::Component;
+use crate::key_handler::KeyHandler;
 
 pub struct KeyTracker {
     keys_entered: Vec<KeyEvent>,
@@ -20,14 +21,6 @@ impl KeyTracker {
         KeyTracker {
             keys_entered: Vec::new(),
         }
-    }
-    fn append_key(&mut self, key: KeyEvent) {
-        info!("Appending {:?}", key);
-        self.keys_entered.push(key)
-    }
-    fn clear_keys(&mut self) {
-        info!("Clearing all keys");
-        self.keys_entered = Vec::new();
     }
     pub fn get_key_chain(&self) -> String {
         let key_chain = self
@@ -42,19 +35,29 @@ impl KeyTracker {
     }
 }
 
-impl Component for KeyTracker {
-    fn update(&mut self, action: Action) -> Result<Option<Action>> {
-        match action {
-            _ => {}
-        }
-        Ok(None)
+impl KeyHandler for KeyTracker {
+    fn append_key_event(&mut self, new_event: KeyEvent) {
+        self.keys_entered.push(new_event);
     }
 
+    fn clear_key_events(&mut self) {
+        self.keys_entered.clear();
+    }
+}
+impl Component for KeyTracker {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let key_chain = self.get_key_chain();
         let key_paragraph = Paragraph::new(key_chain).block(Block::new().borders(Borders::ALL));
 
         frame.render_widget(key_paragraph, area);
         Ok(())
+    }
+}
+impl ActionAgent for KeyTracker {
+    fn update(&mut self, action: Action) -> Result<Option<Action>> {
+        match action {
+            _ => {}
+        }
+        Ok(None)
     }
 }
