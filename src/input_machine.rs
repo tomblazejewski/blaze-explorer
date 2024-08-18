@@ -41,7 +41,7 @@ impl KeyMapNode {
         Some(current_node)
     }
 }
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum KeyProcessingResult {
     Complete(Action), // Sequence is complete and valid
     Incomplete,       // Sequence is valid but not yet complete
@@ -80,4 +80,49 @@ pub fn default_key_map() -> KeyMapNode {
         Action::ExplorerAct(ExplorerAction::SelectUp),
     );
     root
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_keymaps_work() {
+        let mut root = KeyMapNode::new();
+        root.add_sequence(
+            vec![KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE)],
+            Action::AppAct(AppAction::Quit),
+        );
+        root.add_sequence(
+            vec![
+                KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE),
+                KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
+            ],
+            Action::ExplorerAct(ExplorerAction::SelectDown),
+        );
+        root.add_sequence(
+            vec![
+                KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
+                KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE),
+                KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
+            ],
+            Action::ExplorerAct(ExplorerAction::SelectDirectory),
+        );
+        let mut current_sequence: Vec<KeyEvent> = Vec::new();
+        let j_event = KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE);
+        let q_event = KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE);
+        let k_event = KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE);
+        let b_event = KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE);
+
+        let result = process_keys(&root, &mut current_sequence, j_event);
+        assert_eq!(result, KeyProcessingResult::Incomplete);
+
+        let result = process_keys(&root, &mut current_sequence, k_event);
+        assert_eq!(result, KeyProcessingResult::Incomplete);
+        let result = process_keys(&root, &mut current_sequence, j_event);
+        assert_eq!(
+            result,
+            KeyProcessingResult::Complete(Action::ExplorerAct(ExplorerAction::SelectDown))
+        );
+    }
 }

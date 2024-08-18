@@ -4,7 +4,7 @@ use ratatui::crossterm::event::KeyEvent;
 
 use crate::mode::Mode;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ExplorerAction {
     ChangeDirectory(PathBuf),
     ParentDirectory,
@@ -13,18 +13,18 @@ pub enum ExplorerAction {
     SelectDirectory,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum AppAction {
     Quit,
     SwitchMode(Mode),
     CancelKeybind,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum TextAction {
     InsertKey(KeyEvent),
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Action {
     ExplorerAct(ExplorerAction),
     AppAct(AppAction),

@@ -122,7 +122,6 @@ impl App {
     pub fn handle_key_event(&mut self, key_event: KeyEvent) {
         let keymap_result =
             process_keys(&self.input_machine, &mut self.current_sequence, key_event);
-        info!("Keymap result: {:?}", keymap_result);
         if let KeyProcessingResult::Complete(action) = keymap_result {
             info!("Pushed {:?}", action);
             self.action_list.push_back(action);
