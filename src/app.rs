@@ -15,11 +15,13 @@ use ratatui::{
     prelude::CrosstermBackend,
     Terminal,
 };
+use tracing::field::debug;
 use tracing::info;
 
 use crate::action::{AppAction, ExplorerAction};
 use crate::components::command_line::CommandLine;
 use crate::focus::Focus;
+use crate::input_machine::{default_key_map, process_keys, KeyMapNode, KeyProcessingResult};
 use crate::key_combination::KeyManager;
 use crate::key_handler::KeyHandler;
 use crate::{
@@ -58,33 +60,32 @@ fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
 pub struct App {
     pub terminal: Terminal<CrosstermBackend<Stdout>>,
     pub action_list: VecDeque<Action>,
-    pub key_manager: KeyManager,
     pub should_quit: bool,
     pub mode: Mode,
     pub command_line_manager: CommandLine,
     pub explorer_table: ExplorerTable,
     pub command_line: CommandLine,
     pub focus: Focus,
+    pub current_sequence: Vec<KeyEvent>,
+    pub input_machine: KeyMapNode,
 }
 impl App {
     pub fn new() -> Result<Self> {
         Ok(Self {
             terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
             action_list: VecDeque::new(),
-            key_manager: KeyManager::new(),
             should_quit: false,
             mode: Mode::Normal,
             command_line_manager: CommandLine::new(),
             explorer_table: ExplorerTable::new(),
             command_line: CommandLine::new(),
             focus: Focus::ExplorerTable,
+            current_sequence: Vec::new(),
+            input_machine: default_key_map(),
         })
     }
 
     /// Send a key event to the appropriate component based on the current mode
-    pub fn redirect_key_event(&mut self, key_event: KeyEvent) {
-        self.key_manager.append_key_event(key_event);
-    }
     pub fn queue_key_event(&mut self, action: Action) {
         self.action_list.push_back(action);
     }
@@ -104,9 +105,8 @@ impl App {
                 //keytracker to work?
                 info!("Pushed {:?}", key);
                 if key.kind == KeyEventKind::Press {
-                    self.redirect_key_event(key);
+                    self.handle_key_event(key);
                 };
-                self.handle_key_event();
                 if self.should_quit {
                     break;
                 }
@@ -119,25 +119,24 @@ impl App {
         Ok(())
     }
 
-    pub fn handle_key_event(&mut self) -> Option<Action> {
-        let actions = self.key_manager.handle_keymap();
-        self.action_list.extend(actions);
-
-        None
+    pub fn handle_key_event(&mut self, key_event: KeyEvent) {
+        let keymap_result =
+            process_keys(&self.input_machine, &mut self.current_sequence, key_event);
+        info!("Keymap result: {:?}", keymap_result);
+        if let KeyProcessingResult::Complete(action) = keymap_result {
+            info!("Pushed {:?}", action);
+            self.action_list.push_back(action);
+        }
     }
 
     pub fn handle_self_actions(&mut self, action: AppAction) -> Option<Action> {
         match action {
             AppAction::SwitchMode(mode) => {
-                self.key_manager.clear_keys_stored();
                 self.command_line_manager.clear_key_events();
                 self.mode = mode.clone();
-                self.key_manager.switch_mode(mode);
             }
             AppAction::Quit => self.should_quit = true,
-            AppAction::CancelKeybind => {
-                self.key_manager.clear_keys_stored();
-            }
+            _ => return None,
         }
         None
     }
