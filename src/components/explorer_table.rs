@@ -20,6 +20,7 @@ use ratatui::{
 use crate::{
     action::{Action, ExplorerAction},
     action_agent::ActionAgent,
+    mode::Mode,
 };
 
 use super::Component;
@@ -97,6 +98,7 @@ pub struct ExplorerTable {
     state: TableState,
     current_path: PathBuf,
     elements_list: Vec<FileData>,
+    mode: Mode,
 }
 
 impl ExplorerTable {
@@ -105,6 +107,7 @@ impl ExplorerTable {
             state: TableState::default().with_selected(0),
             current_path: PathBuf::from("./"),
             elements_list: Vec::new(),
+            mode: Mode::Normal,
         }
     }
 
@@ -205,6 +208,10 @@ impl ExplorerTable {
         }
         None
     }
+
+    pub fn switch_mode(&mut self, mode: Mode) {
+        self.mode = mode
+    }
 }
 
 impl Component for ExplorerTable {
@@ -246,17 +253,27 @@ impl Component for ExplorerTable {
             .header(header);
 
         // get paragraph block
-        let path_paragraph =
-            Paragraph::new(self.current_path.clone().to_str().unwrap().to_string())
-                .block(Block::new().borders(Borders::ALL));
+        let mode_span = Span::styled(
+            self.mode.to_string(),
+            Style::default()
+                .bg(if self.mode == Mode::Normal {
+                    tailwind::BLUE.c200
+                } else {
+                    tailwind::VIOLET.c200
+                })
+                .fg(tailwind::BLACK),
+        );
+        let path_span = Span::from(self.current_path.to_str().unwrap());
+
+        let status_line = Line::from(vec![mode_span, path_span]);
 
         //divide the available area into one for the table and one for the paragraph
         let explorer_area_blocks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Percentage(90), Constraint::Percentage(10)])
+            .constraints([Constraint::Fill(1), Constraint::Length(1)])
             .split(area);
         frame.render_stateful_widget(t, explorer_area_blocks[0], &mut self.state);
-        frame.render_widget(path_paragraph, explorer_area_blocks[1]);
+        frame.render_widget(status_line, explorer_area_blocks[1]);
 
         Ok(())
     }

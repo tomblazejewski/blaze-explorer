@@ -48,7 +48,7 @@ impl CommandLine {
 
 impl Component for CommandLine {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let text = Paragraph::new(self.command.clone()).block(Block::new().borders(Borders::ALL));
+        let text = Paragraph::new(self.command.clone()).block(Block::new());
         frame.render_widget(text, area);
         Ok(())
     }

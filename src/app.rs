@@ -34,27 +34,12 @@ use crate::{
 fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
     let main_box = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(vec![
-            Constraint::Percentage(80),
-            Constraint::Percentage(10),
-            Constraint::Percentage(10),
-        ])
+        .constraints(vec![Constraint::Fill(1), Constraint::Length(1)])
         .split(frame.size());
-    let status_bar = main_box[1];
-    let status_bar_parts = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(vec![
-            Constraint::Percentage(10),
-            Constraint::Percentage(80),
-            Constraint::Percentage(10),
-        ])
-        .split(status_bar);
-    let command_bar = main_box[2];
+    let command_bar = main_box[1];
 
     let mut areas = HashMap::new();
     areas.insert("explorer_table".to_string(), main_box[0]);
-    areas.insert("key_tracker".to_string(), status_bar_parts[2]);
-    areas.insert("mode_display".to_string(), status_bar_parts[0]);
     areas.insert("command_line".to_string(), command_bar);
     areas
 }
@@ -140,11 +125,13 @@ impl App {
 
     pub fn enter_search_mode(&mut self) {
         self.mode = Mode::Search;
+        self.explorer_table.switch_mode(Mode::Search);
         self.command_line.focus();
     }
 
     pub fn leave_search_mode(&mut self) {
         self.mode = Mode::Normal;
+        self.explorer_table.switch_mode(Mode::Normal);
         self.command_line.unfocus();
     }
 
