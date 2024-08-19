@@ -8,6 +8,35 @@ use crate::{
     mode::Mode,
 };
 
+pub struct InputMachine {
+    keymap_nodes: HashMap<Mode, KeyMapNode>,
+    default_actions: HashMap<Mode, Option<Action>>,
+}
+
+impl InputMachine {
+    pub fn new() -> Self {
+        let mut keymap_nodes = HashMap::new();
+        keymap_nodes.insert(Mode::Normal, default_key_map());
+        InputMachine {
+            keymap_nodes,
+            default_actions: HashMap::new(),
+        }
+    }
+    pub fn process_keys(
+        &mut self,
+        mode: &Mode,
+        current_sequence: &mut Vec<KeyEvent>,
+        input_key: KeyEvent,
+    ) -> KeyProcessingResult {
+        let keymap = self.keymap_nodes.get(mode).unwrap();
+        process_keys(keymap, current_sequence, input_key)
+    }
+
+    pub fn get_default_action(&self, mode: Mode) -> Option<Action> {
+        self.default_actions.get(&mode).unwrap().clone()
+    }
+}
+
 #[derive(Debug)]
 pub struct KeyMapNode {
     action: Option<Action>,

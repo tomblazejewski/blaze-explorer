@@ -21,12 +21,13 @@ use tracing::info;
 use crate::action::{AppAction, ExplorerAction};
 use crate::components::command_line::CommandLine;
 use crate::focus::Focus;
-use crate::input_machine::{default_key_map, process_keys, KeyMapNode, KeyProcessingResult};
-use crate::key_combination::KeyManager;
+use crate::input_machine::{
+    default_key_map, process_keys, InputMachine, KeyMapNode, KeyProcessingResult,
+};
 use crate::key_handler::KeyHandler;
 use crate::{
     action::Action,
-    components::{explorer_table::ExplorerTable, key_tracker::KeyTracker, Component},
+    components::{explorer_table::ExplorerTable, Component},
     mode::Mode,
 };
 
@@ -67,7 +68,7 @@ pub struct App {
     pub command_line: CommandLine,
     pub focus: Focus,
     pub current_sequence: Vec<KeyEvent>,
-    pub input_machine: KeyMapNode,
+    pub input_machine: InputMachine,
 }
 impl App {
     pub fn new() -> Result<Self> {
@@ -81,7 +82,7 @@ impl App {
             command_line: CommandLine::new(),
             focus: Focus::ExplorerTable,
             current_sequence: Vec::new(),
-            input_machine: default_key_map(),
+            input_machine: InputMachine::new(),
         })
     }
 
@@ -121,7 +122,8 @@ impl App {
 
     pub fn handle_key_event(&mut self, key_event: KeyEvent) {
         let keymap_result =
-            process_keys(&self.input_machine, &mut self.current_sequence, key_event);
+            self.input_machine
+                .process_keys(&self.mode, &mut self.current_sequence, key_event);
         if let KeyProcessingResult::Complete(action) = keymap_result {
             info!("Pushed {:?}", action);
             self.action_list.push_back(action);
