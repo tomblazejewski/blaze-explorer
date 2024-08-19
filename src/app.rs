@@ -63,7 +63,6 @@ pub struct App {
     pub action_list: VecDeque<Action>,
     pub should_quit: bool,
     pub mode: Mode,
-    pub command_line_manager: CommandLine,
     pub explorer_table: ExplorerTable,
     pub command_line: CommandLine,
     pub focus: Focus,
@@ -77,7 +76,6 @@ impl App {
             action_list: VecDeque::new(),
             should_quit: false,
             mode: Mode::Normal,
-            command_line_manager: CommandLine::new(),
             explorer_table: ExplorerTable::new(),
             command_line: CommandLine::new(),
             focus: Focus::ExplorerTable,
@@ -140,11 +138,23 @@ impl App {
         }
     }
 
+    pub fn enter_search_mode(&mut self) {
+        self.mode = Mode::Search;
+        self.command_line.focus();
+    }
+
+    pub fn leave_search_mode(&mut self) {
+        self.mode = Mode::Normal;
+        self.command_line.unfocus();
+    }
+
     pub fn handle_self_actions(&mut self, action: AppAction) -> Option<Action> {
         match action {
-            AppAction::SwitchMode(mode) => {
-                self.mode = mode.clone();
-            }
+            AppAction::SwitchMode(mode) => match mode {
+                Mode::Normal => self.leave_search_mode(),
+                Mode::Search => self.enter_search_mode(),
+                _ => {}
+            },
             AppAction::Quit => self.should_quit = true,
             _ => return None,
         }

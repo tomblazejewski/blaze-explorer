@@ -38,6 +38,12 @@ impl CommandLine {
         info!("Command is {:?}", self.command);
         None
     }
+
+    pub fn unfocus(&mut self) {}
+
+    pub fn focus(&mut self) {
+        self.command = String::new();
+    }
 }
 
 impl Component for CommandLine {
