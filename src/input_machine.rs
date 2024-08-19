@@ -4,23 +4,21 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use tracing::info;
 
 use crate::{
-    action::{Action, AppAction, ExplorerAction},
+    action::{Action, AppAction, ExplorerAction, TextAction},
     mode::Mode,
 };
 
 pub struct InputMachine {
     keymap_nodes: HashMap<Mode, KeyMapNode>,
-    default_actions: HashMap<Mode, Option<Action>>,
 }
 
 impl InputMachine {
     pub fn new() -> Self {
         let mut keymap_nodes = HashMap::new();
         keymap_nodes.insert(Mode::Normal, default_key_map());
-        InputMachine {
-            keymap_nodes,
-            default_actions: HashMap::new(),
-        }
+        keymap_nodes.insert(Mode::Search, search_key_map());
+
+        InputMachine { keymap_nodes }
     }
     pub fn process_keys(
         &mut self,
@@ -32,8 +30,15 @@ impl InputMachine {
         process_keys(keymap, current_sequence, input_key)
     }
 
-    pub fn get_default_action(&self, mode: Mode) -> Option<Action> {
-        self.default_actions.get(&mode).unwrap().clone()
+    pub fn get_default_action(&self, mode: &Mode, last_key: KeyEvent) -> Option<Action> {
+        match mode {
+            Mode::Normal => None,
+            Mode::Search => match last_key.code {
+                KeyCode::Char(ch) => Some(Action::TextAct(TextAction::InsertKey(ch))),
+                _ => None,
+            },
+            _ => None,
+        }
     }
 }
 
@@ -130,6 +135,14 @@ pub fn default_key_map() -> KeyMapNode {
     root
 }
 
+pub fn search_key_map() -> KeyMapNode {
+    let mut root = KeyMapNode::new();
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
+        Action::AppAct(AppAction::SwitchMode(Mode::Normal)),
+    );
+    root
+}
 #[cfg(test)]
 mod tests {
     use crate::action::TextAction;

@@ -22,7 +22,7 @@ pub enum AppAction {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TextAction {
-    InsertKey(KeyEvent),
+    InsertKey(char),
 }
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {

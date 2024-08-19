@@ -35,9 +35,9 @@ fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
     let main_box = Layout::default()
         .direction(Direction::Vertical)
         .constraints(vec![
-            Constraint::Percentage(85),
+            Constraint::Percentage(80),
             Constraint::Percentage(10),
-            Constraint::Percentage(5),
+            Constraint::Percentage(10),
         ])
         .split(frame.size());
     let status_bar = main_box[1];
@@ -124,16 +124,25 @@ impl App {
         let keymap_result =
             self.input_machine
                 .process_keys(&self.mode, &mut self.current_sequence, key_event);
-        if let KeyProcessingResult::Complete(action) = keymap_result {
-            info!("Pushed {:?}", action);
-            self.action_list.push_back(action);
+        info!("Keymap result: {:?}", keymap_result);
+        match keymap_result {
+            KeyProcessingResult::Complete(action) => {
+                info!("Complete Action: {:?}", action);
+                self.action_list.push_back(action);
+            }
+            KeyProcessingResult::Invalid => {
+                if let Some(action) = self.input_machine.get_default_action(&self.mode, key_event) {
+                    info!("Default Action: {:?}", action);
+                    self.action_list.push_back(action);
+                }
+            }
+            _ => {}
         }
     }
 
     pub fn handle_self_actions(&mut self, action: AppAction) -> Option<Action> {
         match action {
             AppAction::SwitchMode(mode) => {
-                self.command_line_manager.clear_key_events();
                 self.mode = mode.clone();
             }
             AppAction::Quit => self.should_quit = true,

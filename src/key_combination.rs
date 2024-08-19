@@ -265,7 +265,8 @@ impl KeyManager {
                 Mode::Search => {
                     self.clear_keys_stored();
                     let key_event = self.last_key_event.unwrap();
-                    vec![Action::TextAct(TextAction::InsertKey(key_event))]
+                    // vec![Action::TextAct(TextAction::InsertKey(key_event))] add a filler for now
+                    vec![]
                 }
             }
         }
