@@ -11,7 +11,7 @@ pub enum ExplorerAction {
     SelectUp,
     SelectDown,
     SelectDirectory,
-    SearchThisDirectory(String),
+    SearchHere(String),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -26,6 +26,7 @@ pub enum TextAction {
     InsertKey(char),
     EraseText,
     RemoveKey,
+    ConfirmSearchQuery,
 }
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {

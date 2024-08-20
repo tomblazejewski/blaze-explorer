@@ -7,7 +7,7 @@ use ratatui::{
 };
 use tracing::info;
 
-use crate::action::{Action, TextAction};
+use crate::action::{Action, ExplorerAction, TextAction};
 
 use super::Component;
 
@@ -40,6 +40,11 @@ impl CommandLine {
             TextAction::InsertKey(c) => self.append_char(c),
             TextAction::EraseText => self.clear_command(),
             TextAction::RemoveKey => self.remove_char(),
+            TextAction::ConfirmSearchQuery => {
+                return Some(Action::ExplorerAct(ExplorerAction::SearchHere(
+                    self.command.clone(),
+                )))
+            }
         }
         info!("Command is {:?}", self.command);
         None

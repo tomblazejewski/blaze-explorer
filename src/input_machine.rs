@@ -149,6 +149,10 @@ pub fn search_key_map() -> KeyMapNode {
         vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
         Action::TextAct(TextAction::RemoveKey),
     );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
+        Action::TextAct(TextAction::ConfirmSearchQuery),
+    );
     root
 }
 #[cfg(test)]

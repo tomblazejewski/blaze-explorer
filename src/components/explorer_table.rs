@@ -102,6 +102,7 @@ pub struct ExplorerTable {
     current_path: PathBuf,
     elements_list: Vec<FileData>,
     mode: Mode,
+    search_phrase: Option<String>,
     selected_ids: Option<Vec<usize>>,
 }
 
@@ -112,6 +113,7 @@ impl ExplorerTable {
             current_path: PathBuf::from("./"),
             elements_list: Vec::new(),
             mode: Mode::Normal,
+            search_phrase: None,
             selected_ids: None,
         }
     }
@@ -220,6 +222,7 @@ impl ExplorerTable {
             }
             ExplorerAction::SelectUp => self.previous(),
             ExplorerAction::SelectDown => self.next(),
+            ExplorerAction::SearchHere(query) => self.search_here(&query),
         }
         None
     }
@@ -245,7 +248,6 @@ impl Component for ExplorerTable {
             .height(1);
         let line_numbers =
             get_line_numbers(self.elements_list.len(), self.state.selected().unwrap() + 1);
-        todo!("Add row styling to searched entries");
         let rows = self
             .elements_list
             .iter()
@@ -257,6 +259,16 @@ impl Component for ExplorerTable {
                     format_file_size(element.size).into(),
                     format_last_time(&element.modified).into(),
                 ])
+                .style(Style::new().bg(match &self.selected_ids {
+                    Some(selected_ids) => {
+                        if selected_ids.contains(&element.id) {
+                            tailwind::RED.c100
+                        } else {
+                            tailwind::BLUE.c50
+                        }
+                    }
+                    None => tailwind::BLUE.c50,
+                }))
             })
             .collect::<Vec<Row>>();
         let selected_style = Style::default()
@@ -292,32 +304,6 @@ impl Component for ExplorerTable {
         frame.render_widget(status_line, explorer_area_blocks[1]);
 
         Ok(())
-    }
-}
-impl ActionAgent for ExplorerTable {
-    fn update(&mut self, action: Action) -> Result<Option<Action>> {
-        match action {
-            Action::ExplorerAct(ExplorerAction::SelectDirectory) => {
-                let target_directory = self.select_directory();
-                if let Some(found_directory) = target_directory {
-                    return Ok(Some(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
-                        found_directory,
-                    ))));
-                } else {
-                    return Ok(None);
-                }
-            }
-            Action::ExplorerAct(ExplorerAction::ChangeDirectory(path)) => {
-                self.update_path(path);
-            }
-            Action::ExplorerAct(ExplorerAction::ParentDirectory) => {
-                self.go_up();
-            }
-            Action::ExplorerAct(ExplorerAction::SelectUp) => self.previous(),
-            Action::ExplorerAct(ExplorerAction::SelectDown) => self.next(),
-            _ => {}
-        }
-        Ok(None)
     }
 }
 
