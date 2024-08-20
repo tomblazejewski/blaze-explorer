@@ -34,20 +34,26 @@ impl CommandLine {
         self.command = String::new();
     }
 
-    pub fn remove_char(&mut self) {
-        self.command.pop();
+    pub fn remove_char(&mut self) -> Option<Action> {
+        if self.command.is_empty() {
+            Some(Action::AppAct(AppAction::SwitchMode(Mode::Normal)))
+        } else {
+            self.command.pop();
+            Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
+                self.command.clone(),
+            )))
+        }
     }
 
     pub fn handle_text_action(&mut self, action: TextAction) -> Option<Action> {
         match action {
             TextAction::InsertKey(c) => self.append_char(c),
             TextAction::EraseText => self.clear_command(),
-            TextAction::RemoveKey => self.remove_char(),
+            TextAction::DropKey => return self.remove_char(),
             TextAction::ConfirmSearchQuery => {
                 return Some(Action::AppAct(AppAction::SwitchMode(Mode::Normal)))
             }
         }
-        info!("Command is {:?}", self.command);
         Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
             self.command.clone(),
         )))

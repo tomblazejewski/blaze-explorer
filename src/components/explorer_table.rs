@@ -200,6 +200,33 @@ impl ExplorerTable {
             self.search_phrase = None
         }
     }
+
+    fn next_search_result(&mut self) {
+        if let Some(selected_ids) = self.search_elements() {
+            if selected_ids.len() < 2 {
+                return;
+            }
+            let i = match self.state.selected() {
+                Some(i) => {
+                    // select the next search result whose id is bigger than id of selected element
+                    // if there is no such element then start from id 0 and check again
+                    let mut j = i;
+                    loop {
+                        j += 1;
+                        if j == self.elements_list.len() {
+                            j = 0;
+                        }
+                        if selected_ids.contains(&j) {
+                            break;
+                        }
+                    }
+                    j
+                }
+                None => 0,
+            };
+            self.state.select(Some(i));
+        }
+    }
     pub fn search_elements(&mut self) -> Option<Vec<usize>> {
         if let Some(query) = &self.search_phrase {
             return Some(
@@ -234,6 +261,7 @@ impl ExplorerTable {
             ExplorerAction::SelectDown => self.next(),
             ExplorerAction::UpdateSearchQuery(query) => self.update_search_query(query),
             ExplorerAction::ClearSearchQuery => self.search_phrase = None,
+            ExplorerAction::NextSearchResult => self.next_search_result(),
         }
         None
     }

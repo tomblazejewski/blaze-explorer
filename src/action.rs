@@ -13,6 +13,7 @@ pub enum ExplorerAction {
     SelectDirectory,
     UpdateSearchQuery(String),
     ClearSearchQuery,
+    NextSearchResult,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -26,7 +27,7 @@ pub enum AppAction {
 pub enum TextAction {
     InsertKey(char),
     EraseText,
-    RemoveKey,
+    DropKey,
     ConfirmSearchQuery,
 }
 #[derive(Clone, Debug, PartialEq)]

@@ -113,6 +113,10 @@ pub fn default_key_map() -> KeyMapNode {
         Action::AppAct(AppAction::Quit),
     );
     root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('n'), KeyModifiers::NONE)],
+        Action::ExplorerAct(ExplorerAction::NextSearchResult),
+    );
+    root.add_sequence(
         vec![KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::SelectUp),
     );
@@ -151,7 +155,7 @@ pub fn search_key_map() -> KeyMapNode {
     );
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
-        Action::TextAct(TextAction::RemoveKey),
+        Action::TextAct(TextAction::DropKey),
     );
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
