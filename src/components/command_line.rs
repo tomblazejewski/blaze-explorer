@@ -31,9 +31,15 @@ impl CommandLine {
         self.command = String::new();
     }
 
+    pub fn remove_char(&mut self) {
+        self.command.pop();
+    }
+
     pub fn handle_text_action(&mut self, action: TextAction) -> Option<Action> {
         match action {
             TextAction::InsertKey(c) => self.append_char(c),
+            TextAction::EraseText => self.clear_command(),
+            TextAction::RemoveKey => self.remove_char(),
         }
         info!("Command is {:?}", self.command);
         None

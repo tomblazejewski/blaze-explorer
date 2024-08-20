@@ -141,6 +141,14 @@ pub fn search_key_map() -> KeyMapNode {
         vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
         Action::AppAct(AppAction::SwitchMode(Mode::Normal)),
     );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL)],
+        Action::TextAct(TextAction::EraseText),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
+        Action::TextAct(TextAction::RemoveKey),
+    );
     root
 }
 #[cfg(test)]

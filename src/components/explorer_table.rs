@@ -27,6 +27,7 @@ use super::Component;
 
 #[derive(Debug)]
 pub struct FileData {
+    id: usize,
     filename: String,
     size: u64,
     modified: Option<DateTime<Utc>>,
@@ -62,7 +63,8 @@ pub fn get_file_data(path: &PathBuf) -> Vec<FileData> {
                 entry.metadata().unwrap().modified(),
             )
         })
-        .map(|(file_name, file_size, modified)| {
+        .enumerate()
+        .map(|(id, (file_name, file_size, modified))| {
             let modified_time: Option<DateTime<Utc>>;
             if let Ok(system_time) = modified {
                 modified_time = Some(system_time.into());
@@ -70,6 +72,7 @@ pub fn get_file_data(path: &PathBuf) -> Vec<FileData> {
                 modified_time = None;
             };
             FileData {
+                id,
                 filename: file_name,
                 size: file_size,
                 modified: modified_time,
@@ -99,6 +102,7 @@ pub struct ExplorerTable {
     current_path: PathBuf,
     elements_list: Vec<FileData>,
     mode: Mode,
+    selected_ids: Option<Vec<usize>>,
 }
 
 impl ExplorerTable {
@@ -108,6 +112,7 @@ impl ExplorerTable {
             current_path: PathBuf::from("./"),
             elements_list: Vec::new(),
             mode: Mode::Normal,
+            selected_ids: None,
         }
     }
 
@@ -185,6 +190,16 @@ impl ExplorerTable {
             None
         }
     }
+
+    pub fn search_here(&mut self, query: &str) {
+        let selected_elements = self
+            .elements_list
+            .iter()
+            .filter(|x| x.filename.contains(query))
+            .map(|x| x.id)
+            .collect::<Vec<usize>>();
+        self.selected_ids = Some(selected_elements);
+    }
     pub fn explorer_action(&mut self, explorer_act: ExplorerAction) -> Option<Action> {
         match explorer_act {
             ExplorerAction::SelectDirectory => {
@@ -230,6 +245,7 @@ impl Component for ExplorerTable {
             .height(1);
         let line_numbers =
             get_line_numbers(self.elements_list.len(), self.state.selected().unwrap() + 1);
+        todo!("Add row styling to searched entries");
         let rows = self
             .elements_list
             .iter()
