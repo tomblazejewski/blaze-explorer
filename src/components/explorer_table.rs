@@ -193,6 +193,13 @@ impl ExplorerTable {
         }
     }
 
+    fn update_search_query(&mut self, new_query: String) {
+        if new_query.len() > 0 {
+            self.search_phrase = Some(new_query)
+        } else {
+            self.search_phrase = None
+        }
+    }
     pub fn search_elements(&mut self) -> Option<Vec<usize>> {
         if let Some(query) = &self.search_phrase {
             return Some(
@@ -225,7 +232,7 @@ impl ExplorerTable {
             }
             ExplorerAction::SelectUp => self.previous(),
             ExplorerAction::SelectDown => self.next(),
-            ExplorerAction::UpdateSearchQuery(query) => self.search_phrase = Some(query),
+            ExplorerAction::UpdateSearchQuery(query) => self.update_search_query(query),
             ExplorerAction::ClearSearchQuery => self.search_phrase = None,
         }
         None
