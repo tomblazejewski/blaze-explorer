@@ -11,7 +11,8 @@ pub enum ExplorerAction {
     SelectUp,
     SelectDown,
     SelectDirectory,
-    SearchHere(String),
+    UpdateSearchQuery(String),
+    ClearSearchQuery,
 }
 
 #[derive(Clone, Debug, PartialEq)]

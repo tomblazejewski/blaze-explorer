@@ -7,7 +7,10 @@ use ratatui::{
 };
 use tracing::info;
 
-use crate::action::{Action, ExplorerAction, TextAction};
+use crate::{
+    action::{Action, AppAction, ExplorerAction, TextAction},
+    mode::Mode,
+};
 
 use super::Component;
 
@@ -41,13 +44,13 @@ impl CommandLine {
             TextAction::EraseText => self.clear_command(),
             TextAction::RemoveKey => self.remove_char(),
             TextAction::ConfirmSearchQuery => {
-                return Some(Action::ExplorerAct(ExplorerAction::SearchHere(
-                    self.command.clone(),
-                )))
+                return Some(Action::AppAct(AppAction::SwitchMode(Mode::Normal)))
             }
         }
         info!("Command is {:?}", self.command);
-        None
+        Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
+            self.command.clone(),
+        )))
     }
 
     pub fn unfocus(&mut self) {}

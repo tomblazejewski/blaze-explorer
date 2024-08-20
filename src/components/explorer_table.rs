@@ -193,14 +193,17 @@ impl ExplorerTable {
         }
     }
 
-    pub fn search_here(&mut self, query: &str) {
-        let selected_elements = self
-            .elements_list
-            .iter()
-            .filter(|x| x.filename.contains(query))
-            .map(|x| x.id)
-            .collect::<Vec<usize>>();
-        self.selected_ids = Some(selected_elements);
+    pub fn search_elements(&mut self) -> Option<Vec<usize>> {
+        if let Some(query) = &self.search_phrase {
+            return Some(
+                self.elements_list
+                    .iter()
+                    .filter(|x| x.filename.contains(query))
+                    .map(|x| x.id)
+                    .collect::<Vec<usize>>(),
+            );
+        }
+        None
     }
     pub fn explorer_action(&mut self, explorer_act: ExplorerAction) -> Option<Action> {
         match explorer_act {
@@ -222,7 +225,8 @@ impl ExplorerTable {
             }
             ExplorerAction::SelectUp => self.previous(),
             ExplorerAction::SelectDown => self.next(),
-            ExplorerAction::SearchHere(query) => self.search_here(&query),
+            ExplorerAction::UpdateSearchQuery(query) => self.search_phrase = Some(query),
+            ExplorerAction::ClearSearchQuery => self.search_phrase = None,
         }
         None
     }
@@ -248,6 +252,7 @@ impl Component for ExplorerTable {
             .height(1);
         let line_numbers =
             get_line_numbers(self.elements_list.len(), self.state.selected().unwrap() + 1);
+        let search_elements = self.search_elements();
         let rows = self
             .elements_list
             .iter()
@@ -259,7 +264,7 @@ impl Component for ExplorerTable {
                     format_file_size(element.size).into(),
                     format_last_time(&element.modified).into(),
                 ])
-                .style(Style::new().bg(match &self.selected_ids {
+                .style(Style::new().bg(match &search_elements {
                     Some(selected_ids) => {
                         if selected_ids.contains(&element.id) {
                             tailwind::RED.c100

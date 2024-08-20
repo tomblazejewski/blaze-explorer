@@ -132,6 +132,10 @@ pub fn default_key_map() -> KeyMapNode {
         vec![KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE)],
         Action::AppAct(AppAction::SwitchMode(Mode::Search)),
     );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
+        Action::ExplorerAct(ExplorerAction::ClearSearchQuery),
+    );
     root
 }
 
