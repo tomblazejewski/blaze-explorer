@@ -194,15 +194,16 @@ impl ExplorerTable {
     }
 
     fn update_search_query(&mut self, new_query: String) {
-        if new_query.len() > 0 {
+        if !new_query.is_empty() {
             self.search_phrase = Some(new_query)
         } else {
             self.search_phrase = None
         }
+        self.search_elements();
     }
 
     fn next_search_result(&mut self) {
-        if let Some(selected_ids) = self.search_elements() {
+        if let Some(selected_ids) = &self.selected_ids {
             if selected_ids.len() < 2 {
                 return;
             }
@@ -227,17 +228,19 @@ impl ExplorerTable {
             self.state.select(Some(i));
         }
     }
-    pub fn search_elements(&mut self) -> Option<Vec<usize>> {
-        if let Some(query) = &self.search_phrase {
-            return Some(
+    pub fn search_elements(&mut self) {
+        let element_ids = if let Some(query) = &self.search_phrase {
+            Some(
                 self.elements_list
                     .iter()
                     .filter(|x| x.filename.contains(query))
                     .map(|x| x.id)
                     .collect::<Vec<usize>>(),
-            );
-        }
-        None
+            )
+        } else {
+            None
+        };
+        self.selected_ids = element_ids;
     }
     pub fn explorer_action(&mut self, explorer_act: ExplorerAction) -> Option<Action> {
         match explorer_act {
@@ -269,6 +272,23 @@ impl ExplorerTable {
     pub fn switch_mode(&mut self, mode: Mode) {
         self.mode = mode
     }
+
+    fn highlight_search_result(&mut self, line_text: String) -> Cell {
+        if self.search_phrase.is_none() {
+            return Cell::from(line_text);
+        }
+        let query = &self.search_phrase.unwrap();
+        if line_text.contains(query) {
+            let splits = line_text.split(query);
+            let chunks = splits.into_iter().map(|c| Span::from(c.to_owned()));
+            let pattern = Span::styled(query, app.theme.selected);
+            itertools::intersperse(chunks, pattern)
+                .collect::<Vec<Span>>()
+                .into()
+        } else {
+            Cell::from(line_text)
+        }
+    }
 }
 
 impl Component for ExplorerTable {
@@ -287,7 +307,6 @@ impl Component for ExplorerTable {
             .height(1);
         let line_numbers =
             get_line_numbers(self.elements_list.len(), self.state.selected().unwrap() + 1);
-        let search_elements = self.search_elements();
         let rows = self
             .elements_list
             .iter()
@@ -299,7 +318,7 @@ impl Component for ExplorerTable {
                     format_file_size(element.size).into(),
                     format_last_time(&element.modified).into(),
                 ])
-                .style(Style::new().bg(match &search_elements {
+                .style(Style::new().bg(match &self.selected_ids {
                     Some(selected_ids) => {
                         if selected_ids.contains(&element.id) {
                             tailwind::RED.c100
