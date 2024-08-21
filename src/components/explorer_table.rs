@@ -106,6 +106,22 @@ pub struct ExplorerTable {
     selected_ids: Option<Vec<usize>>,
 }
 
+fn highlight_search_result(line_text: String, query: Option<&str>) -> Line {
+    if query.is_none() {
+        return Line::from(line_text);
+    }
+    let query = query.unwrap();
+    if line_text.contains(&query) {
+        let splits = line_text.split(&query);
+        let chunks = splits.into_iter().map(|c| Span::from(c.to_owned()));
+        let pattern = Span::styled(query.clone(), Style::new().bg(tailwind::SKY.c100));
+        itertools::intersperse(chunks, pattern)
+            .collect::<Vec<Span>>()
+            .into()
+    } else {
+        Line::from(line_text)
+    }
+}
 impl ExplorerTable {
     pub fn new() -> Self {
         Self {
@@ -272,23 +288,6 @@ impl ExplorerTable {
     pub fn switch_mode(&mut self, mode: Mode) {
         self.mode = mode
     }
-
-    fn highlight_search_result(&mut self, line_text: String) -> Cell {
-        if self.search_phrase.is_none() {
-            return Cell::from(line_text);
-        }
-        let query = &self.search_phrase.unwrap();
-        if line_text.contains(query) {
-            let splits = line_text.split(query);
-            let chunks = splits.into_iter().map(|c| Span::from(c.to_owned()));
-            let pattern = Span::styled(query, app.theme.selected);
-            itertools::intersperse(chunks, pattern)
-                .collect::<Vec<Span>>()
-                .into()
-        } else {
-            Cell::from(line_text)
-        }
-    }
 }
 
 impl Component for ExplorerTable {
@@ -314,7 +313,11 @@ impl Component for ExplorerTable {
             .map(|(element, row_number)| {
                 Row::new([
                     Cell::from(Text::from(row_number).alignment(Alignment::Right)),
-                    element.filename.clone().into(),
+                    highlight_search_result(
+                        element.filename.clone(),
+                        self.search_phrase.as_deref(),
+                    )
+                    .into(),
                     format_file_size(element.size).into(),
                     format_last_time(&element.modified).into(),
                 ])
