@@ -21,6 +21,7 @@ use crate::{
     action::{Action, ExplorerAction},
     action_agent::ActionAgent,
     mode::Mode,
+    themes::CustomTheme,
 };
 
 use super::Component;
@@ -97,16 +98,12 @@ fn get_line_numbers(n_lines: usize, current_line: usize) -> Vec<String> {
     current_lines.extend(after_selected_iter);
     current_lines
 }
-pub struct ExplorerTable {
-    state: TableState,
-    current_path: PathBuf,
-    elements_list: Vec<FileData>,
-    mode: Mode,
-    search_phrase: Option<String>,
-    selected_ids: Option<Vec<usize>>,
-}
 
-fn highlight_search_result(line_text: String, query: Option<&str>) -> Line {
+fn highlight_search_result(
+    line_text: String,
+    query: Option<&str>,
+    highlighted_style: Style,
+) -> Line {
     if query.is_none() {
         return Line::from(line_text);
     }
@@ -114,13 +111,22 @@ fn highlight_search_result(line_text: String, query: Option<&str>) -> Line {
     if line_text.contains(&query) {
         let splits = line_text.split(&query);
         let chunks = splits.into_iter().map(|c| Span::from(c.to_owned()));
-        let pattern = Span::styled(query.clone(), Style::new().bg(tailwind::SKY.c100));
+        let pattern = Span::styled(query.clone(), highlighted_style);
         itertools::intersperse(chunks, pattern)
             .collect::<Vec<Span>>()
             .into()
     } else {
         Line::from(line_text)
     }
+}
+pub struct ExplorerTable {
+    state: TableState,
+    current_path: PathBuf,
+    elements_list: Vec<FileData>,
+    mode: Mode,
+    search_phrase: Option<String>,
+    selected_ids: Option<Vec<usize>>,
+    theme: CustomTheme,
 }
 impl ExplorerTable {
     pub fn new() -> Self {
@@ -131,6 +137,7 @@ impl ExplorerTable {
             mode: Mode::Normal,
             search_phrase: None,
             selected_ids: None,
+            theme: CustomTheme::default(),
         }
     }
 
@@ -316,6 +323,7 @@ impl Component for ExplorerTable {
                     highlight_search_result(
                         element.filename.clone(),
                         self.search_phrase.as_deref(),
+                        self.theme.search_result,
                     )
                     .into(),
                     format_file_size(element.size).into(),
@@ -324,13 +332,14 @@ impl Component for ExplorerTable {
                 .style(Style::new().bg(match &self.selected_ids {
                     Some(selected_ids) => {
                         if selected_ids.contains(&element.id) {
-                            tailwind::RED.c100
+                            tailwind::BLACK
                         } else {
-                            tailwind::BLUE.c50
+                            tailwind::BLACK
                         }
                     }
-                    None => tailwind::BLUE.c50,
+                    None => tailwind::BLACK,
                 }))
+                .fg(tailwind::WHITE)
             })
             .collect::<Vec<Row>>();
         let selected_style = Style::default()
