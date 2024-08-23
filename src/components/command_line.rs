@@ -50,9 +50,6 @@ impl CommandLine {
             TextAction::InsertKey(c) => self.append_char(c),
             TextAction::EraseText => self.clear_command(),
             TextAction::DropKey => return self.remove_char(),
-            TextAction::ConfirmSearchQuery => {
-                return Some(Action::AppAct(AppAction::SwitchMode(Mode::Normal)))
-            }
         }
         Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
             self.command.clone(),

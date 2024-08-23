@@ -137,6 +137,11 @@ impl App {
         self.explorer_table.focus();
     }
 
+    fn confirm_search_query(&mut self) -> Option<Action> {
+        self.leave_search_mode();
+        Some(Action::ExplorerAct(ExplorerAction::NextSearchResult))
+    }
+
     pub fn handle_self_actions(&mut self, action: AppAction) -> Option<Action> {
         match action {
             AppAction::SwitchMode(mode) => match mode {
@@ -145,6 +150,9 @@ impl App {
                 _ => {}
             },
             AppAction::Quit => self.should_quit = true,
+            AppAction::ConfirmSearchQuery => {
+                return self.confirm_search_query();
+            }
             _ => return None,
         }
         None

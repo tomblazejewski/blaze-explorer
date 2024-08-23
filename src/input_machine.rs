@@ -159,7 +159,7 @@ pub fn search_key_map() -> KeyMapNode {
     );
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
-        Action::TextAct(TextAction::ConfirmSearchQuery),
+        Action::AppAct(AppAction::ConfirmSearchQuery),
     );
     root
 }

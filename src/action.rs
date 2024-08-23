@@ -21,6 +21,7 @@ pub enum AppAction {
     Quit,
     SwitchMode(Mode),
     CancelKeybind,
+    ConfirmSearchQuery,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -28,7 +29,6 @@ pub enum TextAction {
     InsertKey(char),
     EraseText,
     DropKey,
-    ConfirmSearchQuery,
 }
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {
