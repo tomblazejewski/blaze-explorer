@@ -8,7 +8,7 @@ use std::{
 use style::Styled;
 use tracing::info;
 
-use color_eyre::eyre::Result;
+use color_eyre::{eyre::Result, owo_colors::OwoColorize};
 use ratatui::{
     crossterm::event::{KeyCode, KeyEvent},
     prelude::*,
@@ -127,6 +127,7 @@ pub struct ExplorerTable {
     search_phrase: Option<String>,
     selected_ids: Option<Vec<usize>>,
     theme: CustomTheme,
+    focused: bool,
 }
 impl ExplorerTable {
     pub fn new() -> Self {
@@ -138,6 +139,7 @@ impl ExplorerTable {
             search_phrase: None,
             selected_ids: None,
             theme: CustomTheme::default(),
+            focused: true,
         }
     }
 
@@ -295,6 +297,13 @@ impl ExplorerTable {
     pub fn switch_mode(&mut self, mode: Mode) {
         self.mode = mode
     }
+    pub fn focus(&mut self) {
+        self.focused = true
+    }
+
+    pub fn unfocus(&mut self) {
+        self.focused = false
+    }
 }
 
 impl Component for ExplorerTable {
@@ -310,7 +319,8 @@ impl Component for ExplorerTable {
             .into_iter()
             .map(Cell::from)
             .collect::<Row>()
-            .height(1);
+            .height(1)
+            .style(self.theme.header);
         let line_numbers =
             get_line_numbers(self.elements_list.len(), self.state.selected().unwrap() + 1);
         let rows = self
@@ -342,13 +352,15 @@ impl Component for ExplorerTable {
                 .fg(tailwind::WHITE)
             })
             .collect::<Vec<Row>>();
-        let selected_style = Style::default()
-            .add_modifier(Modifier::REVERSED)
-            .fg(tailwind::BLUE.c400);
+        let style = match self.focused {
+            true => self.theme.focused_border,
+            false => self.theme.unfocused_border,
+        };
         let t = Table::new(rows, widths)
-            .style(Style::new().blue())
+            // .style(self.theme.selected_frame)
+            .style(style)
             .block(Block::new().borders(Borders::ALL))
-            .highlight_style(selected_style)
+            .highlight_style(self.theme.selected_row)
             .header(header);
 
         // get paragraph block

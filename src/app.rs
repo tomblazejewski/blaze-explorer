@@ -127,12 +127,14 @@ impl App {
         self.mode = Mode::Search;
         self.explorer_table.switch_mode(Mode::Search);
         self.command_line.focus();
+        self.explorer_table.unfocus();
     }
 
     pub fn leave_search_mode(&mut self) {
         self.mode = Mode::Normal;
         self.explorer_table.switch_mode(Mode::Normal);
         self.command_line.unfocus();
+        self.explorer_table.focus();
     }
 
     pub fn handle_self_actions(&mut self, action: AppAction) -> Option<Action> {
