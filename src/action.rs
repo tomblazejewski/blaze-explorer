@@ -22,6 +22,7 @@ pub enum AppAction {
     SwitchMode(Mode),
     CancelKeybind,
     ConfirmSearchQuery,
+    ConfirmCommand,
 }
 
 #[derive(Clone, Debug, PartialEq)]

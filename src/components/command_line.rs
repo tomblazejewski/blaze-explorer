@@ -26,6 +26,10 @@ impl CommandLine {
         }
     }
 
+    pub fn pop_command(&mut self) -> String {
+        self.command.drain(..).collect()
+    }
+
     pub fn append_char(&mut self, c: char) {
         self.command.push(c);
     }

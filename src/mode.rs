@@ -4,6 +4,7 @@ use std::fmt::Display;
 pub enum Mode {
     Normal,
     Search,
+    Command,
 }
 
 impl Display for Mode {
@@ -11,6 +12,7 @@ impl Display for Mode {
         match self {
             Mode::Normal => write!(f, "Normal"),
             Mode::Search => write!(f, "Search"),
+            Mode::Command => write!(f, "Command"),
         }
     }
 }

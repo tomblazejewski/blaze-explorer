@@ -123,6 +123,14 @@ impl App {
         }
     }
 
+    fn execute_command(&mut self) -> Option<Action> {
+        let command = self.command_line.pop_command();
+        match command.as_str() {
+            "q" => return Some(Action::AppAct(AppAction::Quit)),
+            _ => None,
+        }
+    }
+
     pub fn enter_search_mode(&mut self) {
         self.mode = Mode::Search;
         self.explorer_table.switch_mode(Mode::Search);
@@ -130,30 +138,39 @@ impl App {
         self.explorer_table.unfocus();
     }
 
-    pub fn leave_search_mode(&mut self) {
+    pub fn enter_normal_mode(&mut self) {
         self.mode = Mode::Normal;
         self.explorer_table.switch_mode(Mode::Normal);
         self.command_line.unfocus();
         self.explorer_table.focus();
     }
 
+    pub fn enter_command_mode(&mut self) {
+        self.mode = Mode::Command;
+        self.explorer_table.switch_mode(Mode::Command);
+        self.command_line.focus();
+        self.explorer_table.unfocus();
+    }
     fn confirm_search_query(&mut self) -> Option<Action> {
-        self.leave_search_mode();
+        self.enter_normal_mode();
         Some(Action::ExplorerAct(ExplorerAction::NextSearchResult))
     }
 
     pub fn handle_self_actions(&mut self, action: AppAction) -> Option<Action> {
         match action {
             AppAction::SwitchMode(mode) => match mode {
-                Mode::Normal => self.leave_search_mode(),
+                Mode::Normal => self.enter_normal_mode(),
                 Mode::Search => self.enter_search_mode(),
-                _ => {}
+                Mode::Command => self.enter_command_mode(),
             },
             AppAction::Quit => self.should_quit = true,
             AppAction::ConfirmSearchQuery => {
                 return self.confirm_search_query();
             }
-            _ => return None,
+            AppAction::ConfirmCommand => {
+                return self.execute_command();
+            }
+            _ => {}
         }
         None
     }

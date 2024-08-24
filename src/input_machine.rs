@@ -17,6 +17,7 @@ impl InputMachine {
         let mut keymap_nodes = HashMap::new();
         keymap_nodes.insert(Mode::Normal, default_key_map());
         keymap_nodes.insert(Mode::Search, search_key_map());
+        keymap_nodes.insert(Mode::Command, command_key_map());
 
         InputMachine { keymap_nodes }
     }
@@ -37,7 +38,10 @@ impl InputMachine {
                 KeyCode::Char(ch) => Some(Action::TextAct(TextAction::InsertKey(ch))),
                 _ => None,
             },
-            _ => None,
+            Mode::Command => match last_key.code {
+                KeyCode::Char(ch) => Some(Action::TextAct(TextAction::InsertKey(ch))),
+                _ => None,
+            },
         }
     }
 }
@@ -137,6 +141,10 @@ pub fn default_key_map() -> KeyMapNode {
         Action::AppAct(AppAction::SwitchMode(Mode::Search)),
     );
     root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char(':'), KeyModifiers::SHIFT)],
+        Action::AppAct(AppAction::SwitchMode(Mode::Command)),
+    );
+    root.add_sequence(
         vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::ClearSearchQuery),
     );
@@ -160,6 +168,26 @@ pub fn search_key_map() -> KeyMapNode {
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
         Action::AppAct(AppAction::ConfirmSearchQuery),
+    );
+    root
+}
+pub fn command_key_map() -> KeyMapNode {
+    let mut root = KeyMapNode::new();
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
+        Action::AppAct(AppAction::SwitchMode(Mode::Normal)),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL)],
+        Action::TextAct(TextAction::EraseText),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
+        Action::TextAct(TextAction::DropKey),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
+        Action::AppAct(AppAction::ConfirmCommand),
     );
     root
 }
