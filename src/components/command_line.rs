@@ -16,6 +16,7 @@ use super::Component;
 
 pub struct CommandLine {
     command: String,
+    focused: bool,
 }
 
 /// Struct used to process and display keys in command/search mode
@@ -23,6 +24,7 @@ impl CommandLine {
     pub fn new() -> Self {
         CommandLine {
             command: String::new(),
+            focused: false,
         }
     }
 
@@ -60,9 +62,12 @@ impl CommandLine {
         )))
     }
 
-    pub fn unfocus(&mut self) {}
+    pub fn unfocus(&mut self) {
+        self.focused = false;
+    }
 
     pub fn focus(&mut self) {
+        self.focused = true;
         self.command = String::new();
     }
 }
@@ -71,6 +76,10 @@ impl Component for CommandLine {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let text = Paragraph::new(self.command.clone()).block(Block::new());
         frame.render_widget(text, area);
+        match self.focused {
+            true => frame.set_cursor(area.x + self.command.len() as u16, area.y + 1),
+            false => {}
+        }
         Ok(())
     }
 }

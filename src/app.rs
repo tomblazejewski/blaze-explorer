@@ -126,7 +126,7 @@ impl App {
     fn execute_command(&mut self) -> Option<Action> {
         let command = self.command_line.pop_command();
         match command.as_str() {
-            "q" => return Some(Action::AppAct(AppAction::Quit)),
+            "q" => Some(Action::AppAct(AppAction::Quit)),
             _ => None,
         }
     }
