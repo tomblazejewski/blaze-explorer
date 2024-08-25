@@ -267,6 +267,17 @@ impl ExplorerTable {
         };
         self.selected_ids = element_ids;
     }
+    fn show_in_folder(&mut self, path: PathBuf) {
+        // split the path by the last slash separator to get the folder and filename
+        let folder = path.parent().unwrap();
+        let filename = path.file_name().unwrap();
+        self.update_path(folder.to_path_buf());
+        self.state.select(
+            self.elements_list
+                .iter()
+                .position(|x| x.filename == filename.to_str().unwrap()),
+        );
+    }
     pub fn explorer_action(&mut self, explorer_act: ExplorerAction) -> Option<Action> {
         match explorer_act {
             ExplorerAction::SelectDirectory => {
@@ -290,6 +301,7 @@ impl ExplorerTable {
             ExplorerAction::UpdateSearchQuery(query) => self.update_search_query(query),
             ExplorerAction::ClearSearchQuery => self.search_phrase = None,
             ExplorerAction::NextSearchResult => self.next_search_result(),
+            ExplorerAction::ShowInFolder(path) => self.show_in_folder(path),
         }
         None
     }

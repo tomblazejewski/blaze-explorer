@@ -18,6 +18,7 @@ mod input_machine;
 mod key_handler;
 mod logging;
 mod mode;
+mod telescope;
 mod themes;
 fn main() -> Result<(), Box<dyn Error>> {
     initialize_logging()?;

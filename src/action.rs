@@ -14,6 +14,7 @@ pub enum ExplorerAction {
     UpdateSearchQuery(String),
     ClearSearchQuery,
     NextSearchResult,
+    ShowInFolder(PathBuf),
 }
 
 #[derive(Clone, Debug, PartialEq)]
