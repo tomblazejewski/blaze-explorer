@@ -148,6 +148,14 @@ pub fn default_key_map() -> KeyMapNode {
         vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::ClearSearchQuery),
     );
+    root.add_sequence(
+        vec![
+            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
+        ],
+        Action::AppAct(AppAction::OpenPopup),
+    );
     root
 }
 

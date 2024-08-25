@@ -9,56 +9,63 @@ use tracing::info;
 
 use crate::{
     action::{Action, AppAction, ExplorerAction, TextAction},
+    line_entry::LineEntry,
     mode::Mode,
 };
 
 use super::Component;
 
 pub struct CommandLine {
-    command: String,
+    contents: String,
     focused: bool,
+}
+
+impl LineEntry for CommandLine {
+    fn pop_contents(&mut self) -> String {
+        self.contents.drain(..).collect()
+    }
+
+    fn append_char(&mut self, c: char) {
+        self.contents.push(c);
+    }
+
+    fn clear_contents(&mut self) {
+        self.contents = String::new();
+    }
+
+    fn drop_char(&mut self) {
+        self.contents.pop();
+    }
+
+    fn remove_char(&mut self) -> Option<Action> {
+        if self.contents.is_empty() {
+            Some(Action::AppAct(AppAction::SwitchMode(Mode::Normal)))
+        } else {
+            self.drop_char();
+            Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
+                self.contents.clone(),
+            )))
+        }
+    }
 }
 
 /// Struct used to process and display keys in command/search mode
 impl CommandLine {
     pub fn new() -> Self {
         CommandLine {
-            command: String::new(),
+            contents: String::new(),
             focused: false,
-        }
-    }
-
-    pub fn pop_command(&mut self) -> String {
-        self.command.drain(..).collect()
-    }
-
-    pub fn append_char(&mut self, c: char) {
-        self.command.push(c);
-    }
-
-    pub fn clear_command(&mut self) {
-        self.command = String::new();
-    }
-
-    pub fn remove_char(&mut self) -> Option<Action> {
-        if self.command.is_empty() {
-            Some(Action::AppAct(AppAction::SwitchMode(Mode::Normal)))
-        } else {
-            self.command.pop();
-            Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
-                self.command.clone(),
-            )))
         }
     }
 
     pub fn handle_text_action(&mut self, action: TextAction) -> Option<Action> {
         match action {
             TextAction::InsertKey(c) => self.append_char(c),
-            TextAction::EraseText => self.clear_command(),
+            TextAction::EraseText => self.clear_contents(),
             TextAction::DropKey => return self.remove_char(),
         }
         Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
-            self.command.clone(),
+            self.contents.clone(),
         )))
     }
 
@@ -68,16 +75,16 @@ impl CommandLine {
 
     pub fn focus(&mut self) {
         self.focused = true;
-        self.command = String::new();
+        self.contents = String::new();
     }
 }
 
 impl Component for CommandLine {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let text = Paragraph::new(self.command.clone()).block(Block::new());
+        let text = Paragraph::new(self.contents.clone()).block(Block::new());
         frame.render_widget(text, area);
         match self.focused {
-            true => frame.set_cursor(area.x + self.command.len() as u16, area.y + 1),
+            true => frame.set_cursor(area.x + self.contents.len() as u16, area.y + 1),
             false => {}
         }
         Ok(())

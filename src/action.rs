@@ -24,6 +24,7 @@ pub enum AppAction {
     CancelKeybind,
     ConfirmSearchQuery,
     ConfirmCommand,
+    OpenPopup,
 }
 
 #[derive(Clone, Debug, PartialEq)]

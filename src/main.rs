@@ -16,9 +16,12 @@ mod components;
 mod focus;
 mod input_machine;
 mod key_handler;
+mod line_entry;
 mod logging;
 mod mode;
+mod popup;
 mod telescope;
+mod telescope_query;
 mod themes;
 fn main() -> Result<(), Box<dyn Error>> {
     initialize_logging()?;
