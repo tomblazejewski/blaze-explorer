@@ -1,4 +1,5 @@
 use std::collections::{HashMap, VecDeque};
+use std::fmt::Display;
 use std::io::{stdout, Stdout};
 use std::path;
 
@@ -15,7 +16,6 @@ use ratatui::{
     prelude::CrosstermBackend,
     Terminal,
 };
-use tracing::field::debug;
 use tracing::info;
 
 use crate::action::{AppAction, ExplorerAction};
@@ -24,7 +24,9 @@ use crate::focus::Focus;
 use crate::input_machine::{
     default_key_map, process_keys, InputMachine, KeyMapNode, KeyProcessingResult,
 };
-use crate::key_handler::KeyHandler;
+use crate::line_entry::LineEntry;
+use crate::popup::PopUp;
+use crate::telescope::PopUpComponent;
 use crate::{
     action::Action,
     components::{explorer_table::ExplorerTable, Component},
@@ -43,7 +45,10 @@ fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
     areas.insert("command_line".to_string(), command_bar);
     areas
 }
-pub struct App {
+pub struct App<T>
+where
+    T: PopUpComponent,
+{
     pub terminal: Terminal<CrosstermBackend<Stdout>>,
     pub action_list: VecDeque<Action>,
     pub should_quit: bool,
@@ -53,8 +58,12 @@ pub struct App {
     pub focus: Focus,
     pub current_sequence: Vec<KeyEvent>,
     pub input_machine: InputMachine,
+    pub popup: PopUp<T>,
 }
-impl App {
+impl<T> App<T>
+where
+    T: PopUpComponent + Display,
+{
     pub fn new() -> Result<Self> {
         Ok(Self {
             terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
@@ -66,6 +75,7 @@ impl App {
             focus: Focus::ExplorerTable,
             current_sequence: Vec::new(),
             input_machine: InputMachine::new(),
+            popup: PopUp::None,
         })
     }
 
@@ -104,6 +114,15 @@ impl App {
     }
 
     pub fn handle_key_event(&mut self, key_event: KeyEvent) {
+        match &mut self.popup {
+            PopUp::PopUp(popup) => {
+                popup.handle_key_event(key_event);
+                popup.handle_actions();
+                return;
+            }
+            PopUp::None => {}
+        }
+
         let keymap_result =
             self.input_machine
                 .process_keys(&self.mode, &mut self.current_sequence, key_event);

@@ -56,19 +56,14 @@ where
     pub table_state: TableState,
 }
 
-impl<T> Telescope<T>
-where
-    T: TelescopeSearch + Display,
-{
-    pub fn new(search_context: AppContext) -> Self {
-        Self {
-            query: TelescopeQuery::new(),
-            search: T::new(search_context),
-            table_state: TableState::default().with_selected(0),
-        }
-    }
+impl<T> Telescope<T> where T: TelescopeSearch + Display {}
+
+pub trait PopUpComponent {
+    fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
+    fn handle_action(&mut self, action: Action) -> Option<Action>;
+    fn new(search_context: AppContext) -> Self;
 }
-impl<T> Component for Telescope<T>
+impl<T> PopUpComponent for Telescope<T>
 where
     T: TelescopeSearch + Display,
 {
@@ -117,5 +112,20 @@ where
         }
 
         Ok(())
+    }
+
+    fn handle_action(&mut self, action: Action) -> Option<Action> {
+        match action {
+            _ => {}
+        }
+        None
+    }
+
+    fn new(search_context: AppContext) -> Self {
+        Self {
+            query: TelescopeQuery::new(),
+            search: T::new(search_context),
+            table_state: TableState::default().with_selected(0),
+        }
     }
 }
