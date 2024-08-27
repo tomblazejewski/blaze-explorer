@@ -1,10 +1,10 @@
 use std::collections::VecDeque;
 
-use ratatui::crossterm::event::KeyEvent;
+use color_eyre::eyre::Result;
+use ratatui::{crossterm::event::KeyEvent, layout::Rect, Frame};
 
 use crate::{
     action::Action,
-    components::Component,
     input_machine::{InputMachine, KeyProcessingResult},
     mode::Mode,
     telescope::PopUpComponent,
@@ -34,6 +34,17 @@ where
             PopUp::None => {}
             PopUp::PopUp(popup_window) => popup_window.handle_actions(),
         }
+    }
+
+    pub(crate) fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>
+    where
+        T: PopUpComponent + std::fmt::Display,
+    {
+        match self {
+            PopUp::None => {}
+            PopUp::PopUp(popup_window) => popup_window.component.draw(frame, area)?,
+        }
+        Ok(())
     }
 }
 
@@ -87,5 +98,13 @@ where
                 self.action_list.push_back(new_action);
             }
         }
+    }
+
+    pub(crate) fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>
+    where
+        T: PopUpComponent + std::fmt::Display,
+    {
+        self.component.draw(frame, area)?;
+        Ok(())
     }
 }

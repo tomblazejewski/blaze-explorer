@@ -215,6 +215,7 @@ where
                 .draw(frame, *areas.get("explorer_table").unwrap());
             self.command_line
                 .draw(frame, *areas.get("command_line").unwrap());
+            self.popup.draw(frame, *areas.get("command_line").unwrap());
         })?;
         Ok(())
     }
