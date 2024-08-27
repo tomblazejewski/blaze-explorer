@@ -13,15 +13,15 @@ use crate::action::{Action, ExplorerAction};
 
 use super::{AppContext, TelescopeResult, TelescopeSearch};
 
-struct SearchFileshereSearch {
+pub struct SearchFileshereSearch {
     absolute_directory: String,
     results: Vec<SearchFilesHereResult>,
 }
 
 impl SearchFileshereSearch {
-    pub fn new(absolute_directory: String) -> Self {
+    pub fn new(ctx: AppContext) -> Self {
         Self {
-            absolute_directory,
+            absolute_directory: ctx.current_directory.display().to_string(),
             results: Vec::new(),
         }
     }
@@ -47,13 +47,6 @@ impl TelescopeSearch for SearchFileshereSearch {
         )))
     }
 
-    fn new(ctx: AppContext) -> Self {
-        Self {
-            absolute_directory: ctx.current_directory.display().to_string(),
-            results: Vec::new(),
-        }
-    }
-
     fn get_results_list(&self) -> Vec<String> {
         self.results
             .iter()
@@ -61,16 +54,15 @@ impl TelescopeSearch for SearchFileshereSearch {
             .collect::<Vec<String>>()
     }
 
+    fn display(&self) -> String {
+        "Search in files here".to_string()
+    }
+
     fn preview_result(&self, id: usize, frame: &mut Frame, area: Rect) -> Result<()> {
         self.results[id].preview(frame, area)
     }
 }
 
-impl Display for SearchFileshereSearch {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Search in files here")
-    }
-}
 struct SearchFilesHereResult {
     path: String,
 }

@@ -23,6 +23,7 @@ mod popup;
 mod telescope;
 mod telescope_query;
 mod themes;
+mod tools;
 fn main() -> Result<(), Box<dyn Error>> {
     initialize_logging()?;
     stdout().execute(EnterAlternateScreen)?;

@@ -1,27 +1,24 @@
 pub mod sfs_telescope;
-use std::{
-    fmt::Display,
-    fs::read_to_string,
-    path::{Path, PathBuf},
-};
+use std::{fmt::Display, path::PathBuf};
 
 use color_eyre::eyre::Result;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
-    text::{Line, Text},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState},
     Frame,
 };
-use rust_search::SearchBuilder;
+use sfs_telescope::SearchFileshereSearch;
 
-use crate::{
-    action::{Action, ExplorerAction},
-    components::Component,
-    telescope_query::TelescopeQuery,
-};
+use crate::{action::Action, telescope_query::TelescopeQuery};
 
 pub struct AppContext {
     current_directory: PathBuf,
+}
+
+impl AppContext {
+    pub fn new(current_directory: PathBuf) -> Self {
+        Self { current_directory }
+    }
 }
 
 pub trait TelescopeSearch {
@@ -33,10 +30,9 @@ pub trait TelescopeSearch {
     /// Determine what happens when the user confirms a result
     fn confirm_result(&mut self, id: usize) -> Option<Action>;
 
-    //Create a telescope search instance from a collection of initial params
-    fn new(ctx: AppContext) -> Self;
-
     fn preview_result(&self, id: usize, frame: &mut Frame, area: Rect) -> Result<()>;
+
+    fn display(&self) -> String;
 }
 
 pub trait TelescopeResult {
@@ -47,26 +43,20 @@ pub trait TelescopeResult {
 
     fn from<S: ToString + Display>(s: S) -> Self;
 }
-pub struct Telescope<T>
-where
-    T: TelescopeSearch,
-{
+pub struct Telescope {
     pub query: TelescopeQuery,
-    pub search: T,
+    pub search: Box<dyn TelescopeSearch>,
     pub table_state: TableState,
 }
 
-impl<T> Telescope<T> where T: TelescopeSearch + Display {}
+impl Telescope {}
 
 pub trait PopUpComponent {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
     fn handle_action(&mut self, action: Action) -> Option<Action>;
     fn new(search_context: AppContext) -> Self;
 }
-impl<T> PopUpComponent for Telescope<T>
-where
-    T: TelescopeSearch + Display,
-{
+impl PopUpComponent for Telescope {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         //split the area vertically 60/40
         let chunks = Layout::default()
@@ -84,7 +74,7 @@ where
         let results_block = Block::default().borders(Borders::ALL).title("Results");
         let query_block = Block::default()
             .borders(Borders::ALL)
-            .title(format!("{} Search", self.search));
+            .title(format!("{} Search", self.search.display()));
 
         // this type is responsible for rendering the query block - this is just a paragraph with
         // the query
@@ -94,10 +84,10 @@ where
         frame.render_widget(query_paragraph, query_area);
 
         //create a table from the vector of results
-        self.search.search(self.query.contents.clone());
 
-        let results = self.search.get_results_list();
-        let rows = results
+        let rows = (*self.search)
+            .get_results_list()
+            .clone()
             .into_iter()
             .map(|r| Row::new([Cell::from(r)]))
             .collect::<Vec<Row>>();
@@ -124,8 +114,8 @@ where
     fn new(search_context: AppContext) -> Self {
         Self {
             query: TelescopeQuery::new(),
-            search: T::new(search_context),
-            table_state: TableState::default().with_selected(0),
+            search: Box::new(SearchFileshereSearch::new(search_context)),
+            table_state: TableState::default(),
         }
     }
 }

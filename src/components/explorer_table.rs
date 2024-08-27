@@ -316,6 +316,10 @@ impl ExplorerTable {
     pub fn unfocus(&mut self) {
         self.focused = false
     }
+
+    pub fn get_current_path(&self) -> PathBuf {
+        self.current_path.clone()
+    }
 }
 
 impl Component for ExplorerTable {

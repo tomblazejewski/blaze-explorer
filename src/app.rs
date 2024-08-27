@@ -1,5 +1,4 @@
 use std::collections::{HashMap, VecDeque};
-use std::fmt::Display;
 use std::io::{stdout, Stdout};
 use std::path;
 
@@ -21,12 +20,11 @@ use tracing::info;
 use crate::action::{AppAction, ExplorerAction};
 use crate::components::command_line::CommandLine;
 use crate::focus::Focus;
-use crate::input_machine::{
-    default_key_map, process_keys, InputMachine, KeyMapNode, KeyProcessingResult,
-};
+use crate::input_machine::{InputMachine, KeyProcessingResult};
 use crate::line_entry::LineEntry;
-use crate::popup::PopUp;
-use crate::telescope::PopUpComponent;
+use crate::popup::{PopUp, PopUpWindow};
+use crate::telescope::AppContext;
+use crate::tools::center_rect;
 use crate::{
     action::Action,
     components::{explorer_table::ExplorerTable, Component},
@@ -43,12 +41,16 @@ fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
     let mut areas = HashMap::new();
     areas.insert("explorer_table".to_string(), main_box[0]);
     areas.insert("command_line".to_string(), command_bar);
+
+    let popup_area = center_rect(
+        frame.size(),
+        Constraint::Percentage(80),
+        Constraint::Percentage(80),
+    );
+    areas.insert("popup".to_string(), popup_area);
     areas
 }
-pub struct App<T>
-where
-    T: PopUpComponent,
-{
+pub struct App {
     pub terminal: Terminal<CrosstermBackend<Stdout>>,
     pub action_list: VecDeque<Action>,
     pub should_quit: bool,
@@ -58,12 +60,9 @@ where
     pub focus: Focus,
     pub current_sequence: Vec<KeyEvent>,
     pub input_machine: InputMachine,
-    pub popup: PopUp<T>,
+    pub popup: PopUp,
 }
-impl<T> App<T>
-where
-    T: PopUpComponent + Display,
-{
+impl App {
     pub fn new() -> Result<Self> {
         Ok(Self {
             terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
@@ -115,7 +114,7 @@ where
 
     pub fn handle_key_event(&mut self, key_event: KeyEvent) {
         match &mut self.popup {
-            PopUp::PopUp(popup) => {
+            PopUp::TelescopePopUp(popup) => {
                 popup.handle_key_event(key_event);
                 popup.handle_actions();
                 return;
@@ -189,7 +188,13 @@ where
             AppAction::ConfirmCommand => {
                 return self.execute_command();
             }
-            _ => {}
+            AppAction::OpenPopup => {
+                let ctx = self.get_app_context();
+                self.popup = PopUp::TelescopePopUp(PopUpWindow::new(ctx));
+            }
+            AppAction::CancelKeybind => {
+                self.popup = PopUp::None;
+            }
         }
         None
     }
@@ -215,8 +220,12 @@ where
                 .draw(frame, *areas.get("explorer_table").unwrap());
             self.command_line
                 .draw(frame, *areas.get("command_line").unwrap());
-            self.popup.draw(frame, *areas.get("command_line").unwrap());
+            self.popup.draw(frame, *areas.get("popup").unwrap());
         })?;
         Ok(())
+    }
+
+    fn get_app_context(&self) -> AppContext {
+        AppContext::new(self.explorer_table.get_current_path().clone())
     }
 }

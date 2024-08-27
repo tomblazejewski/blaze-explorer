@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use tracing::info;
 
 use crate::{
     action::{Action, AppAction, ExplorerAction, TextAction},
@@ -201,7 +200,6 @@ pub fn command_key_map() -> KeyMapNode {
 }
 #[cfg(test)]
 mod tests {
-    use crate::action::TextAction;
 
     use super::*;
 
