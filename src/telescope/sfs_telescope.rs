@@ -58,8 +58,15 @@ impl TelescopeSearch for SearchFileshereSearch {
         "Search in files here".to_string()
     }
 
-    fn preview_result(&self, id: usize, frame: &mut Frame, area: Rect) -> Result<()> {
-        self.results[id].preview(frame, area)
+    fn preview_result(&self, some_id: Option<usize>, frame: &mut Frame, area: Rect) -> Result<()> {
+        let preview_block = Block::default().borders(Borders::ALL).title("Preview");
+        match some_id {
+            Some(id) => return self.results[id].preview(frame, area, preview_block),
+            None => {
+                frame.render_widget(Paragraph::default().block(preview_block), area);
+            }
+        };
+        Ok(())
     }
 }
 
@@ -78,10 +85,9 @@ impl TelescopeResult for SearchFilesHereResult {
         self.path.clone()
     }
 
-    fn preview(&self, frame: &mut Frame, area: Rect) -> Result<()> {
+    fn preview(&self, frame: &mut Frame, area: Rect, preview_block: Block) -> Result<()> {
         //Render a preview of the contents of the file
-        let preview_block = Block::default().borders(Borders::ALL).title("Preview");
-        let contents = read_to_string(&self.path).unwrap();
+        let contents = read_to_string(&self.path).unwrap_or("Could not read the file".to_string());
         let lines = contents.lines().map(Line::from).collect::<Vec<Line>>();
         let paragraph = Paragraph::new(Text::from(lines)).block(preview_block);
 

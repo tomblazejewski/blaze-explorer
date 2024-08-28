@@ -1,7 +1,8 @@
 use std::collections::VecDeque;
 
 use color_eyre::eyre::Result;
-use ratatui::{crossterm::event::KeyEvent, layout::Rect, Frame};
+use ratatui::{crossterm::event::KeyEvent, layout::Rect, widgets::Clear, Frame};
+use tracing::info;
 
 use crate::{
     action::Action,
@@ -59,7 +60,8 @@ impl PopUpWindow {
     pub fn handle_key_event(&mut self, key_event: KeyEvent) {
         let keymap_result =
             self.input_machine
-                .process_keys(&Mode::Normal, &mut self.current_sequence, key_event);
+                .process_keys(&Mode::Search, &mut self.current_sequence, key_event);
+        info!("Telescope Keymap result: {:?}", keymap_result);
         match keymap_result {
             KeyProcessingResult::Complete(action) => {
                 self.action_list.push_back(action);
@@ -67,8 +69,9 @@ impl PopUpWindow {
             KeyProcessingResult::Invalid => {
                 if let Some(action) = self
                     .input_machine
-                    .get_default_action(&Mode::Normal, key_event)
+                    .get_default_action(&Mode::Search, key_event)
                 {
+                    info!("Default Action: {:?}", action);
                     self.action_list.push_back(action);
                 }
             }
@@ -86,6 +89,7 @@ impl PopUpWindow {
     }
 
     pub(crate) fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
+        frame.render_widget(Clear, area);
         self.telescope_backend.draw(frame, area)?;
         Ok(())
     }
