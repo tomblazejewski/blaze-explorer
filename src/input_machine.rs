@@ -1,65 +1,37 @@
+// Defines the skeleton of an input machine that can be used by an appropriate app - be it the main
+// app or the telescope backend
 use std::collections::HashMap;
 
-use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use ratatui::crossterm::event::KeyEvent;
 
-use crate::{
-    action::{Action, AppAction, ExplorerAction, TextAction},
-    mode::Mode,
-};
+use crate::mode::Mode;
 
-pub struct InputMachine {
-    keymap_nodes: HashMap<Mode, KeyMapNode>,
-}
-
-impl InputMachine {
-    pub fn new() -> Self {
-        let mut keymap_nodes = HashMap::new();
-        keymap_nodes.insert(Mode::Normal, default_key_map());
-        keymap_nodes.insert(Mode::Search, search_key_map());
-        keymap_nodes.insert(Mode::Command, command_key_map());
-
-        InputMachine { keymap_nodes }
-    }
-    pub fn process_keys(
+pub trait InputMachine<T> {
+    fn process_keys(
         &mut self,
         mode: &Mode,
         current_sequence: &mut Vec<KeyEvent>,
         input_key: KeyEvent,
-    ) -> KeyProcessingResult {
-        let keymap = self.keymap_nodes.get(mode).unwrap();
-        process_keys(keymap, current_sequence, input_key)
-    }
+    ) -> KeyProcessingResult<T>;
 
-    pub fn get_default_action(&self, mode: &Mode, last_key: KeyEvent) -> Option<Action> {
-        match mode {
-            Mode::Normal => None,
-            Mode::Search => match last_key.code {
-                KeyCode::Char(ch) => Some(Action::TextAct(TextAction::InsertKey(ch))),
-                _ => None,
-            },
-            Mode::Command => match last_key.code {
-                KeyCode::Char(ch) => Some(Action::TextAct(TextAction::InsertKey(ch))),
-                _ => None,
-            },
-        }
-    }
+    fn get_default_action(&self, mode: &Mode, last_key: KeyEvent) -> Option<T>;
 }
 
 #[derive(Debug)]
-pub struct KeyMapNode {
-    action: Option<Action>,
-    children: HashMap<KeyEvent, KeyMapNode>,
+pub struct KeyMapNode<T> {
+    pub action: Option<T>,
+    children: HashMap<KeyEvent, KeyMapNode<T>>,
 }
 
-impl KeyMapNode {
-    fn new() -> Self {
+impl<T> KeyMapNode<T> {
+    pub fn new() -> Self {
         KeyMapNode {
             action: None,
             children: HashMap::new(),
         }
     }
 
-    fn add_sequence(&mut self, sequence: Vec<KeyEvent>, action: Action) {
+    pub fn add_sequence(&mut self, sequence: Vec<KeyEvent>, action: T) {
         let mut current_node = self;
         for key in sequence {
             current_node = current_node
@@ -70,7 +42,7 @@ impl KeyMapNode {
         current_node.action = Some(action);
     }
 
-    fn get_node(&self, sequence: &[KeyEvent]) -> Option<&KeyMapNode> {
+    pub fn get_node(&self, sequence: &[KeyEvent]) -> Option<&KeyMapNode<T>> {
         let mut current_node = self;
         for key in sequence {
             match current_node.children.get(key) {
@@ -82,17 +54,17 @@ impl KeyMapNode {
     }
 }
 #[derive(Debug, PartialEq)]
-pub enum KeyProcessingResult {
-    Complete(Action), // Sequence is complete and valid
-    Incomplete,       // Sequence is valid but not yet complete
-    Invalid,          // Sequence is invalid
+pub enum KeyProcessingResult<T> {
+    Complete(T), // Sequence is complete and valid
+    Incomplete,  // Sequence is valid but not yet complete
+    Invalid,     // Sequence is invalid
 }
 
-pub fn process_keys(
-    keymap: &KeyMapNode,
+pub fn process_keys<T: Clone>(
+    keymap: &KeyMapNode<T>,
     current_sequence: &mut Vec<KeyEvent>,
     input_key: KeyEvent,
-) -> KeyProcessingResult {
+) -> KeyProcessingResult<T> {
     current_sequence.push(input_key.clone());
     match keymap.get_node(current_sequence) {
         Some(node) => match &node.action {
@@ -109,97 +81,12 @@ pub fn process_keys(
     }
 }
 
-pub fn default_key_map() -> KeyMapNode {
-    let mut root = KeyMapNode::new();
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE)],
-        Action::AppAct(AppAction::Quit),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Char('n'), KeyModifiers::NONE)],
-        Action::ExplorerAct(ExplorerAction::NextSearchResult),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE)],
-        Action::ExplorerAct(ExplorerAction::SelectUp),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)],
-        Action::ExplorerAct(ExplorerAction::SelectDown),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
-        Action::ExplorerAct(ExplorerAction::ParentDirectory),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
-        Action::ExplorerAct(ExplorerAction::SelectDirectory),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE)],
-        Action::AppAct(AppAction::SwitchMode(Mode::Search)),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Char(':'), KeyModifiers::SHIFT)],
-        Action::AppAct(AppAction::SwitchMode(Mode::Command)),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
-        Action::ExplorerAct(ExplorerAction::ClearSearchQuery),
-    );
-    root.add_sequence(
-        vec![
-            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
-            KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE),
-            KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
-        ],
-        Action::AppAct(AppAction::OpenPopup),
-    );
-    root
-}
-
-pub fn search_key_map() -> KeyMapNode {
-    let mut root = KeyMapNode::new();
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
-        Action::AppAct(AppAction::SwitchMode(Mode::Normal)),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL)],
-        Action::TextAct(TextAction::EraseText),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
-        Action::TextAct(TextAction::DropKey),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
-        Action::AppAct(AppAction::ConfirmSearchQuery),
-    );
-    root
-}
-pub fn command_key_map() -> KeyMapNode {
-    let mut root = KeyMapNode::new();
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
-        Action::AppAct(AppAction::SwitchMode(Mode::Normal)),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL)],
-        Action::TextAct(TextAction::EraseText),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
-        Action::TextAct(TextAction::DropKey),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
-        Action::AppAct(AppAction::ConfirmCommand),
-    );
-    root
-}
 #[cfg(test)]
 mod tests {
+
+    use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+
+    use crate::action::{Action, AppAction, ExplorerAction};
 
     use super::*;
 

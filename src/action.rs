@@ -40,3 +40,12 @@ pub enum Action {
     TextAct(TextAction),
     Noop,
 }
+
+pub enum TelescopeAction {
+    ConfirmResult,
+    PushSearchChar,
+    DropSearchChar,
+    NextResult,
+    PreviousResult,
+    Quit,
+}

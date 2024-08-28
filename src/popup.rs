@@ -4,9 +4,11 @@ use color_eyre::eyre::Result;
 use ratatui::{crossterm::event::KeyEvent, layout::Rect, widgets::Clear, Frame};
 use tracing::info;
 
+use crate::input_machine::AppInputMachine;
 use crate::{
     action::Action,
-    input_machine::{InputMachine, KeyProcessingResult},
+    app_input_machine::AppInputMachine,
+    input_machine::KeyProcessingResult,
     mode::Mode,
     telescope::{AppContext, PopUpComponent, Telescope},
 };
@@ -41,7 +43,7 @@ impl PopUp {
 }
 
 pub struct PopUpWindow {
-    input_machine: InputMachine,
+    input_machine: AppInputMachine<Action>,
     telescope_backend: Telescope,
     current_sequence: Vec<KeyEvent>,
     action_list: VecDeque<Action>,
@@ -50,7 +52,7 @@ pub struct PopUpWindow {
 impl PopUpWindow {
     pub fn new(ctx: AppContext) -> Self {
         PopUpWindow {
-            input_machine: InputMachine::new(),
+            input_machine: AppInputMachine::new(),
             telescope_backend: Telescope::new(ctx),
             current_sequence: Vec::new(),
             action_list: VecDeque::new(),

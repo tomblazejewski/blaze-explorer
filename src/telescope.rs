@@ -112,9 +112,10 @@ impl PopUpComponent for Telescope {
             .map(|r| Row::new([Cell::from(r)]))
             .collect::<Vec<Row>>();
 
-        // select if not selected and there are some results
-        if self.table_state.selected().is_none() && !rows.is_empty() {
-            self.table_state.select(Some(0));
+        match (self.table_state.selected(), rows.is_empty()) {
+            (None, false) => self.table_state.select(Some(0)),
+            (Some(_), true) => self.table_state.select(None),
+            _ => {}
         }
         let widths = [Constraint::Percentage(100)];
         let table = Table::new(rows, widths).block(results_block);

@@ -18,6 +18,7 @@ use ratatui::{
 use tracing::info;
 
 use crate::action::{AppAction, ExplorerAction};
+use crate::app_input_machine::AppInputMachine;
 use crate::components::command_line::CommandLine;
 use crate::focus::Focus;
 use crate::input_machine::{InputMachine, KeyProcessingResult};
@@ -59,7 +60,7 @@ pub struct App {
     pub command_line: CommandLine,
     pub focus: Focus,
     pub current_sequence: Vec<KeyEvent>,
-    pub input_machine: InputMachine,
+    pub input_machine: AppInputMachine<Action>,
     pub popup: PopUp,
 }
 impl App {
@@ -73,7 +74,7 @@ impl App {
             command_line: CommandLine::new(),
             focus: Focus::ExplorerTable,
             current_sequence: Vec::new(),
-            input_machine: InputMachine::new(),
+            input_machine: AppInputMachine::new(),
             popup: PopUp::None,
         })
     }
