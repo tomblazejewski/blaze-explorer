@@ -97,7 +97,6 @@ impl App {
             if let event::Event::Key(key) = event::read()? {
                 //need to push the key to get the
                 //keytracker to work?
-                info!("Pushed {:?}", key);
                 if key.kind == KeyEventKind::Press {
                     match &mut self.popup {
                         PopUp::TelescopePopUp(popup) => {

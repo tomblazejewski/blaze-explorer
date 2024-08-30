@@ -31,8 +31,8 @@ impl TelescopeSearch for SearchFileshereSearch {
         self.results = SearchBuilder::default()
             .location(self.absolute_directory.clone())
             .search_input(query)
-            .limit(10) // results to return
-            .strict()
+            .limit(1000) // results to return
+            // .strict()
             .ignore_case()
             .hidden()
             .build()
