@@ -198,6 +198,10 @@ impl App {
             AppAction::CancelKeybind => {
                 self.popup = PopUp::None;
             }
+            AppAction::ShowInFolder(path) => {
+                self.popup = PopUp::None;
+                return Some(Action::ExplorerAct(ExplorerAction::ShowInFolder(path)));
+            }
         }
         None
     }
@@ -217,6 +221,7 @@ impl App {
                 },
                 _ => None,
             } {
+                info!("Resulting Action: {:?}", resulting_action);
                 self.action_list.push_back(resulting_action);
             }
         }

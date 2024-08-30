@@ -14,7 +14,7 @@ use ratatui::{
 };
 use rust_search::SearchBuilder;
 
-use crate::action::{Action, ExplorerAction, TelescopeAction};
+use crate::action::{Action, AppAction, ExplorerAction, TelescopeAction};
 
 use super::{AppContext, TelescopeResult, TelescopeSearch};
 
@@ -52,7 +52,7 @@ impl TelescopeSearch for SearchFileshereSearch {
     fn confirm_result(&mut self, id: usize) -> Option<Action> {
         let result = &self.results[id];
         let path = Path::new(&result.path).to_path_buf();
-        Some(Action::ExplorerAct(ExplorerAction::ShowInFolder(path)))
+        Some(Action::AppAct(AppAction::ShowInFolder(path)))
     }
 
     fn get_results_list(&self) -> Vec<String> {

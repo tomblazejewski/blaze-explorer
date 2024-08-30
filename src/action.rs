@@ -25,6 +25,7 @@ pub enum AppAction {
     ConfirmSearchQuery,
     ConfirmCommand,
     OpenPopup,
+    ShowInFolder(PathBuf),
 }
 
 #[derive(Clone, Debug, PartialEq)]

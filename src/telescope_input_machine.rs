@@ -86,7 +86,7 @@ pub fn default_key_map() -> KeyMapNode<Action> {
     );
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
-        Action::TelescopeAct(TelescopeAction::Quit),
+        Action::TelescopeAct(TelescopeAction::ConfirmResult),
     );
     root
 }
