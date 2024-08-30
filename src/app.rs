@@ -99,8 +99,22 @@ impl App {
                 //keytracker to work?
                 info!("Pushed {:?}", key);
                 if key.kind == KeyEventKind::Press {
-                    self.handle_key_event(key);
+                    match &mut self.popup {
+                        PopUp::TelescopePopUp(popup) => {
+                            popup.handle_key_event(key);
+                            popup.handle_actions();
+                        }
+                        PopUp::None => {
+                            self.handle_key_event(key);
+                        }
+                    }
                 };
+                if let PopUp::TelescopePopUp(popup) = &self.popup {
+                    if popup.should_quit {
+                        info!("Should quit");
+                        self.popup = PopUp::None;
+                    }
+                }
                 if self.should_quit {
                     break;
                 }
@@ -114,15 +128,6 @@ impl App {
     }
 
     pub fn handle_key_event(&mut self, key_event: KeyEvent) {
-        match &mut self.popup {
-            PopUp::TelescopePopUp(popup) => {
-                popup.handle_key_event(key_event);
-                popup.handle_actions();
-                return;
-            }
-            PopUp::None => {}
-        }
-
         let keymap_result =
             self.input_machine
                 .process_keys(&self.mode, &mut self.current_sequence, key_event);

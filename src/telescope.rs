@@ -10,7 +10,7 @@ use ratatui::{
 use sfs_telescope::SearchFileshereSearch;
 
 use crate::{
-    action::{Action, AppAction, ExplorerAction},
+    action::{Action, AppAction, ExplorerAction, TelescopeAction},
     telescope_query::TelescopeQuery,
 };
 
@@ -31,11 +31,13 @@ pub trait TelescopeSearch {
     fn get_results_list(&self) -> Vec<String>;
 
     /// Determine what happens when the user confirms a result
-    fn confirm_result(&mut self, id: usize) -> Option<Action>;
+    fn confirm_result(&mut self, id: usize) -> Option<TelescopeAction>;
 
     fn preview_result(&self, id: Option<usize>, frame: &mut Frame, area: Rect) -> Result<()>;
 
     fn display(&self) -> String;
+
+    fn n_results(&self) -> usize;
 }
 
 pub trait TelescopeResult {
@@ -53,30 +55,48 @@ pub struct Telescope {
 }
 
 impl Telescope {
-    fn handle_self_actions(&mut self, action: Action) -> Option<Action> {
-        match action {
-            Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(query)) => {
-                self.search.search(query)
-            }
-            Action::AppAct(AppAction::ConfirmSearchQuery) => return self.confirm_result(),
-            _ => {}
-        }
-        None
-    }
-
-    fn confirm_result(&mut self) -> Option<Action> {
+    fn confirm_result(&mut self) -> Option<TelescopeAction> {
         if let Some(id) = self.table_state.selected() {
             return self.search.confirm_result(id);
         }
         None
     }
+
+    fn next_result(&mut self) {
+        let n_results = self.search.n_results();
+        let i = match self.table_state.selected() {
+            Some(i) => {
+                if i == n_results - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.table_state.select(Some(i));
+    }
+    fn previous_result(&mut self) {
+        let n_results = self.search.n_results();
+        let i = match self.table_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    n_results - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.table_state.select(Some(i));
+    }
 }
-pub trait PopUpComponent {
+pub trait PopUpComponent<T> {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
-    fn handle_action(&mut self, action: Action) -> Option<Action>;
+    fn handle_action(&mut self, action: T) -> Option<T>;
     fn new(search_context: AppContext) -> Self;
 }
-impl PopUpComponent for Telescope {
+impl PopUpComponent<TelescopeAction> for Telescope {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         //split the area vertically 60/40
         let chunks = Layout::default()
@@ -128,11 +148,17 @@ impl PopUpComponent for Telescope {
         Ok(())
     }
 
-    fn handle_action(&mut self, action: Action) -> Option<Action> {
+    fn handle_action(&mut self, action: TelescopeAction) -> Option<TelescopeAction> {
         match action {
-            Action::TextAct(action) => self.query.handle_text_action(action),
-            action => self.handle_self_actions(action),
+            TelescopeAction::ConfirmResult => return self.confirm_result(),
+            TelescopeAction::NextResult => {
+                self.next_result();
+            }
+            TelescopeAction::PreviousResult => self.previous_result(),
+            TelescopeAction::UpdateSearchQuery(query) => self.search.search(query),
+            action => return self.query.handle_text_action(action),
         }
+        None
     }
 
     fn new(search_context: AppContext) -> Self {

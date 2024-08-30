@@ -20,7 +20,7 @@ pub struct CommandLine {
     focused: bool,
 }
 
-impl LineEntry for CommandLine {
+impl LineEntry<Action> for CommandLine {
     fn pop_contents(&mut self) -> String {
         self.contents.drain(..).collect()
     }

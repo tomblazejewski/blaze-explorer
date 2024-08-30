@@ -41,11 +41,14 @@ pub enum Action {
     Noop,
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum TelescopeAction {
     ConfirmResult,
-    PushSearchChar,
+    PushSearchChar(char),
     DropSearchChar,
     NextResult,
     PreviousResult,
     Quit,
+    EraseText,
+    UpdateSearchQuery(String),
 }

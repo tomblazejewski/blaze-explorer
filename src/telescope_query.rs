@@ -1,5 +1,5 @@
 use crate::{
-    action::{Action, ExplorerAction, TextAction},
+    action::{Action, ExplorerAction, TelescopeAction, TextAction},
     line_entry::LineEntry,
 };
 
@@ -7,7 +7,7 @@ pub struct TelescopeQuery {
     pub contents: String,
 }
 
-impl LineEntry for TelescopeQuery {
+impl LineEntry<TelescopeAction> for TelescopeQuery {
     fn pop_contents(&mut self) -> String {
         self.contents.drain(..).collect()
     }
@@ -24,11 +24,9 @@ impl LineEntry for TelescopeQuery {
         self.contents.pop();
     }
 
-    fn remove_char(&mut self) -> Option<Action> {
+    fn remove_char(&mut self) -> Option<TelescopeAction> {
         self.contents.pop();
-        Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
-            self.contents.clone(),
-        )))
+        Some(TelescopeAction::UpdateSearchQuery(self.contents.clone()))
     }
 }
 
@@ -38,14 +36,13 @@ impl TelescopeQuery {
             contents: String::new(),
         }
     }
-    pub fn handle_text_action(&mut self, action: TextAction) -> Option<Action> {
+    pub fn handle_text_action(&mut self, action: TelescopeAction) -> Option<TelescopeAction> {
         match action {
-            TextAction::InsertKey(c) => self.append_char(c),
-            TextAction::EraseText => self.clear_contents(),
-            TextAction::DropKey => return self.remove_char(),
+            TelescopeAction::PushSearchChar(c) => self.append_char(c),
+            TelescopeAction::EraseText => self.clear_contents(),
+            TelescopeAction::DropSearchChar => return self.remove_char(),
+            _ => {}
         }
-        Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
-            self.contents.clone(),
-        )))
+        Some(TelescopeAction::UpdateSearchQuery(self.contents.clone()))
     }
 }

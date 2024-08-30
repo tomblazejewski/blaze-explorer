@@ -22,6 +22,7 @@ mod logging;
 mod mode;
 mod popup;
 mod telescope;
+mod telescope_input_machine;
 mod telescope_query;
 mod themes;
 mod tools;

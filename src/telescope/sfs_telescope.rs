@@ -9,7 +9,7 @@ use ratatui::{
 };
 use rust_search::SearchBuilder;
 
-use crate::action::{Action, ExplorerAction};
+use crate::action::{Action, ExplorerAction, TelescopeAction};
 
 use super::{AppContext, TelescopeResult, TelescopeSearch};
 
@@ -40,11 +40,9 @@ impl TelescopeSearch for SearchFileshereSearch {
             .collect::<Vec<SearchFilesHereResult>>();
     }
 
-    fn confirm_result(&mut self, id: usize) -> Option<Action> {
+    fn confirm_result(&mut self, id: usize) -> Option<TelescopeAction> {
         let result = &self.results[id];
-        Some(Action::ExplorerAct(ExplorerAction::ShowInFolder(
-            Path::new(&result.path).to_path_buf(),
-        )))
+        None
     }
 
     fn get_results_list(&self) -> Vec<String> {
@@ -67,6 +65,10 @@ impl TelescopeSearch for SearchFileshereSearch {
             }
         };
         Ok(())
+    }
+
+    fn n_results(&self) -> usize {
+        self.results.len()
     }
 }
 
