@@ -4,17 +4,17 @@ use std::collections::HashMap;
 
 use ratatui::crossterm::event::KeyEvent;
 
-use crate::mode::Mode;
+use crate::{action::Action, mode::Mode};
 
-pub trait InputMachine<T> {
+pub trait InputMachine {
     fn process_keys(
         &mut self,
         mode: &Mode,
         current_sequence: &mut Vec<KeyEvent>,
         input_key: KeyEvent,
-    ) -> KeyProcessingResult<T>;
+    ) -> KeyProcessingResult<Action>;
 
-    fn get_default_action(&self, mode: &Mode, last_key: KeyEvent) -> Option<T>;
+    fn get_default_action(&self, mode: &Mode, last_key: KeyEvent) -> Option<Action>;
 }
 
 #[derive(Debug)]

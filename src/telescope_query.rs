@@ -7,7 +7,7 @@ pub struct TelescopeQuery {
     pub contents: String,
 }
 
-impl LineEntry<TelescopeAction> for TelescopeQuery {
+impl LineEntry for TelescopeQuery {
     fn pop_contents(&mut self) -> String {
         self.contents.drain(..).collect()
     }
@@ -24,9 +24,11 @@ impl LineEntry<TelescopeAction> for TelescopeQuery {
         self.contents.pop();
     }
 
-    fn remove_char(&mut self) -> Option<TelescopeAction> {
+    fn remove_char(&mut self) -> Option<Action> {
         self.contents.pop();
-        Some(TelescopeAction::UpdateSearchQuery(self.contents.clone()))
+        Some(Action::TelescopeAct(TelescopeAction::UpdateSearchQuery(
+            self.contents.clone(),
+        )))
     }
 }
 
@@ -36,13 +38,15 @@ impl TelescopeQuery {
             contents: String::new(),
         }
     }
-    pub fn handle_text_action(&mut self, action: TelescopeAction) -> Option<TelescopeAction> {
+    pub fn handle_text_action(&mut self, action: TelescopeAction) -> Option<Action> {
         match action {
             TelescopeAction::PushSearchChar(c) => self.append_char(c),
             TelescopeAction::EraseText => self.clear_contents(),
             TelescopeAction::DropSearchChar => return self.remove_char(),
             _ => {}
         }
-        Some(TelescopeAction::UpdateSearchQuery(self.contents.clone()))
+        Some(Action::TelescopeAct(TelescopeAction::UpdateSearchQuery(
+            self.contents.clone(),
+        )))
     }
 }

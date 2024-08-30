@@ -19,18 +19,20 @@ pub enum PopUp {
 }
 
 impl PopUp {
-    pub fn handle_key_event(&mut self, key_event: KeyEvent) {
+    pub fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action> {
         match self {
             PopUp::None => {}
-            PopUp::TelescopePopUp(popup_window) => popup_window.handle_key_event(key_event),
+            PopUp::TelescopePopUp(popup_window) => return popup_window.handle_key_event(key_event),
         }
+        None
     }
 
-    pub fn handle_actions(&mut self) {
+    pub fn handle_action(&mut self, action: Action) -> Option<Action> {
         match self {
             PopUp::None => {}
-            PopUp::TelescopePopUp(popup_window) => popup_window.handle_actions(),
+            PopUp::TelescopePopUp(popup_window) => return popup_window.handle_action(action),
         }
+        None
     }
 
     pub(crate) fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
@@ -46,7 +48,7 @@ pub struct PopUpWindow {
     input_machine: TelescopeInputMachine,
     telescope_backend: Telescope,
     current_sequence: Vec<KeyEvent>,
-    action_list: VecDeque<TelescopeAction>,
+    action_list: VecDeque<Action>,
     pub should_quit: bool,
 }
 
@@ -61,39 +63,32 @@ impl PopUpWindow {
         }
     }
 
-    pub fn handle_key_event(&mut self, key_event: KeyEvent) {
+    pub fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action> {
         let keymap_result =
             self.input_machine
                 .process_keys(&Mode::Normal, &mut self.current_sequence, key_event);
         info!("Telescope Keymap result: {:?}", keymap_result);
         match keymap_result {
             KeyProcessingResult::Complete(action) => {
-                self.action_list.push_back(action);
+                return Some(action);
             }
             KeyProcessingResult::Invalid => {
-                if let Some(action) = self
+                return self
                     .input_machine
                     .get_default_action(&Mode::Normal, key_event)
-                {
-                    info!("Default Action: {:?}", action);
-                    self.action_list.push_back(action);
-                }
             }
             _ => {}
         }
+        None
     }
 
-    pub fn handle_actions(&mut self) {
-        while let Some(action) = self.action_list.pop_front() {
-            if action == TelescopeAction::Quit {
-                self.should_quit = true;
-                return;
-            }
-            let new_action = self.telescope_backend.handle_action(action);
-            if let Some(new_action) = new_action {
-                self.action_list.push_back(new_action);
-            }
+    pub fn handle_action(&mut self, action: Action) -> Option<Action> {
+        if action == Action::TelescopeAct(TelescopeAction::Quit) {
+            self.should_quit = true;
+            return None;
         }
+        let new_action = self.telescope_backend.handle_action(action);
+        new_action
     }
 
     pub(crate) fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {

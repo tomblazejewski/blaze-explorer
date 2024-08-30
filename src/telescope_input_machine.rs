@@ -11,24 +11,26 @@ use crate::{
 };
 
 pub struct TelescopeInputMachine {
-    keymap_nodes: HashMap<Mode, KeyMapNode<TelescopeAction>>,
+    keymap_nodes: HashMap<Mode, KeyMapNode<Action>>,
 }
 
-impl InputMachine<TelescopeAction> for TelescopeInputMachine {
+impl InputMachine for TelescopeInputMachine {
     fn process_keys(
         &mut self,
         mode: &Mode,
         current_sequence: &mut Vec<KeyEvent>,
         input_key: KeyEvent,
-    ) -> KeyProcessingResult<TelescopeAction> {
+    ) -> KeyProcessingResult<Action> {
         let keymap = self.keymap_nodes.get(mode).unwrap();
         process_telescope_keys(keymap, current_sequence, input_key)
     }
 
-    fn get_default_action(&self, mode: &Mode, last_key: KeyEvent) -> Option<TelescopeAction> {
+    fn get_default_action(&self, mode: &Mode, last_key: KeyEvent) -> Option<Action> {
         match mode {
             Mode::Normal => match last_key.code {
-                KeyCode::Char(ch) => Some(TelescopeAction::PushSearchChar(ch)),
+                KeyCode::Char(ch) => {
+                    Some(Action::TelescopeAct(TelescopeAction::PushSearchChar(ch)))
+                }
                 _ => None,
             },
             _ => None,
@@ -45,10 +47,10 @@ impl TelescopeInputMachine {
     }
 }
 pub fn process_telescope_keys(
-    keymap: &KeyMapNode<TelescopeAction>,
+    keymap: &KeyMapNode<Action>,
     current_sequence: &mut Vec<KeyEvent>,
     input_key: KeyEvent,
-) -> KeyProcessingResult<TelescopeAction> {
+) -> KeyProcessingResult<Action> {
     current_sequence.push(input_key.clone());
     match keymap.get_node(current_sequence) {
         Some(node) => match &node.action {
@@ -64,27 +66,27 @@ pub fn process_telescope_keys(
         }
     }
 }
-pub fn default_key_map() -> KeyMapNode<TelescopeAction> {
+pub fn default_key_map() -> KeyMapNode<Action> {
     let mut root = KeyMapNode::new();
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
-        TelescopeAction::Quit,
+        Action::TelescopeAct(TelescopeAction::Quit),
     );
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Char('n'), KeyModifiers::CONTROL)],
-        TelescopeAction::NextResult,
+        Action::TelescopeAct(TelescopeAction::NextResult),
     );
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Char('p'), KeyModifiers::CONTROL)],
-        TelescopeAction::PreviousResult,
+        Action::TelescopeAct(TelescopeAction::PreviousResult),
     );
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
-        TelescopeAction::DropSearchChar,
+        Action::TelescopeAct(TelescopeAction::DropSearchChar),
     );
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
-        TelescopeAction::ConfirmResult,
+        Action::TelescopeAct(TelescopeAction::Quit),
     );
     root
 }

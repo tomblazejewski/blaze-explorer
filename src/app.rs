@@ -95,13 +95,12 @@ impl App {
         loop {
             self.render();
             if let event::Event::Key(key) = event::read()? {
-                //need to push the key to get the
-                //keytracker to work?
                 if key.kind == KeyEventKind::Press {
                     match &mut self.popup {
                         PopUp::TelescopePopUp(popup) => {
-                            popup.handle_key_event(key);
-                            popup.handle_actions();
+                            if let Some(action) = popup.handle_key_event(key) {
+                                self.action_list.push_back(action);
+                            }
                         }
                         PopUp::None => {
                             self.handle_key_event(key);
@@ -110,7 +109,6 @@ impl App {
                 };
                 if let PopUp::TelescopePopUp(popup) = &self.popup {
                     if popup.should_quit {
-                        info!("Should quit");
                         self.popup = PopUp::None;
                     }
                 }
@@ -211,6 +209,12 @@ impl App {
                 }
                 Action::AppAct(app_action) => self.handle_self_actions(app_action),
                 Action::TextAct(text_action) => self.command_line.handle_text_action(text_action),
+                Action::TelescopeAct(ta) => match &mut self.popup {
+                    PopUp::None => None,
+                    PopUp::TelescopePopUp(popup_window) => {
+                        popup_window.handle_action(Action::TelescopeAct(ta))
+                    }
+                },
                 _ => None,
             } {
                 self.action_list.push_back(resulting_action);

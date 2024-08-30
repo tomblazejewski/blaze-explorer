@@ -14,7 +14,7 @@ pub struct AppInputMachine<T> {
     keymap_nodes: HashMap<Mode, KeyMapNode<T>>,
 }
 
-impl InputMachine<Action> for AppInputMachine<Action> {
+impl InputMachine for AppInputMachine<Action> {
     fn process_keys(
         &mut self,
         mode: &Mode,

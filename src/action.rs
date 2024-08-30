@@ -39,6 +39,7 @@ pub enum Action {
     AppAct(AppAction),
     TextAct(TextAction),
     Noop,
+    TelescopeAct(TelescopeAction),
 }
 
 #[derive(Clone, Debug, PartialEq)]

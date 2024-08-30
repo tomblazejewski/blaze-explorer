@@ -32,7 +32,7 @@ pub trait TelescopeSearch {
     fn get_results_list(&self) -> Vec<String>;
 
     /// Determine what happens when the user confirms a result
-    fn confirm_result(&mut self, id: usize) -> Option<TelescopeAction>;
+    fn confirm_result(&mut self, id: usize) -> Option<Action>;
 
     fn preview_result(&self, id: Option<usize>, frame: &mut Frame, area: Rect) -> Result<()>;
 
@@ -57,7 +57,7 @@ pub struct Telescope {
 }
 
 impl Telescope {
-    fn confirm_result(&mut self) -> Option<TelescopeAction> {
+    fn confirm_result(&mut self) -> Option<Action> {
         if let Some(id) = self.table_state.selected() {
             return self.search.confirm_result(id);
         }
@@ -93,12 +93,12 @@ impl Telescope {
         self.table_state.select(Some(i));
     }
 }
-pub trait PopUpComponent<T> {
+pub trait PopUpComponent {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
-    fn handle_action(&mut self, action: T) -> Option<T>;
+    fn handle_action(&mut self, action: Action) -> Option<Action>;
     fn new(search_context: AppContext) -> Self;
 }
-impl PopUpComponent<TelescopeAction> for Telescope {
+impl PopUpComponent for Telescope {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         //split the area vertically 60/40
         let chunks = Layout::default()
@@ -152,15 +152,17 @@ impl PopUpComponent<TelescopeAction> for Telescope {
         Ok(())
     }
 
-    fn handle_action(&mut self, action: TelescopeAction) -> Option<TelescopeAction> {
-        match action {
-            TelescopeAction::ConfirmResult => return self.confirm_result(),
-            TelescopeAction::NextResult => {
-                self.next_result();
+    fn handle_action(&mut self, action: Action) -> Option<Action> {
+        if let Action::TelescopeAct(action) = action {
+            match action {
+                TelescopeAction::ConfirmResult => return self.confirm_result(),
+                TelescopeAction::NextResult => {
+                    self.next_result();
+                }
+                TelescopeAction::PreviousResult => self.previous_result(),
+                TelescopeAction::UpdateSearchQuery(query) => self.search.search(query),
+                action => return self.query.handle_text_action(action),
             }
-            TelescopeAction::PreviousResult => self.previous_result(),
-            TelescopeAction::UpdateSearchQuery(query) => self.search.search(query),
-            action => return self.query.handle_text_action(action),
         }
         None
     }
