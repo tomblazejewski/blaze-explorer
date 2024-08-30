@@ -12,6 +12,7 @@ use sfs_telescope::SearchFileshereSearch;
 use crate::{
     action::{Action, AppAction, ExplorerAction, TelescopeAction},
     telescope_query::TelescopeQuery,
+    themes::CustomTheme,
 };
 
 pub struct AppContext {
@@ -52,6 +53,7 @@ pub struct Telescope {
     pub query: TelescopeQuery,
     pub search: Box<dyn TelescopeSearch>,
     pub table_state: TableState,
+    theme: CustomTheme,
 }
 
 impl Telescope {
@@ -138,7 +140,9 @@ impl PopUpComponent<TelescopeAction> for Telescope {
             _ => {}
         }
         let widths = [Constraint::Percentage(100)];
-        let table = Table::new(rows, widths).block(results_block);
+        let table = Table::new(rows, widths)
+            .block(results_block)
+            .highlight_style(self.theme.selected_row_telescope);
         frame.render_stateful_widget(table, result_area, &mut self.table_state);
 
         //render the preview - this is handled by the result type (or at least for now)
@@ -166,6 +170,7 @@ impl PopUpComponent<TelescopeAction> for Telescope {
             query: TelescopeQuery::new(),
             search: Box::new(SearchFileshereSearch::new(search_context)),
             table_state: TableState::default(),
+            theme: CustomTheme::default(),
         }
     }
 }

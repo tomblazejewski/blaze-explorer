@@ -1,4 +1,9 @@
-use std::{fmt::Display, fs::read_to_string, path::Path};
+use std::{
+    fmt::Display,
+    fs::read_to_string,
+    path::Path,
+    time::{Duration, Instant},
+};
 
 use color_eyre::eyre::Result;
 use ratatui::{
@@ -9,13 +14,14 @@ use ratatui::{
 };
 use rust_search::SearchBuilder;
 
-use crate::action::{Action, ExplorerAction, TelescopeAction};
+use crate::action::TelescopeAction;
 
 use super::{AppContext, TelescopeResult, TelescopeSearch};
 
 pub struct SearchFileshereSearch {
     absolute_directory: String,
     results: Vec<SearchFilesHereResult>,
+    last_search_timing: Option<Duration>,
 }
 
 impl SearchFileshereSearch {
@@ -23,11 +29,13 @@ impl SearchFileshereSearch {
         Self {
             absolute_directory: ctx.current_directory.display().to_string(),
             results: Vec::new(),
+            last_search_timing: None,
         }
     }
 }
 impl TelescopeSearch for SearchFileshereSearch {
     fn search(&mut self, query: String) {
+        let start = Instant::now();
         self.results = SearchBuilder::default()
             .location(self.absolute_directory.clone())
             .search_input(query)
@@ -38,6 +46,7 @@ impl TelescopeSearch for SearchFileshereSearch {
             .build()
             .map(SearchFilesHereResult::new)
             .collect::<Vec<SearchFilesHereResult>>();
+        self.last_search_timing = Some(start.elapsed());
     }
 
     fn confirm_result(&mut self, id: usize) -> Option<TelescopeAction> {
@@ -53,7 +62,11 @@ impl TelescopeSearch for SearchFileshereSearch {
     }
 
     fn display(&self) -> String {
-        "Search in files here".to_string()
+        let elapsed = match &self.last_search_timing {
+            Some(d) => (d.as_millis() as f64 / 1000.0).to_string(),
+            None => "".to_string(),
+        };
+        format!("Search here - {}", elapsed)
     }
 
     fn preview_result(&self, some_id: Option<usize>, frame: &mut Frame, area: Rect) -> Result<()> {
