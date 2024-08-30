@@ -48,7 +48,6 @@ pub struct PopUpWindow {
     input_machine: TelescopeInputMachine,
     telescope_backend: Telescope,
     current_sequence: Vec<KeyEvent>,
-    action_list: VecDeque<Action>,
     pub should_quit: bool,
 }
 
@@ -58,7 +57,6 @@ impl PopUpWindow {
             input_machine: TelescopeInputMachine::new(),
             telescope_backend: Telescope::new(ctx),
             current_sequence: Vec::new(),
-            action_list: VecDeque::new(),
             should_quit: false,
         }
     }
