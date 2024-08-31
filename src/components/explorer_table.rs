@@ -18,7 +18,7 @@ use ratatui::{
 };
 
 use crate::{
-    action::{Action, ExplorerAction},
+    action::{Action, AppAction, ExplorerAction},
     action_agent::ActionAgent,
     mode::Mode,
     themes::CustomTheme,
@@ -208,11 +208,7 @@ impl ExplorerTable {
         if let Some(index) = self.state.selected() {
             let chosen_element = &self.elements_list[index];
             let created_path = Path::new(&self.current_path).join(&chosen_element.filename);
-            if created_path.is_dir() {
-                Some(created_path)
-            } else {
-                None
-            }
+            Some(created_path)
         } else {
             None
         }
@@ -281,11 +277,19 @@ impl ExplorerTable {
     pub fn explorer_action(&mut self, explorer_act: ExplorerAction) -> Option<Action> {
         match explorer_act {
             ExplorerAction::SelectDirectory => {
+                // either navigate to a folder or open using a default app
                 let target_directory = self.select_directory();
                 if let Some(found_directory) = target_directory {
-                    return Some(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
-                        found_directory,
-                    )));
+                    match found_directory.is_dir() {
+                        true => {
+                            return Some(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
+                                found_directory,
+                            )))
+                        }
+                        false => {
+                            return Some(Action::AppAct(AppAction::OpenDefault(found_directory)))
+                        }
+                    }
                 } else {
                     return None;
                 }

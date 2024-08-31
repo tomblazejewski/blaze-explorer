@@ -26,6 +26,7 @@ pub enum AppAction {
     ConfirmCommand,
     OpenPopup,
     ShowInFolder(PathBuf),
+    OpenDefault(PathBuf),
 }
 
 #[derive(Clone, Debug, PartialEq)]

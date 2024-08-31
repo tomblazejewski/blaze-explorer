@@ -1,6 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 use std::io::{stdout, Stdout};
-use std::path;
+use std::path::{self, PathBuf};
 
 use color_eyre::Result;
 use ratatui::crossterm::event::KeyEvent;
@@ -152,6 +152,10 @@ impl App {
         }
     }
 
+    fn open_default(&self, path: PathBuf) {
+        open::that(path).unwrap();
+    }
+
     pub fn enter_search_mode(&mut self) {
         self.mode = Mode::Search;
         self.explorer_table.switch_mode(Mode::Search);
@@ -201,6 +205,9 @@ impl App {
             AppAction::ShowInFolder(path) => {
                 self.popup = PopUp::None;
                 return Some(Action::ExplorerAct(ExplorerAction::ShowInFolder(path)));
+            }
+            AppAction::OpenDefault(path) => {
+                self.open_default(path);
             }
         }
         None
