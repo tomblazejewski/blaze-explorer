@@ -13,6 +13,7 @@ use app::App;
 mod action;
 mod action_agent;
 mod app_input_machine;
+mod command;
 mod components;
 mod focus;
 mod input_machine;

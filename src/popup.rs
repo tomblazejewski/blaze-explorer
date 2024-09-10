@@ -5,6 +5,7 @@ use ratatui::{crossterm::event::KeyEvent, layout::Rect, widgets::Clear, Frame};
 use tracing::info;
 
 use crate::action::TelescopeAction;
+use crate::line_entry::LineEntry;
 use crate::telescope_input_machine::TelescopeInputMachine;
 use crate::{
     action::Action,
@@ -41,6 +42,62 @@ impl PopUp {
             PopUp::TelescopePopUp(popup_window) => popup_window.draw(frame, area)?,
         }
         Ok(())
+    }
+
+    pub fn confirm_result(&mut self) -> Option<Action> {
+        match self {
+            PopUp::None => None,
+            PopUp::TelescopePopUp(popup_window) => popup_window.confirm_result(),
+        }
+    }
+
+    pub fn next_result(&mut self) {
+        match self {
+            PopUp::None => {}
+            PopUp::TelescopePopUp(popup_window) => popup_window.next_result(),
+        }
+    }
+
+    pub fn previous_result(&mut self) {
+        match self {
+            PopUp::None => {}
+            PopUp::TelescopePopUp(popup_window) => popup_window.previous_result(),
+        }
+    }
+
+    pub fn update_search_query(&mut self, query: String) {
+        match self {
+            PopUp::None => {}
+            PopUp::TelescopePopUp(popup_window) => popup_window.update_search_query(query),
+        }
+    }
+
+    pub fn push_search_char(&mut self, ch: char) {
+        match self {
+            PopUp::None => {}
+            PopUp::TelescopePopUp(popup_window) => popup_window.push_search_char(ch),
+        }
+    }
+
+    pub fn drop_search_char(&mut self) {
+        match self {
+            PopUp::None => {}
+            PopUp::TelescopePopUp(popup_window) => popup_window.drop_search_char(),
+        }
+    }
+
+    pub fn erase_text(&mut self) {
+        match self {
+            PopUp::None => {}
+            PopUp::TelescopePopUp(popup_window) => popup_window.erase_text(),
+        }
+    }
+
+    pub fn quit(&mut self) {
+        match self {
+            PopUp::None => {}
+            PopUp::TelescopePopUp(popup_window) => popup_window.quit(),
+        }
     }
 }
 
@@ -93,5 +150,37 @@ impl PopUpWindow {
         frame.render_widget(Clear, area);
         self.telescope_backend.draw(frame, area)?;
         Ok(())
+    }
+
+    pub fn confirm_result(&mut self) -> Option<Action> {
+        self.telescope_backend.confirm_result()
+    }
+
+    pub fn next_result(&mut self) {
+        self.telescope_backend.next_result();
+    }
+
+    pub fn previous_result(&mut self) {
+        self.telescope_backend.previous_result();
+    }
+
+    pub fn update_search_query(&mut self, query: String) {
+        self.telescope_backend.update_search_query(query);
+    }
+
+    pub fn push_search_char(&mut self, ch: char) {
+        self.telescope_backend.query.append_char(ch)
+    }
+
+    fn drop_search_char(&mut self) {
+        self.telescope_backend.query.drop_char()
+    }
+
+    pub fn quit(&mut self) {
+        self.should_quit = true;
+    }
+
+    pub fn erase_text(&mut self) {
+        self.telescope_backend.query.clear_contents();
     }
 }

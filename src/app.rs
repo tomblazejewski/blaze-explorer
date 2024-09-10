@@ -17,7 +17,7 @@ use ratatui::{
 };
 use tracing::info;
 
-use crate::action::{AppAction, ExplorerAction};
+use crate::action::{get_command, AppAction, ExplorerAction};
 use crate::app_input_machine::AppInputMachine;
 use crate::components::command_line::CommandLine;
 use crate::focus::Focus;
@@ -144,7 +144,7 @@ impl App {
         }
     }
 
-    fn execute_command(&mut self) -> Option<Action> {
+    pub fn execute_command(&mut self) -> Option<Action> {
         let command = self.command_line.pop_contents();
         match command.as_str() {
             "q" => Some(Action::AppAct(AppAction::Quit)),
@@ -152,7 +152,7 @@ impl App {
         }
     }
 
-    fn open_default(&self, path: PathBuf) {
+    pub fn open_default(&self, path: PathBuf) {
         open::that(path).unwrap();
     }
 
@@ -176,7 +176,7 @@ impl App {
         self.command_line.focus();
         self.explorer_table.unfocus();
     }
-    fn confirm_search_query(&mut self) -> Option<Action> {
+    pub fn confirm_search_query(&mut self) -> Option<Action> {
         self.enter_normal_mode();
         Some(Action::ExplorerAct(ExplorerAction::NextSearchResult))
     }
@@ -212,6 +212,15 @@ impl App {
         }
         None
     }
+    pub fn handle_new_actions(&mut self) -> Result<()> {
+        while let Some(action) = self.action_list.pop_front() {
+            let command = get_command(&self, action);
+            if let Some(action) = command.execute(self) {
+                self.action_list.push_back(action);
+            }
+        }
+        Ok(())
+    }
     pub fn handle_actions(&mut self) -> Result<()> {
         while let Some(action) = self.action_list.pop_front() {
             if let Some(resulting_action) = match action {
@@ -246,7 +255,10 @@ impl App {
         Ok(())
     }
 
-    fn get_app_context(&self) -> AppContext {
-        AppContext::new(self.explorer_table.get_current_path().clone())
+    pub fn get_app_context(&self) -> AppContext {
+        AppContext::new(
+            self.explorer_table.get_current_path().clone(),
+            self.explorer_table.clone(),
+        )
     }
 }

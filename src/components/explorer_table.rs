@@ -26,7 +26,7 @@ use crate::{
 
 use super::Component;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FileData {
     id: usize,
     filename: String,
@@ -119,6 +119,7 @@ fn highlight_search_result(
         Line::from(line_text)
     }
 }
+#[derive(Clone)]
 pub struct ExplorerTable {
     state: TableState,
     current_path: PathBuf,
@@ -214,7 +215,7 @@ impl ExplorerTable {
         }
     }
 
-    fn update_search_query(&mut self, new_query: String) {
+    pub fn update_search_query(&mut self, new_query: String) {
         if !new_query.is_empty() {
             self.search_phrase = Some(new_query)
         } else {
@@ -223,7 +224,7 @@ impl ExplorerTable {
         self.search_elements();
     }
 
-    fn next_search_result(&mut self) {
+    pub fn next_search_result(&mut self) {
         if let Some(selected_ids) = &self.selected_ids {
             if selected_ids.len() < 2 {
                 return;
@@ -263,7 +264,7 @@ impl ExplorerTable {
         };
         self.selected_ids = element_ids;
     }
-    fn show_in_folder(&mut self, path: PathBuf) {
+    pub fn show_in_folder(&mut self, path: PathBuf) {
         // split the path by the last slash separator to get the folder and filename
         let folder = path.parent().unwrap();
         let filename = path.file_name().unwrap();
@@ -323,6 +324,14 @@ impl ExplorerTable {
 
     pub fn get_current_path(&self) -> PathBuf {
         self.current_path.clone()
+    }
+
+    pub fn get_selected(&self) -> Option<usize> {
+        self.state.selected()
+    }
+
+    pub fn clear_search_query(&mut self) {
+        self.search_phrase = None
     }
 }
 

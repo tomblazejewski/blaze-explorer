@@ -1,5 +1,6 @@
 use ratatui::style::{Color, Style};
 
+#[derive(Clone)]
 pub struct CustomTheme {
     pub search_result: Style,
     pub selected_row: Style,

@@ -11,17 +11,22 @@ use sfs_telescope::SearchFileshereSearch;
 
 use crate::{
     action::{Action, AppAction, ExplorerAction, TelescopeAction},
+    components::explorer_table::ExplorerTable,
     telescope_query::TelescopeQuery,
     themes::CustomTheme,
 };
 
 pub struct AppContext {
-    current_directory: PathBuf,
+    pub current_directory: PathBuf,
+    pub explorer_table: ExplorerTable,
 }
 
 impl AppContext {
-    pub fn new(current_directory: PathBuf) -> Self {
-        Self { current_directory }
+    pub fn new(current_directory: PathBuf, explorer_table: ExplorerTable) -> Self {
+        Self {
+            current_directory,
+            explorer_table,
+        }
     }
 }
 
@@ -57,14 +62,14 @@ pub struct Telescope {
 }
 
 impl Telescope {
-    fn confirm_result(&mut self) -> Option<Action> {
+    pub fn confirm_result(&mut self) -> Option<Action> {
         if let Some(id) = self.table_state.selected() {
             return self.search.confirm_result(id);
         }
         None
     }
 
-    fn next_result(&mut self) {
+    pub fn next_result(&mut self) {
         let n_results = self.search.n_results();
         let i = match self.table_state.selected() {
             Some(i) => {
@@ -78,7 +83,7 @@ impl Telescope {
         };
         self.table_state.select(Some(i));
     }
-    fn previous_result(&mut self) {
+    pub fn previous_result(&mut self) {
         let n_results = self.search.n_results();
         let i = match self.table_state.selected() {
             Some(i) => {
@@ -91,6 +96,10 @@ impl Telescope {
             None => 0,
         };
         self.table_state.select(Some(i));
+    }
+
+    pub fn update_search_query(&mut self, query: String) {
+        self.search.search(query);
     }
 }
 pub trait PopUpComponent {
