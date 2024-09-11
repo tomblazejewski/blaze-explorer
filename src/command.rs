@@ -19,20 +19,12 @@ pub trait Command {
 }
 
 pub struct ChangeDirectory {
-    old_path: PathBuf, //stores the currently selected file to show it upon undo
     new_path: PathBuf,
-    selected: Option<usize>,
 }
 
 impl ChangeDirectory {
     pub fn new(mut ctx: AppContext, path: PathBuf) -> Self {
-        let current_file = ctx.explorer_table.select_directory().unwrap();
-        let selected = ctx.explorer_table.get_selected();
-        Self {
-            old_path: current_file,
-            new_path: path,
-            selected,
-        }
+        Self { new_path: path }
     }
 }
 
@@ -77,7 +69,7 @@ impl SelectUp {
 }
 impl Command for SelectUp {
     fn execute(&self, app: &mut App) -> Option<Action> {
-        app.explorer_table.next();
+        app.explorer_table.previous();
         None
     }
 }
@@ -91,7 +83,7 @@ impl SelectDown {
 }
 impl Command for SelectDown {
     fn execute(&self, app: &mut App) -> Option<Action> {
-        app.explorer_table.previous();
+        app.explorer_table.next();
         None
     }
 }
@@ -375,8 +367,7 @@ impl TelescopePushSearchChar {
 
 impl Command for TelescopePushSearchChar {
     fn execute(&self, app: &mut App) -> Option<Action> {
-        app.popup.push_search_char(self.ch);
-        None
+        app.popup.push_search_char(self.ch)
     }
 }
 
@@ -389,8 +380,7 @@ impl TelescopeDropSearchChar {
 }
 impl Command for TelescopeDropSearchChar {
     fn execute(&self, app: &mut App) -> Option<Action> {
-        app.popup.drop_search_char();
-        None
+        app.popup.drop_search_char()
     }
 }
 
@@ -417,8 +407,7 @@ impl TelescopeEraseText {
 }
 impl Command for TelescopeEraseText {
     fn execute(&self, app: &mut App) -> Option<Action> {
-        app.popup.erase_text();
-        None
+        app.popup.erase_text()
     }
 }
 

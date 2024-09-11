@@ -6,4 +6,5 @@ pub trait LineEntry {
     fn clear_contents(&mut self);
     fn drop_char(&mut self);
     fn remove_char(&mut self) -> Option<Action>;
+    fn get_contents(&self) -> String;
 }

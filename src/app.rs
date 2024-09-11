@@ -91,7 +91,7 @@ impl App {
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
                 starting_path,
             )));
-        self.handle_actions();
+        self.handle_new_actions();
         loop {
             self.render();
             if let event::Event::Key(key) = event::read()? {
@@ -115,7 +115,7 @@ impl App {
                 if self.should_quit {
                     break;
                 }
-                self.handle_actions();
+                self.handle_new_actions();
             }
         }
         stdout().execute(LeaveAlternateScreen)?;
@@ -181,64 +181,12 @@ impl App {
         Some(Action::ExplorerAct(ExplorerAction::NextSearchResult))
     }
 
-    pub fn handle_self_actions(&mut self, action: AppAction) -> Option<Action> {
-        match action {
-            AppAction::SwitchMode(mode) => match mode {
-                Mode::Normal => self.enter_normal_mode(),
-                Mode::Search => self.enter_search_mode(),
-                Mode::Command => self.enter_command_mode(),
-            },
-            AppAction::Quit => self.should_quit = true,
-            AppAction::ConfirmSearchQuery => {
-                return self.confirm_search_query();
-            }
-            AppAction::ConfirmCommand => {
-                return self.execute_command();
-            }
-            AppAction::OpenPopup => {
-                let ctx = self.get_app_context();
-                self.popup = PopUp::TelescopePopUp(PopUpWindow::new(ctx));
-            }
-            AppAction::CancelKeybind => {
-                self.popup = PopUp::None;
-            }
-            AppAction::ShowInFolder(path) => {
-                self.popup = PopUp::None;
-                return Some(Action::ExplorerAct(ExplorerAction::ShowInFolder(path)));
-            }
-            AppAction::OpenDefault(path) => {
-                self.open_default(path);
-            }
-        }
-        None
-    }
     pub fn handle_new_actions(&mut self) -> Result<()> {
         while let Some(action) = self.action_list.pop_front() {
-            let command = get_command(&self, action);
+            let command = get_command(self, action.clone());
+            info!("Matching action {:?}", action);
             if let Some(action) = command.execute(self) {
                 self.action_list.push_back(action);
-            }
-        }
-        Ok(())
-    }
-    pub fn handle_actions(&mut self) -> Result<()> {
-        while let Some(action) = self.action_list.pop_front() {
-            if let Some(resulting_action) = match action {
-                Action::ExplorerAct(explorer_action) => {
-                    self.explorer_table.explorer_action(explorer_action)
-                }
-                Action::AppAct(app_action) => self.handle_self_actions(app_action),
-                Action::TextAct(text_action) => self.command_line.handle_text_action(text_action),
-                Action::TelescopeAct(ta) => match &mut self.popup {
-                    PopUp::None => None,
-                    PopUp::TelescopePopUp(popup_window) => {
-                        popup_window.handle_action(Action::TelescopeAct(ta))
-                    }
-                },
-                _ => None,
-            } {
-                info!("Resulting Action: {:?}", resulting_action);
-                self.action_list.push_back(resulting_action);
             }
         }
         Ok(())

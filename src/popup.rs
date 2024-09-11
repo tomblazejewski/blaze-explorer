@@ -72,24 +72,45 @@ impl PopUp {
         }
     }
 
-    pub fn push_search_char(&mut self, ch: char) {
+    pub fn search_query_action(&self) -> Option<Action> {
         match self {
-            PopUp::None => {}
-            PopUp::TelescopePopUp(popup_window) => popup_window.push_search_char(ch),
+            PopUp::None => None,
+            PopUp::TelescopePopUp(popup_window) => {
+                let search_query = popup_window.get_search_query();
+                Some(Action::TelescopeAct(TelescopeAction::UpdateSearchQuery(
+                    search_query,
+                )))
+            }
         }
     }
 
-    pub fn drop_search_char(&mut self) {
+    pub fn push_search_char(&mut self, ch: char) -> Option<Action> {
         match self {
-            PopUp::None => {}
-            PopUp::TelescopePopUp(popup_window) => popup_window.drop_search_char(),
+            PopUp::None => None,
+            PopUp::TelescopePopUp(popup_window) => {
+                popup_window.push_search_char(ch);
+                self.search_query_action()
+            }
         }
     }
 
-    pub fn erase_text(&mut self) {
+    pub fn drop_search_char(&mut self) -> Option<Action> {
         match self {
-            PopUp::None => {}
-            PopUp::TelescopePopUp(popup_window) => popup_window.erase_text(),
+            PopUp::None => None,
+            PopUp::TelescopePopUp(popup_window) => {
+                popup_window.drop_search_char();
+                self.search_query_action()
+            }
+        }
+    }
+
+    pub fn erase_text(&mut self) -> Option<Action> {
+        match self {
+            PopUp::None => None,
+            PopUp::TelescopePopUp(popup_window) => {
+                popup_window.erase_text();
+                self.search_query_action()
+            }
         }
     }
 
@@ -182,5 +203,9 @@ impl PopUpWindow {
 
     pub fn erase_text(&mut self) {
         self.telescope_backend.query.clear_contents();
+    }
+
+    pub fn get_search_query(&self) -> String {
+        self.telescope_backend.query.get_contents()
     }
 }

@@ -287,9 +287,7 @@ impl ExplorerTable {
                                 found_directory,
                             )))
                         }
-                        false => {
-                            return Some(Action::AppAct(AppAction::OpenDefault(found_directory)))
-                        }
+                        false => return None,
                     }
                 } else {
                     return None;
@@ -306,7 +304,6 @@ impl ExplorerTable {
             ExplorerAction::UpdateSearchQuery(query) => self.update_search_query(query),
             ExplorerAction::ClearSearchQuery => self.search_phrase = None,
             ExplorerAction::NextSearchResult => self.next_search_result(),
-            ExplorerAction::ShowInFolder(path) => self.show_in_folder(path),
         }
         None
     }

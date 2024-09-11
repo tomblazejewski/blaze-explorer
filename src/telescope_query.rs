@@ -30,6 +30,10 @@ impl LineEntry for TelescopeQuery {
             self.contents.clone(),
         )))
     }
+
+    fn get_contents(&self) -> String {
+        self.contents.clone()
+    }
 }
 
 impl TelescopeQuery {
