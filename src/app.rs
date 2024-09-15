@@ -19,6 +19,8 @@ use tracing::info;
 
 use crate::action::{get_command, AppAction, ExplorerAction};
 use crate::app_input_machine::AppInputMachine;
+use crate::command::Command;
+use crate::command_history::CommandHistory;
 use crate::components::command_line::CommandLine;
 use crate::focus::Focus;
 use crate::input_machine::{InputMachine, KeyProcessingResult};
@@ -62,6 +64,7 @@ pub struct App {
     pub current_sequence: Vec<KeyEvent>,
     pub input_machine: AppInputMachine<Action>,
     pub popup: PopUp,
+    pub command_history: HashMap<PathBuf, CommandHistory>,
 }
 impl App {
     pub fn new() -> Result<Self> {
@@ -76,6 +79,7 @@ impl App {
             current_sequence: Vec::new(),
             input_machine: AppInputMachine::new(),
             popup: PopUp::None,
+            command_history: HashMap::new(),
         })
     }
 
@@ -181,10 +185,23 @@ impl App {
         Some(Action::ExplorerAct(ExplorerAction::NextSearchResult))
     }
 
+    pub fn record_command(&mut self, command: Box<dyn Command>) {
+        let current_path = self.explorer_table.get_current_path();
+        let c_history = self.command_history.get_mut(&current_path);
+        if let Some(history) = c_history {
+            if command.is_revertable() {
+                history.push_command(command);
+            }
+        } else {
+            let mut history = CommandHistory::new();
+            history.push_command(command);
+            self.command_history.insert(current_path, history);
+        }
+    }
     pub fn handle_new_actions(&mut self) -> Result<()> {
         while let Some(action) = self.action_list.pop_front() {
             let command = get_command(self, action.clone());
-            info!("Matching action {:?}", action);
+            self.record_command(command.clone());
             if let Some(action) = command.execute(self) {
                 self.action_list.push_back(action);
             }
