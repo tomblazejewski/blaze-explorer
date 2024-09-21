@@ -81,6 +81,10 @@ impl CommandLine {
         self.focused = true;
         self.contents = String::new();
     }
+
+    pub fn command_line_message(&mut self, msg: String) {
+        self.contents = msg;
+    }
 }
 
 impl Component for CommandLine {

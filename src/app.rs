@@ -3,6 +3,7 @@ use std::io::{stdout, Stdout};
 use std::path::{self, PathBuf};
 
 use color_eyre::Result;
+use mockall::automock;
 use ratatui::crossterm::event::KeyEvent;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
@@ -25,7 +26,7 @@ use crate::components::command_line::CommandLine;
 use crate::focus::Focus;
 use crate::input_machine::{InputMachine, KeyProcessingResult};
 use crate::line_entry::LineEntry;
-use crate::popup::{PopUp, PopUpWindow};
+use crate::popup::PopUp;
 use crate::telescope::AppContext;
 use crate::tools::center_rect;
 use crate::{
@@ -149,7 +150,7 @@ impl App {
     }
 
     pub fn execute_command(&mut self) -> Option<Action> {
-        let command = self.command_line.pop_contents();
+        let command = self.command_line_contents();
         match command.as_str() {
             "q" => Some(Action::AppAct(AppAction::Quit)),
             _ => None,
@@ -200,7 +201,7 @@ impl App {
     }
     pub fn handle_new_actions(&mut self) -> Result<()> {
         while let Some(action) = self.action_list.pop_front() {
-            let command = get_command(self, action.clone());
+            let mut command = get_command(self, action.clone());
             self.record_command(command.clone());
             if let Some(action) = command.execute(self) {
                 self.action_list.push_back(action);
@@ -225,5 +226,18 @@ impl App {
             self.explorer_table.get_current_path().clone(),
             self.explorer_table.clone(),
         )
+    }
+
+    pub fn update_path(&mut self, path: PathBuf) {
+        print!("Inside the real update_path");
+        self.explorer_table.update_path(path.clone())
+    }
+
+    pub fn command_line_message(&mut self, msg: String) {
+        self.command_line.command_line_message(msg);
+    }
+
+    pub fn command_line_contents(&self) -> String {
+        self.command_line.get_contents()
     }
 }

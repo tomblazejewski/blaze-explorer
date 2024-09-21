@@ -1,5 +1,6 @@
 use crate::{action::Action, line_entry::LineEntry};
-use std::{error::Error, fs, io::Write, path::PathBuf};
+use core::panic;
+use std::{collections::HashMap, error::Error, fs, io::Write, ops::Rem, path::PathBuf};
 
 use crate::{
     app::App,
@@ -57,15 +58,13 @@ impl Command for ChangeDirectory {
 
 #[derive(Clone)]
 pub struct ParentDirectory {
-    old_path: PathBuf,
     new_path: Option<PathBuf>,
 }
 
 impl ParentDirectory {
     pub fn new(mut ctx: AppContext) -> Self {
-        let current_path = ctx.explorer_table.select_directory().unwrap().clone();
+        let current_path = ctx.explorer_table.get_current_path();
         Self {
-            old_path: current_path.clone(),
             new_path: current_path.parent().map(|name| name.to_owned()),
         }
     }
@@ -128,7 +127,7 @@ impl Command for SelectDirectory {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         match &self.path {
             Some(path) => match path.is_dir() {
-                true => app.explorer_table.update_path(path.clone()),
+                true => app.update_path(path.clone()),
                 false => app.open_default(path.clone()),
             },
             None => {}
@@ -469,37 +468,246 @@ impl Command for Noop {
     }
 }
 
-#[derive(Clone)]
-pub struct Delete {
-    path: PathBuf,
-    contents: Option<Vec<u8>>,
-    revertible: bool,
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum StateDir {
+    File(PathBuf, Vec<u8>),
+    Dir(PathBuf, Vec<Box<StateDir>>),
 }
 
-impl Delete {
-    pub fn new(path: PathBuf) -> Self {
-        Self {
-            path,
-            contents: None,
-            revertible: false,
+/// Save all the contents and structure of a given directory to a state.
+pub fn read_to_state_dir(path: PathBuf) -> StateDir {
+    match path.is_dir() {
+        false => match fs::read(path.clone()) {
+            Ok(contents) => StateDir::File(path.clone(), contents),
+            Err(err) => panic!("Error with path: {:?}: {}", path, err),
+        },
+        true => {
+            // traverse through all subdirectories
+            let mut state_dir = Vec::new();
+
+            for entry in fs::read_dir(path.clone()).unwrap() {
+                match entry {
+                    Ok(entry) => state_dir.push(Box::new(read_to_state_dir(entry.path()))),
+                    Err(err) => panic!("Error with path: {:?}: {}", path, err),
+                }
+            }
+            StateDir::Dir(path, state_dir)
         }
     }
 }
 
-impl Command for Delete {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        if self.path.exists() {
-            self.contents = Some(fs::read(&self.path).unwrap());
-            fs::remove_file(&self.path).expect("Coult not delete file");
-            self.revertible = true;
+//Unload contents of a statedir to the filesystem
+pub fn write_state_dir(state_dir: StateDir) -> Result<(), std::io::Error> {
+    match state_dir {
+        StateDir::File(path, contents) => {
+            fs::write(path, contents)?;
+            Ok(())
         }
+        StateDir::Dir(path, state_dir) => {
+            fs::create_dir_all(path.clone())?;
+            for state in state_dir {
+                write_state_dir(*state)?
+            }
+            Ok(())
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct DeleteSelection {
+    contents_map: Option<HashMap<PathBuf, StateDir>>,
+}
+
+/// Command used to delete files. Considers all selected items at the time of creating the struct.
+impl DeleteSelection {
+    pub fn new(ctx: AppContext) -> Self {
+        let affected_files = ctx.explorer_table.get_selected_files();
+        let contents_map = affected_files.map(|files| {
+            files
+                .iter()
+                .map(|f| (f.clone(), read_to_state_dir(f.to_owned())))
+                .collect::<HashMap<PathBuf, StateDir>>()
+        });
+        Self {
+            contents_map: contents_map.clone(),
+        }
+    }
+}
+
+fn remove_path(path: PathBuf) {
+    match path.is_dir() {
+        true => {
+            fs::remove_dir_all(&path)
+                .expect(format!("Failed to delete {}", path.to_str().unwrap()).as_str());
+        }
+        false => {
+            fs::remove_file(&path)
+                .expect(format!("Failed to delete {}", path.to_str().unwrap()).as_str());
+        }
+    }
+}
+
+impl Command for DeleteSelection {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        match &self.contents_map {
+            Some(contents) => {
+                contents.keys().for_each(|f| remove_path(f.clone()));
+            }
+            None => {}
+        };
         None
     }
 
     fn undo(&mut self, app: &mut App) -> Option<Action> {
-        let mut file = fs::File::create(&self.path).expect("Failed to create the file");
-        let backup_data = self.contents.clone().expect("No backup data");
-        file.write_all(&backup_data);
+        match &self.contents_map {
+            Some(contents) => {
+                let _ = contents
+                    .values()
+                    .map(|state_dir| write_state_dir(state_dir.to_owned()))
+                    .collect::<Result<Vec<()>, std::io::Error>>();
+                return None;
+            }
+            None => {}
+        };
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{thread, time::Duration};
+
+    use fs::File;
+
+    use crate::action::ExplorerAction;
+
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    #[test]
+    fn test_change_directory() {
+        let mut app = App::new().unwrap();
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
+                PathBuf::from("tests/"),
+            )));
+        app.handle_new_actions();
+        assert_eq!(
+            app.explorer_table.get_current_path(),
+            PathBuf::from("tests/")
+        );
+    }
+
+    #[test]
+    fn test_select_up() {
+        let mut app = App::new().unwrap();
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
+                PathBuf::from("tests/"),
+            )));
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::SelectDown));
+        app.handle_new_actions();
+        assert_eq!(app.explorer_table.get_selected(), Some(1));
+    }
+    #[test]
+    fn test_select_down() {
+        let mut app = App::new().unwrap();
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
+                PathBuf::from("tests/"),
+            )));
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::SelectDown));
+        app.handle_new_actions();
+        assert_eq!(app.explorer_table.get_selected(), Some(1));
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::SelectUp));
+        app.handle_new_actions();
+        assert_eq!(app.explorer_table.get_selected(), Some(0));
+    }
+
+    #[test]
+    fn test_update_search_query() {
+        let mut app = App::new().unwrap();
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
+                PathBuf::from("tests/"),
+            )));
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
+                "test_query".into(),
+            )));
+        app.handle_new_actions();
+        assert_eq!(
+            app.explorer_table.get_search_phrase(),
+            Some(String::from("test_query"))
+        );
+    }
+    #[test]
+    fn test_clear_search_query() {
+        let mut app = App::new().unwrap();
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
+                PathBuf::from("tests/"),
+            )));
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
+                "test_query".into(),
+            )));
+        app.handle_new_actions();
+        assert_eq!(
+            app.explorer_table.get_search_phrase(),
+            Some(String::from("test_query"))
+        );
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::ClearSearchQuery));
+        app.handle_new_actions();
+        assert_eq!(app.explorer_table.get_search_phrase(), None)
+    }
+
+    #[test]
+    fn test_parent_directory() {
+        let mut app = App::new().unwrap();
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
+                PathBuf::from("tests/folder_1"),
+            )));
+        app.handle_new_actions();
+        assert_eq!(
+            app.explorer_table.get_current_path(),
+            PathBuf::from("tests/folder_1")
+        );
+
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::ParentDirectory));
+        app.handle_new_actions();
+
+        assert_eq!(
+            app.explorer_table.get_current_path(),
+            PathBuf::from("tests")
+        );
+    }
+    #[test]
+    fn test_delete() {
+        let mut app = App::new().unwrap();
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
+                PathBuf::from("tests/folder_1"),
+            )));
+        app.handle_new_actions();
+        let mut delete_selection = DeleteSelection::new(app.get_app_context());
+        let before = delete_selection.contents_map.clone();
+
+        delete_selection.execute(&mut app);
+        thread::sleep(Duration::from_secs(5));
+        let _ = delete_selection.undo(&mut app);
+
+        let mut duplicate_selection = DeleteSelection::new(app.get_app_context());
+        let after = duplicate_selection.contents_map.clone();
+        assert_eq!(
+            before.unwrap().values().collect::<Vec<_>>(),
+            after.unwrap().values().collect::<Vec<_>>()
+        );
     }
 }

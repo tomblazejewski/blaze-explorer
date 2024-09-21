@@ -174,6 +174,7 @@ impl ExplorerTable {
 
     pub fn update_path(&mut self, path: PathBuf) {
         self.current_path = path;
+        print!("Current path: {}", self.current_path.display());
         let elements = get_file_data(&self.current_path);
         self.elements_list = elements;
         self.state = TableState::default().with_selected(0);
@@ -205,7 +206,7 @@ impl ExplorerTable {
         self.state.select(Some(i));
     }
 
-    pub fn select_directory(&mut self) -> Option<PathBuf> {
+    pub fn select_directory(&self) -> Option<PathBuf> {
         if let Some(index) = self.state.selected() {
             let chosen_element = &self.elements_list[index];
             let created_path = Path::new(&self.current_path).join(&chosen_element.filename);
@@ -222,6 +223,10 @@ impl ExplorerTable {
             self.search_phrase = None
         }
         self.search_elements();
+    }
+
+    pub fn get_search_phrase(&self) -> Option<String> {
+        self.search_phrase.clone()
     }
 
     pub fn next_search_result(&mut self) {
@@ -329,6 +334,15 @@ impl ExplorerTable {
 
     pub fn clear_search_query(&mut self) {
         self.search_phrase = None
+    }
+
+    pub fn get_selected_files(&self) -> Option<Vec<PathBuf>> {
+        //currently just take the selection  of the table
+        //in the future - take all selected items in the visual mode
+        if let Some(path) = self.select_directory() {
+            return Some(vec![path]);
+        }
+        None
     }
 }
 

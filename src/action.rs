@@ -5,11 +5,12 @@ use ratatui::crossterm::event::KeyEvent;
 use crate::{
     app::App,
     command::{
-        ChangeDirectory, ClearSearchQuery, Command, ConfirmCommand, ConfirmSearchQuery, DropKey,
-        EraseText, InsertKey, NextSearchResult, Noop, OpenPopup, ParentDirectory, Quit,
-        SelectDirectory, SelectDown, SelectUp, ShowInFolder, SwitchMode, TelescopeConfirmResult,
-        TelescopeDropSearchChar, TelescopeNextResult, TelescopePreviousResult,
-        TelescopePushSearchChar, TelescopeUpdateSearchQuery, UpdateSearchQuery,
+        ChangeDirectory, ClearSearchQuery, Command, ConfirmCommand, ConfirmSearchQuery,
+        DeleteSelection, DropKey, EraseText, InsertKey, NextSearchResult, Noop, OpenPopup,
+        ParentDirectory, Quit, SelectDirectory, SelectDown, SelectUp, ShowInFolder, SwitchMode,
+        TelescopeConfirmResult, TelescopeDropSearchChar, TelescopeNextResult,
+        TelescopePreviousResult, TelescopePushSearchChar, TelescopeUpdateSearchQuery,
+        UpdateSearchQuery,
     },
     mode::Mode,
 };
@@ -34,6 +35,7 @@ pub enum AppAction {
     ConfirmCommand,
     OpenPopup,
     ShowInFolder(PathBuf),
+    Delete,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -88,6 +90,7 @@ pub fn get_command(app: &App, action: Action) -> Box<dyn Command> {
         Action::AppAct(AppAction::ConfirmCommand) => Box::new(ConfirmCommand::new()),
         Action::AppAct(AppAction::OpenPopup) => Box::new(OpenPopup::new()),
         Action::AppAct(AppAction::ShowInFolder(path)) => Box::new(ShowInFolder::new(ctx, path)),
+        Action::AppAct(AppAction::Delete) => Box::new(DeleteSelection::new(ctx)),
         Action::TextAct(TextAction::InsertKey(ch)) => Box::new(InsertKey::new(ch)),
         Action::TextAct(TextAction::EraseText) => Box::new(EraseText::new()),
         Action::TextAct(TextAction::DropKey) => Box::new(DropKey::new()),
