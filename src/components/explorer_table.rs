@@ -91,7 +91,6 @@ fn get_line_numbers(n_lines: usize, current_line: usize) -> Vec<String> {
         .map(|number| number.to_string())
         .collect::<Vec<String>>();
     let mut current_lines = before_selected;
-    info!("Attempting to subtract {}, {}", n_lines, current_line);
     let n_lines_after = n_lines - current_line;
     let after_selected_iter = (1..n_lines_after + 1).map(|number| number.to_string());
     let current_line_string = format!("{} ", current_line);

@@ -14,17 +14,25 @@ impl CommandHistory {
         }
     }
 
-    pub fn push_command(&mut self, command: Box<dyn Command>) {
+    pub fn perform(&mut self, command: Box<dyn Command>) {
         self.past_commands.push(command);
         self.future_commands.clear();
     }
 
-    pub fn pop_command(&mut self) -> Option<Box<dyn Command>> {
+    pub fn undo(&mut self) -> Option<Box<dyn Command>> {
         let popped_command = self.past_commands.pop();
         if let Some(boxed_command) = &popped_command {
             self.future_commands.push(boxed_command.clone());
         }
 
+        popped_command
+    }
+
+    pub fn redo(&mut self) -> Option<Box<dyn Command>> {
+        let popped_command = self.future_commands.pop();
+        if let Some(boxed_command) = &popped_command {
+            self.past_commands.push(boxed_command.clone());
+        }
         popped_command
     }
 }

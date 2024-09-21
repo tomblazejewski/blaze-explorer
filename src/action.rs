@@ -51,6 +51,7 @@ pub enum Action {
     TextAct(TextAction),
     Noop,
     TelescopeAct(TelescopeAction),
+    CommandAct(CommandAction),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -63,6 +64,12 @@ pub enum TelescopeAction {
     Quit,
     EraseText,
     UpdateSearchQuery(String),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum CommandAction {
+    Undo,
+    Redo,
 }
 
 pub fn get_command(app: &App, action: Action) -> Box<dyn Command> {
@@ -114,5 +121,6 @@ pub fn get_command(app: &App, action: Action) -> Box<dyn Command> {
         }
 
         Action::Noop => Box::new(Noop::new()),
+        Action::CommandAct(_) => Box::new(Noop::new()),
     }
 }

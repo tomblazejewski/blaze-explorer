@@ -17,7 +17,7 @@ use ratatui::{
 };
 use tracing::info;
 
-use crate::action::{get_command, AppAction, ExplorerAction};
+use crate::action::{get_command, AppAction, CommandAction, ExplorerAction};
 use crate::app_input_machine::AppInputMachine;
 use crate::command::Command;
 use crate::command_history::CommandHistory;
@@ -190,22 +190,48 @@ impl App {
         let c_history = self.command_history.get_mut(&current_path);
         if let Some(history) = c_history {
             if command.is_reversible() {
-                history.push_command(command);
+                history.perform(command);
             }
         } else {
             let mut history = CommandHistory::new();
             if command.is_reversible() {
-                history.push_command(command);
+                history.perform(command);
             }
             self.command_history.insert(current_path, history);
         }
     }
+    fn undo(&mut self) {
+        let path = self.explorer_table.get_current_path();
+        let path_history = self.command_history.get_mut(&path);
+        let command = path_history.unwrap().undo();
+        if let Some(mut c) = command {
+            info!("Should be undoing {:?}", c);
+            c.undo(self);
+        }
+    }
+    fn redo(&mut self) {
+        info!("Redoing");
+        let path = self.explorer_table.get_current_path();
+        let path_history = self.command_history.get_mut(&path);
+        let command = path_history.unwrap().redo();
+        info!("Command: {:?}", command);
+        if let Some(mut c) = command {
+            info!("Should be redoing {:?}", c);
+            c.execute(self);
+        }
+    }
     pub fn handle_new_actions(&mut self) -> Result<()> {
         while let Some(action) = self.action_list.pop_front() {
-            let mut command = get_command(self, action.clone());
-            self.record_command(command.clone());
-            if let Some(action) = command.execute(self) {
-                self.action_list.push_back(action);
+            match action {
+                Action::CommandAct(CommandAction::Undo) => self.undo(),
+                Action::CommandAct(CommandAction::Redo) => self.redo(),
+                _ => {
+                    let mut command = get_command(self, action.clone());
+                    self.record_command(command.clone());
+                    if let Some(action) = command.execute(self) {
+                        self.action_list.push_back(action);
+                    }
+                }
             }
         }
         Ok(())

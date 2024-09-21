@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::{
-    action::{Action, AppAction, ExplorerAction, TextAction},
+    action::{Action, AppAction, CommandAction, ExplorerAction, TextAction},
     input_machine::{InputMachine, KeyMapNode, KeyProcessingResult},
     mode::Mode,
 };
@@ -119,6 +119,15 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         ],
         Action::AppAct(AppAction::Delete),
     );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('u'), KeyModifiers::NONE)],
+        Action::CommandAct(CommandAction::Undo),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('r'), KeyModifiers::CONTROL)],
+        Action::CommandAct(CommandAction::Redo),
+    );
+
     root
 }
 
