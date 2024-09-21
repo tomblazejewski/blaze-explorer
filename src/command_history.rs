@@ -1,5 +1,6 @@
 use crate::command::Command;
 
+#[derive(Debug)]
 pub struct CommandHistory {
     past_commands: Vec<Box<dyn Command>>,
     future_commands: Vec<Box<dyn Command>>,

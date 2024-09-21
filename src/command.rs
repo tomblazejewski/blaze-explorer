@@ -1,4 +1,5 @@
 use crate::{action::Action, line_entry::LineEntry};
+use ::std::fmt::Debug;
 use core::panic;
 use std::{collections::HashMap, error::Error, fs, io::Write, ops::Rem, path::PathBuf};
 
@@ -14,18 +15,18 @@ pub trait Command: CommandClone {
     fn undo(&mut self, app: &mut App) -> Option<Action> {
         None
     }
-    fn is_revertable(&self) -> bool {
+    fn is_reversible(&self) -> bool {
         false
     }
 }
 
-pub trait CommandClone {
+pub trait CommandClone: Debug {
     fn clone_box(&self) -> Box<dyn Command>;
 }
 
 impl<T> CommandClone for T
 where
-    T: 'static + Command + Clone,
+    T: 'static + Command + Clone + Debug,
 {
     fn clone_box(&self) -> Box<dyn Command> {
         Box::new(self.clone())
@@ -38,7 +39,7 @@ impl Clone for Box<dyn Command> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ChangeDirectory {
     new_path: PathBuf,
 }
@@ -56,7 +57,7 @@ impl Command for ChangeDirectory {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ParentDirectory {
     new_path: Option<PathBuf>,
 }
@@ -80,7 +81,7 @@ impl Command for ParentDirectory {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SelectUp {}
 
 impl SelectUp {
@@ -95,7 +96,7 @@ impl Command for SelectUp {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SelectDown {}
 
 impl SelectDown {
@@ -110,7 +111,7 @@ impl Command for SelectDown {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SelectDirectory {
     path: Option<PathBuf>,
 }
@@ -136,7 +137,7 @@ impl Command for SelectDirectory {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct UpdateSearchQuery {
     query: String,
 }
@@ -154,7 +155,7 @@ impl Command for UpdateSearchQuery {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ClearSearchQuery {}
 
 impl ClearSearchQuery {
@@ -170,7 +171,7 @@ impl Command for ClearSearchQuery {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NextSearchResult {}
 
 impl NextSearchResult {
@@ -185,7 +186,7 @@ impl Command for NextSearchResult {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ShowInFolder {
     current_file_path: PathBuf,
     target_path: PathBuf,
@@ -208,7 +209,7 @@ impl Command for ShowInFolder {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Quit {}
 
 impl Quit {
@@ -223,7 +224,7 @@ impl Command for Quit {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SwitchMode {
     mode: Mode,
 }
@@ -244,7 +245,7 @@ impl Command for SwitchMode {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ConfirmSearchQuery {}
 
 impl ConfirmSearchQuery {
@@ -258,7 +259,7 @@ impl Command for ConfirmSearchQuery {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ConfirmCommand {}
 
 impl ConfirmCommand {
@@ -272,7 +273,7 @@ impl Command for ConfirmCommand {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct OpenPopup {}
 
 impl OpenPopup {
@@ -287,7 +288,7 @@ impl Command for OpenPopup {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct InsertKey {
     ch: char,
 }
@@ -304,7 +305,7 @@ impl Command for InsertKey {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct EraseText {}
 
 impl EraseText {
@@ -319,7 +320,7 @@ impl Command for EraseText {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DropKey {}
 
 impl DropKey {
@@ -333,7 +334,7 @@ impl Command for DropKey {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TelescopeConfirmResult {}
 
 impl TelescopeConfirmResult {
@@ -347,7 +348,7 @@ impl Command for TelescopeConfirmResult {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TelescopeNextResult {}
 
 impl TelescopeNextResult {
@@ -362,7 +363,7 @@ impl Command for TelescopeNextResult {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TelescopePreviousResult {}
 
 impl TelescopePreviousResult {
@@ -377,7 +378,7 @@ impl Command for TelescopePreviousResult {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TelescopeUpdateSearchQuery {
     query: String,
 }
@@ -394,7 +395,7 @@ impl Command for TelescopeUpdateSearchQuery {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TelescopePushSearchChar {
     ch: char,
 }
@@ -411,7 +412,7 @@ impl Command for TelescopePushSearchChar {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TelescopeDropSearchChar {}
 
 impl TelescopeDropSearchChar {
@@ -425,7 +426,7 @@ impl Command for TelescopeDropSearchChar {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TelescopeQuit {}
 
 impl TelescopeQuit {
@@ -440,7 +441,7 @@ impl Command for TelescopeQuit {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TelescopeEraseText {}
 
 impl TelescopeEraseText {
@@ -454,7 +455,7 @@ impl Command for TelescopeEraseText {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Noop {}
 
 impl Noop {
@@ -513,7 +514,7 @@ pub fn write_state_dir(state_dir: StateDir) -> Result<(), std::io::Error> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DeleteSelection {
     contents_map: Option<HashMap<PathBuf, StateDir>>,
 }
@@ -570,6 +571,9 @@ impl Command for DeleteSelection {
             None => {}
         };
         None
+    }
+    fn is_reversible(&self) -> bool {
+        true
     }
 }
 

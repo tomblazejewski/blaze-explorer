@@ -2,7 +2,7 @@ use chrono::{offset::Utc, DateTime};
 use layout::Alignment;
 use std::{
     fs,
-    path::{Path, PathBuf},
+    path::{self, Path, PathBuf},
     time::SystemTime,
 };
 use style::Styled;
@@ -132,9 +132,10 @@ pub struct ExplorerTable {
 }
 impl ExplorerTable {
     pub fn new() -> Self {
+        let stating_path = path::absolute("./").unwrap();
         Self {
             state: TableState::default().with_selected(0),
-            current_path: PathBuf::from("./"),
+            current_path: stating_path,
             elements_list: Vec::new(),
             mode: Mode::Normal,
             search_phrase: None,
@@ -174,7 +175,6 @@ impl ExplorerTable {
 
     pub fn update_path(&mut self, path: PathBuf) {
         self.current_path = path;
-        print!("Current path: {}", self.current_path.display());
         let elements = get_file_data(&self.current_path);
         self.elements_list = elements;
         self.state = TableState::default().with_selected(0);

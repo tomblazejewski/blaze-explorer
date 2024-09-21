@@ -3,7 +3,6 @@ use std::io::{stdout, Stdout};
 use std::path::{self, PathBuf};
 
 use color_eyre::Result;
-use mockall::automock;
 use ratatui::crossterm::event::KeyEvent;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
@@ -190,12 +189,14 @@ impl App {
         let current_path = self.explorer_table.get_current_path();
         let c_history = self.command_history.get_mut(&current_path);
         if let Some(history) = c_history {
-            if command.is_revertable() {
+            if command.is_reversible() {
                 history.push_command(command);
             }
         } else {
             let mut history = CommandHistory::new();
-            history.push_command(command);
+            if command.is_reversible() {
+                history.push_command(command);
+            }
             self.command_history.insert(current_path, history);
         }
     }
@@ -229,7 +230,6 @@ impl App {
     }
 
     pub fn update_path(&mut self, path: PathBuf) {
-        print!("Inside the real update_path");
         self.explorer_table.update_path(path.clone())
     }
 

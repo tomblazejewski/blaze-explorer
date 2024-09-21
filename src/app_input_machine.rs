@@ -73,10 +73,6 @@ pub fn process_app_keys(
 pub fn default_key_map() -> KeyMapNode<Action> {
     let mut root = KeyMapNode::new();
     root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE)],
-        Action::AppAct(AppAction::Quit),
-    );
-    root.add_sequence(
         vec![KeyEvent::new(KeyCode::Char('n'), KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::NextSearchResult),
     );
@@ -115,6 +111,13 @@ pub fn default_key_map() -> KeyMapNode<Action> {
             KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
         ],
         Action::AppAct(AppAction::OpenPopup),
+    );
+    root.add_sequence(
+        vec![
+            KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),
+        ],
+        Action::AppAct(AppAction::Delete),
     );
     root
 }
