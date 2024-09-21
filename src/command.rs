@@ -1,6 +1,7 @@
 use crate::{action::Action, line_entry::LineEntry};
 use ::std::fmt::Debug;
 use core::panic;
+use std::fmt;
 use std::{collections::HashMap, error::Error, fs, io::Write, ops::Rem, path::PathBuf};
 
 use crate::{
@@ -514,7 +515,7 @@ pub fn write_state_dir(state_dir: StateDir) -> Result<(), std::io::Error> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct DeleteSelection {
     contents_map: Option<HashMap<PathBuf, StateDir>>,
 }
@@ -532,6 +533,20 @@ impl DeleteSelection {
         Self {
             contents_map: contents_map.clone(),
         }
+    }
+}
+
+impl Debug for DeleteSelection {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("DeleteSelection")
+            .field(
+                "paths",
+                &self
+                    .contents_map
+                    .as_ref()
+                    .map(|m| m.keys().collect::<Vec<_>>()),
+            )
+            .finish()
     }
 }
 

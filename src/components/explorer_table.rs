@@ -91,6 +91,7 @@ fn get_line_numbers(n_lines: usize, current_line: usize) -> Vec<String> {
         .map(|number| number.to_string())
         .collect::<Vec<String>>();
     let mut current_lines = before_selected;
+    info!("Attempting to subtract {}, {}", n_lines, current_line);
     let n_lines_after = n_lines - current_line;
     let after_selected_iter = (1..n_lines_after + 1).map(|number| number.to_string());
     let current_line_string = format!("{} ", current_line);
@@ -178,6 +179,30 @@ impl ExplorerTable {
         let elements = get_file_data(&self.current_path);
         self.elements_list = elements;
         self.state = TableState::default().with_selected(0);
+    }
+
+    fn refresh_contents(&mut self) {
+        //get currently selected item
+        let mut selected = self.state.selected().unwrap();
+        let selected_element_path = self.elements_list[selected].filename.clone();
+        // if that element still exists, select it once more
+        let elements = get_file_data(&self.current_path);
+        self.elements_list = elements;
+        if let Some(index) = self
+            .elements_list
+            .iter()
+            .position(|x| x.filename == selected_element_path)
+        {
+            self.state.select(Some(index));
+            return;
+        }
+        //otherwise, select an item with the same id unless it was the last item
+        if selected >= self.elements_list.len() {
+            selected = self.elements_list.len() - 1;
+        }
+        self.state.select(Some(selected));
+        info!("Elements: {:?}", self.elements_list);
+        info!("Selected: {}", selected);
     }
     pub fn next(&mut self) {
         let i = match self.state.selected() {
@@ -349,6 +374,7 @@ impl ExplorerTable {
 impl Component for ExplorerTable {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         // get table block
+        self.refresh_contents();
         let widths = [
             Constraint::Percentage(5),
             Constraint::Percentage(40),
