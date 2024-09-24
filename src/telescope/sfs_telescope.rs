@@ -14,7 +14,7 @@ use ratatui::{
 };
 use rust_search::SearchBuilder;
 
-use crate::action::{Action, AppAction, ExplorerAction, TelescopeAction};
+use crate::action::{Action, AppAction, ExplorerAction, PopupAction};
 
 use super::{AppContext, TelescopeResult, TelescopeSearch};
 

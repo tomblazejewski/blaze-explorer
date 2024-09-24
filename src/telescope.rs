@@ -10,7 +10,7 @@ use ratatui::{
 use sfs_telescope::SearchFileshereSearch;
 
 use crate::{
-    action::{Action, AppAction, ExplorerAction, TelescopeAction},
+    action::{Action, AppAction, ExplorerAction, PopupAction},
     components::explorer_table::ExplorerTable,
     telescope_query::TelescopeQuery,
     themes::CustomTheme,
@@ -162,14 +162,14 @@ impl PopUpComponent for Telescope {
     }
 
     fn handle_action(&mut self, action: Action) -> Option<Action> {
-        if let Action::TelescopeAct(action) = action {
+        if let Action::PopupAct(action) = action {
             match action {
-                TelescopeAction::ConfirmResult => return self.confirm_result(),
-                TelescopeAction::NextResult => {
+                PopupAction::ConfirmResult => return self.confirm_result(),
+                PopupAction::NextResult => {
                     self.next_result();
                 }
-                TelescopeAction::PreviousResult => self.previous_result(),
-                TelescopeAction::UpdateSearchQuery(query) => self.search.search(query),
+                PopupAction::PreviousResult => self.previous_result(),
+                PopupAction::UpdateSearchQuery(query) => self.search.search(query),
                 action => return self.query.handle_text_action(action),
             }
         }

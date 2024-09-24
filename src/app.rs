@@ -25,7 +25,7 @@ use crate::components::command_line::CommandLine;
 use crate::focus::Focus;
 use crate::input_machine::{InputMachine, KeyProcessingResult};
 use crate::line_entry::LineEntry;
-use crate::popup::PopUp;
+use crate::popup::{self, PopUp, PopupEngine};
 use crate::telescope::AppContext;
 use crate::tools::center_rect;
 use crate::{
@@ -65,6 +65,7 @@ pub struct App {
     pub input_machine: AppInputMachine<Action>,
     pub popup: PopUp,
     pub command_history: HashMap<PathBuf, CommandHistory>,
+    pub command_input: Option<String>,
 }
 impl App {
     pub fn new() -> Result<Self> {
@@ -80,6 +81,7 @@ impl App {
             input_machine: AppInputMachine::new(),
             popup: PopUp::None,
             command_history: HashMap::new(),
+            command_input: None,
         })
     }
 
@@ -111,9 +113,15 @@ impl App {
                         }
                     }
                 };
-                if let PopUp::TelescopePopUp(popup) = &self.popup {
-                    if popup.should_quit {
-                        self.popup = PopUp::None;
+                match &self.popup {
+                    PopUp::None => {}
+                    active_popup => {
+                        if active_popup.should_quit() {
+                            if let Some(command) = active_popup.destruct() {
+                                self.run_command(command);
+                            }
+                            self.popup = PopUp::None;
+                        }
                     }
                 }
                 if self.should_quit {
@@ -180,6 +188,7 @@ impl App {
         self.command_line.focus();
         self.explorer_table.unfocus();
     }
+
     pub fn confirm_search_query(&mut self) -> Option<Action> {
         self.enter_normal_mode();
         Some(Action::ExplorerAct(ExplorerAction::NextSearchResult))
@@ -205,19 +214,22 @@ impl App {
         let path_history = self.command_history.get_mut(&path);
         let command = path_history.unwrap().undo();
         if let Some(mut c) = command {
-            info!("Should be undoing {:?}", c);
             c.undo(self);
         }
     }
     fn redo(&mut self) {
-        info!("Redoing");
         let path = self.explorer_table.get_current_path();
         let path_history = self.command_history.get_mut(&path);
         let command = path_history.unwrap().redo();
-        info!("Command: {:?}", command);
         if let Some(mut c) = command {
-            info!("Should be redoing {:?}", c);
             c.execute(self);
+        }
+    }
+
+    pub fn run_command(&mut self, mut command: Box<dyn Command>) {
+        self.record_command(command.clone());
+        if let Some(action) = command.execute(self) {
+            self.action_list.push_back(action);
         }
     }
     pub fn handle_new_actions(&mut self) -> Result<()> {
@@ -226,11 +238,8 @@ impl App {
                 Action::CommandAct(CommandAction::Undo) => self.undo(),
                 Action::CommandAct(CommandAction::Redo) => self.redo(),
                 _ => {
-                    let mut command = get_command(self, action.clone());
-                    self.record_command(command.clone());
-                    if let Some(action) = command.execute(self) {
-                        self.action_list.push_back(action);
-                    }
+                    let command = get_command(self, action.clone());
+                    self.run_command(command);
                 }
             }
         }

@@ -1,5 +1,5 @@
 use crate::{
-    action::{Action, ExplorerAction, TelescopeAction, TextAction},
+    action::{Action, ExplorerAction, PopupAction, TextAction},
     line_entry::LineEntry,
 };
 
@@ -26,7 +26,7 @@ impl LineEntry for TelescopeQuery {
 
     fn remove_char(&mut self) -> Option<Action> {
         self.contents.pop();
-        Some(Action::TelescopeAct(TelescopeAction::UpdateSearchQuery(
+        Some(Action::PopupAct(PopupAction::UpdateSearchQuery(
             self.contents.clone(),
         )))
     }
@@ -42,14 +42,14 @@ impl TelescopeQuery {
             contents: String::new(),
         }
     }
-    pub fn handle_text_action(&mut self, action: TelescopeAction) -> Option<Action> {
+    pub fn handle_text_action(&mut self, action: PopupAction) -> Option<Action> {
         match action {
-            TelescopeAction::PushSearchChar(c) => self.append_char(c),
-            TelescopeAction::EraseText => self.clear_contents(),
-            TelescopeAction::DropSearchChar => return self.remove_char(),
+            PopupAction::PushSearchChar(c) => self.append_char(c),
+            PopupAction::EraseText => self.clear_contents(),
+            PopupAction::DropSearchChar => return self.remove_char(),
             _ => {}
         }
-        Some(Action::TelescopeAct(TelescopeAction::UpdateSearchQuery(
+        Some(Action::PopupAct(PopupAction::UpdateSearchQuery(
             self.contents.clone(),
         )))
     }

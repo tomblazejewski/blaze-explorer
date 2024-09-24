@@ -1,3 +1,4 @@
+use crate::popup::PopUp;
 use std::path::PathBuf;
 
 use ratatui::crossterm::event::KeyEvent;
@@ -14,6 +15,12 @@ use crate::{
     },
     mode::Mode,
 };
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum PopupType {
+    None,
+    Telescope,
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExplorerAction {
@@ -33,7 +40,7 @@ pub enum AppAction {
     SwitchMode(Mode),
     ConfirmSearchQuery,
     ConfirmCommand,
-    OpenPopup,
+    OpenPopup(PopupType),
     ShowInFolder(PathBuf),
     Delete,
 }
@@ -50,12 +57,12 @@ pub enum Action {
     AppAct(AppAction),
     TextAct(TextAction),
     Noop,
-    TelescopeAct(TelescopeAction),
+    PopupAct(PopupAction),
     CommandAct(CommandAction),
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum TelescopeAction {
+pub enum PopupAction {
     ConfirmResult,
     PushSearchChar(char),
     DropSearchChar,
@@ -72,7 +79,7 @@ pub enum CommandAction {
     Redo,
 }
 
-pub fn get_command(app: &App, action: Action) -> Box<dyn Command> {
+pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
     let ctx = app.get_app_context();
     match action {
         Action::ExplorerAct(ExplorerAction::ChangeDirectory(path)) => {
@@ -95,28 +102,22 @@ pub fn get_command(app: &App, action: Action) -> Box<dyn Command> {
         Action::AppAct(AppAction::SwitchMode(mode)) => Box::new(SwitchMode::new(ctx, mode)),
         Action::AppAct(AppAction::ConfirmSearchQuery) => Box::new(ConfirmSearchQuery::new()),
         Action::AppAct(AppAction::ConfirmCommand) => Box::new(ConfirmCommand::new()),
-        Action::AppAct(AppAction::OpenPopup) => Box::new(OpenPopup::new()),
+        Action::AppAct(AppAction::OpenPopup(popup_type)) => Box::new(OpenPopup::new(popup_type)),
         Action::AppAct(AppAction::ShowInFolder(path)) => Box::new(ShowInFolder::new(ctx, path)),
         Action::AppAct(AppAction::Delete) => Box::new(DeleteSelection::new(ctx)),
         Action::TextAct(TextAction::InsertKey(ch)) => Box::new(InsertKey::new(ch)),
         Action::TextAct(TextAction::EraseText) => Box::new(EraseText::new()),
         Action::TextAct(TextAction::DropKey) => Box::new(DropKey::new()),
-        Action::TelescopeAct(TelescopeAction::ConfirmResult) => {
-            Box::new(TelescopeConfirmResult::new())
-        }
-        Action::TelescopeAct(TelescopeAction::PushSearchChar(ch)) => {
+        Action::PopupAct(PopupAction::ConfirmResult) => Box::new(TelescopeConfirmResult::new()),
+        Action::PopupAct(PopupAction::PushSearchChar(ch)) => {
             Box::new(TelescopePushSearchChar::new(ch))
         }
-        Action::TelescopeAct(TelescopeAction::DropSearchChar) => {
-            Box::new(TelescopeDropSearchChar::new())
-        }
-        Action::TelescopeAct(TelescopeAction::NextResult) => Box::new(TelescopeNextResult::new()),
-        Action::TelescopeAct(TelescopeAction::PreviousResult) => {
-            Box::new(TelescopePreviousResult::new())
-        }
-        Action::TelescopeAct(TelescopeAction::Quit) => Box::new(Quit::new()),
-        Action::TelescopeAct(TelescopeAction::EraseText) => Box::new(EraseText::new()),
-        Action::TelescopeAct(TelescopeAction::UpdateSearchQuery(query)) => {
+        Action::PopupAct(PopupAction::DropSearchChar) => Box::new(TelescopeDropSearchChar::new()),
+        Action::PopupAct(PopupAction::NextResult) => Box::new(TelescopeNextResult::new()),
+        Action::PopupAct(PopupAction::PreviousResult) => Box::new(TelescopePreviousResult::new()),
+        Action::PopupAct(PopupAction::Quit) => Box::new(Quit::new()),
+        Action::PopupAct(PopupAction::EraseText) => Box::new(EraseText::new()),
+        Action::PopupAct(PopupAction::UpdateSearchQuery(query)) => {
             Box::new(TelescopeUpdateSearchQuery::new(query))
         }
 

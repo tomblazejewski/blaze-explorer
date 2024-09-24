@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::{
-    action::{Action, AppAction, CommandAction, ExplorerAction, TextAction},
+    action::{Action, AppAction, CommandAction, ExplorerAction, PopupType, TextAction},
     input_machine::{InputMachine, KeyMapNode, KeyProcessingResult},
     mode::Mode,
 };
@@ -110,7 +110,7 @@ pub fn default_key_map() -> KeyMapNode<Action> {
             KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
         ],
-        Action::AppAct(AppAction::OpenPopup),
+        Action::AppAct(AppAction::OpenPopup(PopupType::Telescope)),
     );
     root.add_sequence(
         vec![

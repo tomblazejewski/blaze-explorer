@@ -1,3 +1,4 @@
+use crate::action::PopupType;
 use crate::{action::Action, line_entry::LineEntry};
 use ::std::fmt::Debug;
 use core::panic;
@@ -7,7 +8,7 @@ use std::{collections::HashMap, error::Error, fs, io::Write, ops::Rem, path::Pat
 use crate::{
     app::App,
     mode::Mode,
-    popup::{PopUp, PopUpWindow},
+    popup::{PopUp, TelescopeWindow},
     telescope::AppContext,
 };
 
@@ -275,16 +276,23 @@ impl Command for ConfirmCommand {
 }
 
 #[derive(Clone, Debug)]
-pub struct OpenPopup {}
+pub struct OpenPopup {
+    popup: PopupType,
+}
 
 impl OpenPopup {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(popup: PopupType) -> Self {
+        Self { popup }
     }
 }
 impl Command for OpenPopup {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup = PopUp::TelescopePopUp(PopUpWindow::new(app.get_app_context()));
+        match &self.popup {
+            PopupType::None => app.popup = PopUp::None,
+            PopupType::Telescope => {
+                app.popup = PopUp::TelescopePopUp(TelescopeWindow::new(app.get_app_context()))
+            }
+        }
         None
     }
 }
@@ -592,6 +600,62 @@ impl Command for DeleteSelection {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct RenameActive {
+    pub first_path: PathBuf,
+    pub second_path: Option<PathBuf>,
+    reversible: bool,
+}
+
+/// Rename currently selected file
+impl RenameActive {
+    // pub fn new(ctx: AppContext, new_name: String) -> Self {
+    //     let first_path = ctx.explorer_table.select_directory().unwrap();
+    //     let second_path = first_path.parent().unwrap().join(new_name);
+    //     Self {
+    //         first_path,
+    //         second_path,
+    //         reversible: false,
+    //     }
+    // }
+
+    pub fn default(ctx: AppContext) -> Self {
+        let first_path = ctx.explorer_table.select_directory().unwrap();
+        let second_path = None;
+        Self {
+            first_path,
+            second_path,
+            reversible: false,
+        }
+    }
+
+    pub fn update_second_path(&mut self, new_path: String) {
+        let new_path = self.first_path.parent().unwrap().join(new_path);
+        self.second_path = Some(new_path);
+        self.reversible = true;
+    }
+}
+
+fn rename_path(first_path: PathBuf, second_path: PathBuf) {
+    fs::rename(first_path.clone(), second_path)
+        .expect(format!("Failed to rename {}", first_path.to_str().unwrap()).as_str());
+}
+
+impl Command for RenameActive {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        rename_path(self.first_path.clone(), self.second_path.clone().unwrap());
+        self.reversible = true;
+        None
+    }
+
+    fn undo(&mut self, app: &mut App) -> Option<Action> {
+        rename_path(self.second_path.clone().unwrap(), self.first_path.clone());
+        None
+    }
+    fn is_reversible(&self) -> bool {
+        self.reversible
+    }
+}
 #[cfg(test)]
 mod tests {
     use std::{thread, time::Duration};

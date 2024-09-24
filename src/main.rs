@@ -23,6 +23,7 @@ mod line_entry;
 mod logging;
 mod mode;
 mod popup;
+mod simple_input_machine;
 mod telescope;
 mod telescope_input_machine;
 mod telescope_query;

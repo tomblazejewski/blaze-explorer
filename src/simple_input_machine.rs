@@ -10,11 +10,11 @@ use crate::{
     mode::Mode,
 };
 
-pub struct TelescopeInputMachine {
+pub struct SimpleInputMachine {
     keymap_nodes: HashMap<Mode, KeyMapNode<Action>>,
 }
 
-impl InputMachine for TelescopeInputMachine {
+impl InputMachine for SimpleInputMachine {
     fn process_keys(
         &mut self,
         mode: &Mode,
@@ -36,12 +36,12 @@ impl InputMachine for TelescopeInputMachine {
     }
 }
 
-impl TelescopeInputMachine {
+impl SimpleInputMachine {
     pub fn new() -> Self {
         let mut keymap_nodes = HashMap::new();
         keymap_nodes.insert(Mode::Normal, default_key_map());
 
-        TelescopeInputMachine { keymap_nodes }
+        SimpleInputMachine { keymap_nodes }
     }
 }
 pub fn process_telescope_keys(
