@@ -113,6 +113,10 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         Action::AppAct(AppAction::OpenPopup(PopupType::Telescope)),
     );
     root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)],
+        Action::AppAct(AppAction::OpenPopup(PopupType::Rename)),
+    );
+    root.add_sequence(
         vec![
             KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),

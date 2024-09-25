@@ -111,6 +111,11 @@ impl App {
                         PopUp::None => {
                             self.handle_key_event(key);
                         }
+                        PopUp::InputPopUp(input) => {
+                            if let Some(action) = input.handle_key_event(key) {
+                                self.action_list.push_back(action);
+                            }
+                        }
                     }
                 };
                 match &self.popup {

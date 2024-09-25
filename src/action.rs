@@ -1,4 +1,4 @@
-use crate::popup::PopUp;
+use crate::{command::TelescopeQuit, popup::PopUp};
 use std::path::PathBuf;
 
 use ratatui::crossterm::event::KeyEvent;
@@ -20,6 +20,7 @@ use crate::{
 pub enum PopupType {
     None,
     Telescope,
+    Rename,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -115,7 +116,7 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::PopupAct(PopupAction::DropSearchChar) => Box::new(TelescopeDropSearchChar::new()),
         Action::PopupAct(PopupAction::NextResult) => Box::new(TelescopeNextResult::new()),
         Action::PopupAct(PopupAction::PreviousResult) => Box::new(TelescopePreviousResult::new()),
-        Action::PopupAct(PopupAction::Quit) => Box::new(Quit::new()),
+        Action::PopupAct(PopupAction::Quit) => Box::new(TelescopeQuit::new()),
         Action::PopupAct(PopupAction::EraseText) => Box::new(EraseText::new()),
         Action::PopupAct(PopupAction::UpdateSearchQuery(query)) => {
             Box::new(TelescopeUpdateSearchQuery::new(query))

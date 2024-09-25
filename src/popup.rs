@@ -21,6 +21,7 @@ use crate::{
 pub enum PopUp {
     None,
     TelescopePopUp(TelescopeWindow),
+    InputPopUp(ActionInput<RenameActive>),
 }
 
 impl PopUp {
@@ -28,6 +29,7 @@ impl PopUp {
         match self {
             PopUp::None => {}
             PopUp::TelescopePopUp(popup_window) => return popup_window.handle_key_event(key_event),
+            PopUp::InputPopUp(action_input) => return action_input.handle_key_event(key_event),
         }
         None
     }
@@ -36,6 +38,7 @@ impl PopUp {
         match self {
             PopUp::None => {}
             PopUp::TelescopePopUp(popup_window) => return popup_window.handle_action(action),
+            PopUp::InputPopUp(action_input) => return action_input.handle_action(action),
         }
         None
     }
@@ -44,6 +47,7 @@ impl PopUp {
         match self {
             PopUp::None => {}
             PopUp::TelescopePopUp(popup_window) => popup_window.draw(frame, area)?,
+            PopUp::InputPopUp(action_input) => action_input.draw(frame, area)?,
         }
         Ok(())
     }
@@ -52,6 +56,7 @@ impl PopUp {
         match self {
             PopUp::None => None,
             PopUp::TelescopePopUp(popup_window) => popup_window.confirm_result(),
+            PopUp::InputPopUp(action_input) => action_input.confirm_result(),
         }
     }
 
@@ -59,6 +64,7 @@ impl PopUp {
         match self {
             PopUp::None => {}
             PopUp::TelescopePopUp(popup_window) => popup_window.next_result(),
+            PopUp::InputPopUp(action_input) => action_input.next_result(),
         }
     }
 
@@ -66,6 +72,7 @@ impl PopUp {
         match self {
             PopUp::None => {}
             PopUp::TelescopePopUp(popup_window) => popup_window.previous_result(),
+            PopUp::InputPopUp(action_input) => action_input.previous_result(),
         }
     }
 
@@ -73,6 +80,7 @@ impl PopUp {
         match self {
             PopUp::None => {}
             PopUp::TelescopePopUp(popup_window) => popup_window.update_search_query(query),
+            PopUp::InputPopUp(action_input) => action_input.update_search_query(query),
         }
     }
 
@@ -85,6 +93,7 @@ impl PopUp {
                     search_query,
                 )))
             }
+            PopUp::InputPopUp(action_input) => None,
         }
     }
 
@@ -94,6 +103,10 @@ impl PopUp {
             PopUp::TelescopePopUp(popup_window) => {
                 popup_window.push_search_char(ch);
                 self.search_query_action()
+            }
+            PopUp::InputPopUp(action_input) => {
+                action_input.push_search_char(ch);
+                None
             }
         }
     }
@@ -105,6 +118,10 @@ impl PopUp {
                 popup_window.drop_search_char();
                 self.search_query_action()
             }
+            PopUp::InputPopUp(action_input) => {
+                action_input.drop_search_char();
+                None
+            }
         }
     }
 
@@ -115,6 +132,10 @@ impl PopUp {
                 popup_window.erase_text();
                 self.search_query_action()
             }
+            PopUp::InputPopUp(action_input) => {
+                action_input.erase_text();
+                None
+            }
         }
     }
 
@@ -122,6 +143,7 @@ impl PopUp {
         match self {
             PopUp::None => {}
             PopUp::TelescopePopUp(popup_window) => popup_window.quit(),
+            PopUp::InputPopUp(action_input) => action_input.quit(),
         }
     }
 
@@ -129,6 +151,7 @@ impl PopUp {
         match self {
             PopUp::None => None,
             PopUp::TelescopePopUp(popup_window) => popup_window.destruct(),
+            PopUp::InputPopUp(action_input) => action_input.destruct(),
         }
     }
 
@@ -136,6 +159,7 @@ impl PopUp {
         match self {
             PopUp::None => false,
             PopUp::TelescopePopUp(popup_window) => popup_window.should_quit,
+            PopUp::InputPopUp(action_input) => action_input.should_quit,
         }
     }
 }
@@ -280,7 +304,7 @@ impl ActionInput<RenameActive> {
     }
 
     pub fn update_action_details(&mut self, new_name: String) {
-        self.resulting_action.update_second_path(new_name);
+        self.resulting_action.update_command_context(new_name);
     }
 }
 impl PopupEngine for ActionInput<RenameActive> {
@@ -334,7 +358,8 @@ impl PopupEngine for ActionInput<RenameActive> {
 
         frame.render_widget(Clear, area);
         frame.render_widget(query_paragraph, query_area);
-        todo!();
+
+        Ok(())
     }
 
     fn confirm_result(&mut self) -> Option<Action> {

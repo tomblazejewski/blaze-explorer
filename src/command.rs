@@ -1,4 +1,5 @@
 use crate::action::PopupType;
+use crate::popup::ActionInput;
 use crate::{action::Action, line_entry::LineEntry};
 use ::std::fmt::Debug;
 use core::panic;
@@ -291,6 +292,10 @@ impl Command for OpenPopup {
             PopupType::None => app.popup = PopUp::None,
             PopupType::Telescope => {
                 app.popup = PopUp::TelescopePopUp(TelescopeWindow::new(app.get_app_context()))
+            }
+            PopupType::Rename => {
+                app.popup =
+                    PopUp::InputPopUp(ActionInput::<RenameActive>::new(app.get_app_context()))
             }
         }
         None
@@ -628,8 +633,7 @@ impl RenameActive {
             reversible: false,
         }
     }
-
-    pub fn update_second_path(&mut self, new_path: String) {
+    pub fn update_command_context(&mut self, new_path: String) {
         let new_path = self.first_path.parent().unwrap().join(new_path);
         self.second_path = Some(new_path);
         self.reversible = true;
