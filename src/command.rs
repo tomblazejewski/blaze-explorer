@@ -61,25 +61,17 @@ impl Command for ChangeDirectory {
 }
 
 #[derive(Clone, Debug)]
-pub struct ParentDirectory {
-    new_path: Option<PathBuf>,
-}
+pub struct ParentDirectory {}
 
 impl ParentDirectory {
     pub fn new(mut ctx: AppContext) -> Self {
-        let current_path = ctx.explorer_table.get_current_path();
-        Self {
-            new_path: current_path.parent().map(|name| name.to_owned()),
-        }
+        ParentDirectory {}
     }
 }
 
 impl Command for ParentDirectory {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &self.new_path {
-            Some(new_path) => app.explorer_table.update_path(new_path.clone()),
-            _ => {}
-        }
+        app.explorer_table.go_up();
         None
     }
 }
