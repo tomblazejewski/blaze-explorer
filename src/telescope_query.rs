@@ -5,6 +5,8 @@ use crate::{
 
 pub struct TelescopeQuery {
     pub contents: String,
+    pub prefix: String,
+    pub suffix: String,
 }
 
 impl LineEntry for TelescopeQuery {
@@ -32,14 +34,23 @@ impl LineEntry for TelescopeQuery {
     }
 
     fn get_contents(&self) -> String {
-        self.contents.clone()
+        format!("{}{}{}", self.prefix, self.contents, self.suffix)
     }
 }
 
 impl TelescopeQuery {
-    pub fn new() -> Self {
+    pub fn default() -> Self {
         Self {
             contents: String::new(),
+            prefix: String::new(),
+            suffix: String::new(),
+        }
+    }
+    pub fn new(prefix: String, suffix: String) -> Self {
+        Self {
+            contents: String::new(),
+            prefix,
+            suffix,
         }
     }
     pub fn handle_text_action(&mut self, action: PopupAction) -> Option<Action> {

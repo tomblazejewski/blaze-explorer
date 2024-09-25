@@ -294,12 +294,22 @@ pub struct ActionInput<T> {
 
 impl ActionInput<RenameActive> {
     pub fn new(ctx: AppContext) -> Self {
+        let suffix = ctx
+            .explorer_table
+            .select_directory()
+            .unwrap()
+            .extension()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+        let dot_suffix = format!(".{}", suffix);
         ActionInput {
             resulting_action: RenameActive::default(ctx),
             input_machine: TelescopeInputMachine::new(),
             current_sequence: Vec::new(),
             should_quit: false,
-            query: TelescopeQuery::new(),
+            query: TelescopeQuery::new(String::new(), dot_suffix),
         }
     }
 
@@ -346,14 +356,17 @@ impl PopupEngine for ActionInput<RenameActive> {
         let query_area = center_rect(
             frame.size(),
             Constraint::Percentage(50),
-            Constraint::Percentage(10),
+            Constraint::Length(3),
         );
         let title = format!(
             "Rename {}",
             self.resulting_action.first_path.to_str().unwrap()
         );
         let query_block = Block::default().borders(Borders::ALL).title(title);
-        let query_paragraph = Paragraph::new(self.query.contents.clone());
+        let new_name = self.query.contents.clone();
+        let extension = self.resulting_action.first_path.extension().unwrap();
+        let rename_field_output = format!("{}.{}", new_name, extension.to_str().unwrap());
+        let query_paragraph = Paragraph::new(rename_field_output);
         let query_paragraph = query_paragraph.block(query_block);
 
         frame.render_widget(Clear, area);

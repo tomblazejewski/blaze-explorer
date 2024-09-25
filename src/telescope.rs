@@ -178,7 +178,7 @@ impl PopUpComponent for Telescope {
 
     fn new(search_context: AppContext) -> Self {
         Self {
-            query: TelescopeQuery::new(),
+            query: TelescopeQuery::default(),
             search: Box::new(SearchFileshereSearch::new(search_context)),
             table_state: TableState::default(),
             theme: CustomTheme::default(),
