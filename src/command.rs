@@ -1,9 +1,14 @@
+use chrono::offset;
+use directories::ProjectDirs;
+use tracing::info;
+
 use crate::action::PopupType;
 use crate::popup::ActionInput;
 use crate::{action::Action, line_entry::LineEntry};
-use ::std::fmt::Debug;
 use core::panic;
 use std::fmt;
+use std::fmt::Debug;
+use std::fs::File;
 use std::{collections::HashMap, error::Error, fs, io::Write, ops::Rem, path::PathBuf};
 
 use crate::{
@@ -475,10 +480,10 @@ impl Command for Noop {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum StateDir {
     File(PathBuf, Vec<u8>),
-    Dir(PathBuf, Vec<Box<StateDir>>),
+    Dir(PathBuf, Vec<StateDir>),
 }
 
 /// Save all the contents and structure of a given directory to a state.
@@ -494,7 +499,7 @@ pub fn read_to_state_dir(path: PathBuf) -> StateDir {
 
             for entry in fs::read_dir(path.clone()).unwrap() {
                 match entry {
-                    Ok(entry) => state_dir.push(Box::new(read_to_state_dir(entry.path()))),
+                    Ok(entry) => state_dir.push(read_to_state_dir(entry.path())),
                     Err(err) => panic!("Error with path: {:?}: {}", path, err),
                 }
             }
@@ -513,30 +518,34 @@ pub fn write_state_dir(state_dir: StateDir) -> Result<(), std::io::Error> {
         StateDir::Dir(path, state_dir) => {
             fs::create_dir_all(path.clone())?;
             for state in state_dir {
-                write_state_dir(*state)?
+                write_state_dir(state)?
             }
             Ok(())
         }
     }
 }
 
+pub fn write_state_dir_from_file(path: PathBuf) -> Result<(), std::io::Error> {
+    let contents = File::open(path)?;
+    let state_dir: StateDir = serde_json::from_reader(contents)?;
+
+    let _ = write_state_dir(state_dir);
+    Ok(())
+}
+
 #[derive(Clone)]
 pub struct DeleteSelection {
-    contents_map: Option<HashMap<PathBuf, StateDir>>,
+    affected_files: Option<Vec<PathBuf>>,
+    backup_path: Option<HashMap<PathBuf, PathBuf>>,
 }
 
 /// Command used to delete files. Considers all selected items at the time of creating the struct.
 impl DeleteSelection {
     pub fn new(ctx: AppContext) -> Self {
         let affected_files = ctx.explorer_table.get_selected_files();
-        let contents_map = affected_files.map(|files| {
-            files
-                .iter()
-                .map(|f| (f.clone(), read_to_state_dir(f.to_owned())))
-                .collect::<HashMap<PathBuf, StateDir>>()
-        });
         Self {
-            contents_map: contents_map.clone(),
+            affected_files,
+            backup_path: None,
         }
     }
 }
@@ -544,18 +553,40 @@ impl DeleteSelection {
 impl Debug for DeleteSelection {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("DeleteSelection")
-            .field(
-                "paths",
-                &self
-                    .contents_map
-                    .as_ref()
-                    .map(|m| m.keys().collect::<Vec<_>>()),
-            )
+            .field("to delete", &self.affected_files)
+            .field("backup_path", &self.backup_path)
             .finish()
     }
 }
 
-fn remove_path(path: PathBuf) {
+fn backup_contents(contents: StateDir, backup_path: PathBuf) -> Result<(), std::io::Error> {
+    let serialized_contents = serde_json::to_string(&contents)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+
+    // Create or open the backup file
+    let mut file = File::create(backup_path)?;
+
+    // Write the serialized contents to the file
+    file.write_all(serialized_contents.as_bytes())?;
+
+    // Ensure all data is flushed to disk
+    file.flush()?;
+
+    Ok(())
+}
+fn remove_path(path: &PathBuf) -> PathBuf {
+    //write contents to a file so this can be recovered later on
+    let backup_name = format!(
+        "backup_{}.blzbkp",
+        offset::Local::now().format("%d_%h_%Y_%H_%M_%S_%3f")
+    );
+
+    let proj_dir = ProjectDirs::from("", "", "blaze_explorer").unwrap();
+    let backup_path = proj_dir.cache_dir().join(backup_name);
+
+    let contents = read_to_state_dir(path.clone());
+    backup_contents(contents, backup_path.clone()).unwrap();
+
     match path.is_dir() {
         true => {
             fs::remove_dir_all(&path)
@@ -566,13 +597,18 @@ fn remove_path(path: PathBuf) {
                 .expect(format!("Failed to delete {}", path.to_str().unwrap()).as_str());
         }
     }
+    backup_path
 }
 
 impl Command for DeleteSelection {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &self.contents_map {
+        match &self.affected_files {
             Some(contents) => {
-                contents.keys().for_each(|f| remove_path(f.clone()));
+                let contents_map = contents
+                    .iter()
+                    .map(|f| (f.to_owned(), remove_path(f)))
+                    .collect::<HashMap<PathBuf, PathBuf>>();
+                self.backup_path = Some(contents_map);
             }
             None => {}
         };
@@ -580,11 +616,11 @@ impl Command for DeleteSelection {
     }
 
     fn undo(&mut self, app: &mut App) -> Option<Action> {
-        match &self.contents_map {
+        match &self.backup_path {
             Some(contents) => {
                 let _ = contents
                     .values()
-                    .map(|state_dir| write_state_dir(state_dir.to_owned()))
+                    .map(|path| write_state_dir_from_file(path.to_owned()))
                     .collect::<Result<Vec<()>, std::io::Error>>();
                 return None;
             }

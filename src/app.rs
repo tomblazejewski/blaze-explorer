@@ -145,7 +145,6 @@ impl App {
         let keymap_result =
             self.input_machine
                 .process_keys(&self.mode, &mut self.current_sequence, key_event);
-        info!("Keymap result: {:?}", keymap_result);
         match keymap_result {
             KeyProcessingResult::Complete(action) => {
                 info!("Complete Action: {:?}", action);
@@ -232,10 +231,11 @@ impl App {
     }
 
     pub fn run_command(&mut self, mut command: Box<dyn Command>) {
-        self.record_command(command.clone());
         if let Some(action) = command.execute(self) {
             self.action_list.push_back(action);
         }
+        //Record the command after execution (execution can mutate the command)
+        self.record_command(command.clone());
     }
     pub fn handle_new_actions(&mut self) -> Result<()> {
         while let Some(action) = self.action_list.pop_front() {
