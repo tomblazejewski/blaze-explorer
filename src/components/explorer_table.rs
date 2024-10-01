@@ -1,18 +1,17 @@
 use chrono::{offset::Utc, DateTime};
 use layout::Alignment;
+use std::path::PathBuf;
 use std::{
     fs,
-    path::{self, Path, PathBuf},
-    time::SystemTime,
+    path::{self, Path},
 };
 use style::Styled;
 use tracing::info;
 
 use color_eyre::{eyre::Result, owo_colors::OwoColorize};
 use ratatui::{
-    crossterm::event::{KeyCode, KeyEvent},
     prelude::*,
-    style::{palette::tailwind, Modifier, Style},
+    style::{palette::tailwind, Style},
     widgets::*,
     Frame,
 };

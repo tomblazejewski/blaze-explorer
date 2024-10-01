@@ -116,7 +116,7 @@ mod tests {
                 KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
                 KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
             ],
-            Action::AppAct(AppAction::OpenPopup),
+            Action::AppAct(AppAction::Delete),
         );
         root.add_sequence(
             vec![

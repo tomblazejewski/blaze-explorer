@@ -3,6 +3,7 @@ use directories::ProjectDirs;
 use tracing::info;
 
 use crate::action::PopupType;
+use crate::app::ExitResult;
 use crate::popup::ActionInput;
 use crate::{action::Action, line_entry::LineEntry};
 use core::panic;
@@ -688,6 +689,25 @@ impl Command for RenameActive {
         self.reversible
     }
 }
+#[derive(Clone, Debug)]
+pub struct OpenNeovimHere {
+    path: PathBuf,
+}
+
+impl OpenNeovimHere {
+    pub fn new(ctx: AppContext) -> Self {
+        let path = ctx.explorer_table.get_current_path();
+        Self { path }
+    }
+}
+
+impl Command for OpenNeovimHere {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.exit_status = Some(ExitResult::OpenNeovim(self.path.clone()));
+        app.should_quit = true;
+        None
+    }
+}
 #[cfg(test)]
 mod tests {
     use std::{thread, time::Duration};
@@ -812,17 +832,14 @@ mod tests {
             )));
         app.handle_new_actions();
         let mut delete_selection = DeleteSelection::new(app.get_app_context());
-        let before = delete_selection.contents_map.clone();
+        let before = delete_selection.affected_files.clone();
 
         delete_selection.execute(&mut app);
         thread::sleep(Duration::from_secs(5));
         let _ = delete_selection.undo(&mut app);
 
         let mut duplicate_selection = DeleteSelection::new(app.get_app_context());
-        let after = duplicate_selection.contents_map.clone();
-        assert_eq!(
-            before.unwrap().values().collect::<Vec<_>>(),
-            after.unwrap().values().collect::<Vec<_>>()
-        );
+        let after = duplicate_selection.affected_files.clone();
+        assert_eq!(before, after);
     }
 }

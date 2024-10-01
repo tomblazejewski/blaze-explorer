@@ -131,6 +131,14 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         vec![KeyEvent::new(KeyCode::Char('r'), KeyModifiers::CONTROL)],
         Action::CommandAct(CommandAction::Redo),
     );
+    root.add_sequence(
+        vec![
+            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('o'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('n'), KeyModifiers::NONE),
+        ],
+        Action::AppAct(AppAction::OpenNeovimHere),
+    );
 
     root
 }

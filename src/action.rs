@@ -1,4 +1,7 @@
-use crate::{command::TelescopeQuit, popup::PopUp};
+use crate::{
+    command::{OpenNeovimHere, TelescopeQuit},
+    popup::PopUp,
+};
 use std::path::PathBuf;
 
 use ratatui::crossterm::event::KeyEvent;
@@ -44,6 +47,7 @@ pub enum AppAction {
     OpenPopup(PopupType),
     ShowInFolder(PathBuf),
     Delete,
+    OpenNeovimHere,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -106,6 +110,7 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::AppAct(AppAction::OpenPopup(popup_type)) => Box::new(OpenPopup::new(popup_type)),
         Action::AppAct(AppAction::ShowInFolder(path)) => Box::new(ShowInFolder::new(ctx, path)),
         Action::AppAct(AppAction::Delete) => Box::new(DeleteSelection::new(ctx)),
+        Action::AppAct(AppAction::OpenNeovimHere) => Box::new(OpenNeovimHere::new(ctx)),
         Action::TextAct(TextAction::InsertKey(ch)) => Box::new(InsertKey::new(ch)),
         Action::TextAct(TextAction::EraseText) => Box::new(EraseText::new()),
         Action::TextAct(TextAction::DropKey) => Box::new(DropKey::new()),

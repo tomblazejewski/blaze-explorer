@@ -1,15 +1,17 @@
 use logging::initialize_logging;
 use ratatui::{
     crossterm::{
-        terminal::{enable_raw_mode, EnterAlternateScreen},
+        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
         ExecutableCommand,
     },
     prelude::*,
 };
-use std::error::Error;
-use std::io::stdout;
+use std::process::Command;
+use std::{env::set_current_dir, io::stdout};
+use std::{error::Error, path::PathBuf};
+use tracing::info;
 mod app;
-use app::App;
+use app::{App, ExitResult};
 mod action;
 mod action_agent;
 mod app_input_machine;
@@ -29,12 +31,38 @@ mod telescope_input_machine;
 mod telescope_query;
 mod themes;
 mod tools;
+
+fn bring_app_back(app: &mut App) {
+    app.exit_status = None;
+    app.should_quit = false;
+}
+fn open_neovim(path: &PathBuf) -> Result<(), Box<dyn Error>> {
+    set_current_dir(path)?;
+    let output = Command::new("nvim").status()?;
+    Ok(())
+}
 fn main() -> Result<(), Box<dyn Error>> {
     initialize_logging()?;
-    stdout().execute(EnterAlternateScreen)?;
-    enable_raw_mode()?;
     let mut app = App::new().unwrap();
-    let _ = app.run();
-
+    let mut cold_start = true;
+    loop {
+        stdout().execute(EnterAlternateScreen)?;
+        enable_raw_mode()?;
+        let result = app.run(cold_start);
+        cold_start = false;
+        stdout().execute(LeaveAlternateScreen)?;
+        disable_raw_mode()?;
+        match result {
+            Ok(ExitResult::Quit) => break,
+            Ok(ExitResult::OpenNeovim(path)) => {
+                open_neovim(&path)?;
+                bring_app_back(&mut app);
+            }
+            Err(e) => {
+                println!("{}", e);
+            }
+            _ => {}
+        }
+    }
     Ok(())
 }

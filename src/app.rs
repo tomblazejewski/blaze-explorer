@@ -34,6 +34,12 @@ use crate::{
     mode::Mode,
 };
 
+#[derive(Clone)]
+pub enum ExitResult {
+    Quit,
+    OpenTerminal(PathBuf),
+    OpenNeovim(PathBuf),
+}
 fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
     let main_box = Layout::default()
         .direction(Direction::Vertical)
@@ -66,6 +72,7 @@ pub struct App {
     pub popup: PopUp,
     pub command_history: HashMap<PathBuf, CommandHistory>,
     pub command_input: Option<String>,
+    pub exit_status: Option<ExitResult>,
 }
 impl App {
     pub fn new() -> Result<Self> {
@@ -82,6 +89,7 @@ impl App {
             popup: PopUp::None,
             command_history: HashMap::new(),
             command_input: None,
+            exit_status: None,
         })
     }
 
@@ -89,14 +97,16 @@ impl App {
     pub fn queue_key_event(&mut self, action: Action) {
         self.action_list.push_back(action);
     }
-    pub fn run(&mut self) -> Result<()> {
+    pub fn run(&mut self, cold_start: bool) -> Result<ExitResult> {
         self.terminal.clear()?;
-        let path = "./";
-        let starting_path = path::absolute(path).unwrap();
-        self.action_list
-            .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
-                starting_path,
-            )));
+        if cold_start {
+            let path = "./";
+            let starting_path = path::absolute(path).unwrap();
+            self.action_list
+                .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
+                    starting_path,
+                )));
+        }
         self.handle_new_actions();
         loop {
             self.render();
@@ -135,10 +145,11 @@ impl App {
                 self.handle_new_actions();
             }
         }
-        stdout().execute(LeaveAlternateScreen)?;
-        disable_raw_mode()?;
 
-        Ok(())
+        self.exit_status
+            .clone()
+            .map(Ok)
+            .unwrap_or(Ok(ExitResult::Quit))
     }
 
     pub fn handle_key_event(&mut self, key_event: KeyEvent) {
