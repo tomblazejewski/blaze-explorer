@@ -83,7 +83,6 @@ pub fn get_file_data(path: &PathBuf) -> Vec<FileData> {
 }
 
 fn get_line_numbers(n_lines: usize, current_line: usize) -> Vec<String> {
-    info!("{}, {}", n_lines, current_line);
     //create all string labels before the selected line
     let before_selected = (1..current_line)
         .rev()
@@ -199,8 +198,6 @@ impl ExplorerTable {
             selected = self.elements_list.len() - 1;
         }
         self.state.select(Some(selected));
-        info!("Elements: {:?}", self.elements_list);
-        info!("Selected: {}", selected);
     }
     pub fn next(&mut self) {
         let i = match self.state.selected() {
