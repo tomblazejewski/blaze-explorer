@@ -692,14 +692,19 @@ impl TerminalCommand {
 
 impl Command for TerminalCommand {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        let output = ProcessCommand::new(self.command.clone())
-            .output()
-            .expect("Failed to execute");
-        let output = output.stdout;
-        let output_string = String::from_utf8(output).unwrap();
+        let output = ProcessCommand::new(self.command.clone()).output();
+        let output_message = match output {
+            Ok(output) => {
+                let output = output.stdout;
+                String::from_utf8(output).unwrap()
+            }
+            Err(err) => {
+                format!("Failed to execute command '{}': {}", self.command, err)
+            }
+        };
 
         Some(Action::AppAct(crate::action::AppAction::DisplayMessage(
-            output_string,
+            output_message,
         )))
     }
 }

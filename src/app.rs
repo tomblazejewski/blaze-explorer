@@ -190,8 +190,10 @@ impl App {
     pub fn execute_command(&mut self, command: String) -> Option<Action> {
         match command.as_str() {
             "q" => Some(Action::AppAct(AppAction::Quit)),
-            "display" => None,
-            _ => None,
+            other_command => Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                "Not a supported command: {}",
+                other_command
+            )))),
         }
     }
 
