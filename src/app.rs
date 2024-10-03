@@ -45,7 +45,11 @@ fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
         .direction(Direction::Vertical)
         .constraints(vec![Constraint::Fill(1), Constraint::Length(1)])
         .split(frame.size());
-    let command_bar = main_box[1];
+    let command_box = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(vec![Constraint::Fill(1), Constraint::Length(30)])
+        .split(frame.size());
+    let command_bar = command_box[1];
 
     let mut areas = HashMap::new();
     areas.insert("explorer_table".to_string(), main_box[0]);
@@ -152,29 +156,41 @@ impl App {
             .unwrap_or(Ok(ExitResult::Quit))
     }
 
+    /// Register the key event, obtain possible action and push it back if applicable.
+    /// Command line message takes precedence over register actions by the input machine
     pub fn handle_key_event(&mut self, key_event: KeyEvent) {
         let keymap_result =
             self.input_machine
                 .process_keys(&self.mode, &mut self.current_sequence, key_event);
-        match keymap_result {
-            KeyProcessingResult::Complete(action) => {
-                info!("Complete Action: {:?}", action);
-                self.action_list.push_back(action);
+        if self.command_line.current_message.is_some() {
+            self.command_line.get_message_batch();
+            if self.command_line.current_message.is_none() {
+                self.action_list
+                    .push_back(Action::AppAct(AppAction::SwitchMode(Mode::Normal)));
             }
-            KeyProcessingResult::Invalid => {
-                if let Some(action) = self.input_machine.get_default_action(&self.mode, key_event) {
-                    info!("Default Action: {:?}", action);
+        } else {
+            match keymap_result {
+                KeyProcessingResult::Complete(action) => {
+                    info!("Complete Action: {:?}", action);
                     self.action_list.push_back(action);
                 }
+                KeyProcessingResult::Invalid => {
+                    if let Some(action) =
+                        self.input_machine.get_default_action(&self.mode, key_event)
+                    {
+                        info!("Default Action: {:?}", action);
+                        self.action_list.push_back(action);
+                    }
+                }
+                _ => {}
             }
-            _ => {}
         }
     }
 
-    pub fn execute_command(&mut self) -> Option<Action> {
-        let command = self.command_line_contents();
+    pub fn execute_command(&mut self, command: String) -> Option<Action> {
         match command.as_str() {
             "q" => Some(Action::AppAct(AppAction::Quit)),
+            "display" => None,
             _ => None,
         }
     }
@@ -277,6 +293,7 @@ impl App {
         AppContext::new(
             self.explorer_table.get_current_path().clone(),
             self.explorer_table.clone(),
+            self.command_line_contents().clone(),
         )
     }
 

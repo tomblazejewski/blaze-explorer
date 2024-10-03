@@ -2,9 +2,11 @@ use color_eyre::eyre::Result;
 use ratatui::{
     crossterm::event::{KeyCode, KeyEvent},
     layout::{Constraint, Direction, Layout, Rect},
-    widgets::{Block, Borders, Paragraph},
+    text::{Line, Text},
+    widgets::{Block, Borders, Clear, Paragraph},
     Frame,
 };
+use std::cmp::min;
 use tracing::info;
 
 use crate::{
@@ -18,6 +20,9 @@ use super::Component;
 pub struct CommandLine {
     contents: String,
     focused: bool,
+    message_queue: Option<Vec<String>>,
+    pub current_message: Option<Vec<String>>,
+    line_limit: u8,
 }
 
 impl LineEntry for CommandLine {
@@ -47,7 +52,6 @@ impl LineEntry for CommandLine {
             )))
         }
     }
-
     fn get_contents(&self) -> String {
         self.contents.clone()
     }
@@ -59,6 +63,9 @@ impl CommandLine {
         CommandLine {
             contents: String::new(),
             focused: false,
+            message_queue: None,
+            current_message: None,
+            line_limit: 30,
         }
     }
 
@@ -82,17 +89,81 @@ impl CommandLine {
         self.contents = String::new();
     }
 
+    /// Clear contents of the command line and save a message to a message_queue field, so that
+    /// they can be displayed later on
     pub fn command_line_message(&mut self, msg: String) {
-        self.contents = msg;
+        self.clear_contents();
+        let lines = msg.lines().map(|f| f.to_string()).collect::<Vec<String>>();
+        self.message_queue = Some(lines);
+        self.get_message_batch();
+    }
+
+    /// get a batch consisting of line_limit and pop it off the message. If the remaining message
+    /// is empty, make it None
+    pub fn get_message_batch(&mut self) {
+        let current_message = self.message_queue.clone();
+        info!("Getting batch - current message {:?}", current_message);
+        match current_message {
+            None => self.current_message = None,
+            Some(mut msg) => {
+                info!("Message queue {:?}", msg);
+                let limit = min(self.line_limit as usize, msg.len());
+                info!("Limit {:?}", limit);
+                info!("Length {:?}", msg.len());
+                let batch = msg.drain(0..limit as usize).collect::<Vec<String>>();
+                info!("Length after trimming {:?}", msg.len());
+                if msg.is_empty() {
+                    info!("Empty message queue");
+                    self.message_queue = None;
+                } else {
+                    self.message_queue = Some(msg);
+                }
+
+                info!("Current batch {:?}", batch);
+                self.current_message = Some(batch);
+            }
+        }
     }
 }
-
 impl Component for CommandLine {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let text = Paragraph::new(self.contents.clone()).block(Block::new());
-        frame.render_widget(text, area);
+        let mut actual_area = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![Constraint::Fill(1), Constraint::Length(1)])
+            .split(area)[1];
+
+        match &self.current_message {
+            None => {
+                //reduce the area to just one line
+                let text = Paragraph::new(self.contents.clone()).block(Block::new());
+                frame.render_widget(Clear, actual_area);
+                frame.render_widget(text, actual_area);
+            }
+            Some(contents) => {
+                actual_area = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints(vec![
+                        Constraint::Fill(1),
+                        Constraint::Length(contents.len() as u16),
+                    ])
+                    .split(area)[1];
+                let lines = contents
+                    .to_owned()
+                    .into_iter()
+                    .map(Line::from)
+                    .collect::<Vec<Line>>();
+                let paragraph = Paragraph::new(Text::from(lines)).block(Block::new());
+                frame.render_widget(Clear, actual_area);
+                frame.render_widget(paragraph, actual_area);
+            }
+        }
+        //regardless of what used to be, zero out the message (will just display the next
+        //batch soon)
         match self.focused {
-            true => frame.set_cursor(area.x + self.contents.len() as u16, area.y + 1),
+            true => frame.set_cursor(
+                actual_area.x + self.contents.len() as u16,
+                actual_area.y + 1,
+            ),
             false => {}
         }
         Ok(())

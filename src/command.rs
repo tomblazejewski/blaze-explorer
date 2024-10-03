@@ -10,6 +10,7 @@ use core::panic;
 use std::fmt::Debug;
 use std::fs::File;
 use std::path::Path;
+use std::process::Command as ProcessCommand;
 use std::{collections::HashMap, error::Error, fs, io::Write, ops::Rem, path::PathBuf};
 use std::{fmt, io};
 
@@ -262,16 +263,43 @@ impl Command for ConfirmSearchQuery {
 }
 
 #[derive(Clone, Debug)]
-pub struct ConfirmCommand {}
+pub struct ConfirmCommand {
+    command: String,
+}
 
 impl ConfirmCommand {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(ctx: AppContext) -> Self {
+        Self {
+            command: ctx.command,
+        }
     }
 }
 impl Command for ConfirmCommand {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.execute_command()
+        if !self.command.is_empty() && self.command.chars().nth(0).unwrap() == '!' {
+            Some(Action::AppAct(crate::action::AppAction::TerminalCommand(
+                self.command[1..].to_string(),
+            )))
+        } else {
+            app.execute_command(self.command.clone())
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct DisplayMessage {
+    message: String,
+}
+
+impl DisplayMessage {
+    pub fn new(message: String) -> Self {
+        Self { message }
+    }
+}
+impl Command for DisplayMessage {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.command_line.command_line_message(self.message.clone());
+        None
     }
 }
 
@@ -649,6 +677,30 @@ impl Command for RenameActive {
     }
     fn is_reversible(&self) -> bool {
         self.reversible
+    }
+}
+#[derive(Clone, Debug)]
+pub struct TerminalCommand {
+    command: String,
+}
+
+impl TerminalCommand {
+    pub fn new(ctx: AppContext, command: String) -> Self {
+        Self { command }
+    }
+}
+
+impl Command for TerminalCommand {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        let output = ProcessCommand::new(self.command.clone())
+            .output()
+            .expect("Failed to execute");
+        let output = output.stdout;
+        let output_string = String::from_utf8(output).unwrap();
+
+        Some(Action::AppAct(crate::action::AppAction::DisplayMessage(
+            output_string,
+        )))
     }
 }
 #[derive(Clone, Debug)]

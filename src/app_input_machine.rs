@@ -139,6 +139,16 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         ],
         Action::AppAct(AppAction::OpenNeovimHere),
     );
+    root.add_sequence(
+        vec![
+            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('m'), KeyModifiers::NONE),
+        ],
+        Action::AppAct(AppAction::DisplayMessage(
+            "message \n message \n message".to_string(),
+        )),
+    );
 
     root
 }

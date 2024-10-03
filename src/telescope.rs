@@ -19,13 +19,15 @@ use crate::{
 pub struct AppContext {
     pub current_directory: PathBuf,
     pub explorer_table: ExplorerTable,
+    pub command: String,
 }
 
 impl AppContext {
-    pub fn new(current_directory: PathBuf, explorer_table: ExplorerTable) -> Self {
+    pub fn new(current_directory: PathBuf, explorer_table: ExplorerTable, command: String) -> Self {
         Self {
             current_directory,
             explorer_table,
+            command,
         }
     }
 }

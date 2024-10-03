@@ -1,5 +1,5 @@
 use crate::{
-    command::{OpenNeovimHere, TelescopeQuit},
+    command::{DisplayMessage, OpenNeovimHere, TelescopeQuit, TerminalCommand},
     popup::PopUp,
 };
 use std::path::PathBuf;
@@ -48,6 +48,8 @@ pub enum AppAction {
     ShowInFolder(PathBuf),
     Delete,
     OpenNeovimHere,
+    DisplayMessage(String),
+    TerminalCommand(String),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -106,11 +108,13 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::AppAct(AppAction::Quit) => Box::new(Quit::new()),
         Action::AppAct(AppAction::SwitchMode(mode)) => Box::new(SwitchMode::new(ctx, mode)),
         Action::AppAct(AppAction::ConfirmSearchQuery) => Box::new(ConfirmSearchQuery::new()),
-        Action::AppAct(AppAction::ConfirmCommand) => Box::new(ConfirmCommand::new()),
+        Action::AppAct(AppAction::ConfirmCommand) => Box::new(ConfirmCommand::new(ctx)),
         Action::AppAct(AppAction::OpenPopup(popup_type)) => Box::new(OpenPopup::new(popup_type)),
         Action::AppAct(AppAction::ShowInFolder(path)) => Box::new(ShowInFolder::new(ctx, path)),
         Action::AppAct(AppAction::Delete) => Box::new(DeleteSelection::new(ctx)),
         Action::AppAct(AppAction::OpenNeovimHere) => Box::new(OpenNeovimHere::new(ctx)),
+        Action::AppAct(AppAction::DisplayMessage(msg)) => Box::new(DisplayMessage::new(msg)),
+        Action::AppAct(AppAction::TerminalCommand(cmd)) => Box::new(TerminalCommand::new(ctx, cmd)),
         Action::TextAct(TextAction::InsertKey(ch)) => Box::new(InsertKey::new(ch)),
         Action::TextAct(TextAction::EraseText) => Box::new(EraseText::new()),
         Action::TextAct(TextAction::DropKey) => Box::new(DropKey::new()),
