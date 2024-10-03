@@ -102,24 +102,17 @@ impl CommandLine {
     /// is empty, make it None
     pub fn get_message_batch(&mut self) {
         let current_message = self.message_queue.clone();
-        info!("Getting batch - current message {:?}", current_message);
         match current_message {
             None => self.current_message = None,
             Some(mut msg) => {
-                info!("Message queue {:?}", msg);
                 let limit = min(self.line_limit as usize, msg.len());
-                info!("Limit {:?}", limit);
-                info!("Length {:?}", msg.len());
                 let batch = msg.drain(0..limit as usize).collect::<Vec<String>>();
-                info!("Length after trimming {:?}", msg.len());
                 if msg.is_empty() {
-                    info!("Empty message queue");
                     self.message_queue = None;
                 } else {
                     self.message_queue = Some(msg);
                 }
 
-                info!("Current batch {:?}", batch);
                 self.current_message = Some(batch);
             }
         }
