@@ -138,6 +138,13 @@ impl Component for CommandLine {
                 let text = Paragraph::new(self.contents.clone()).block(Block::new());
                 frame.render_widget(Clear, actual_area);
                 frame.render_widget(text, actual_area);
+                match self.focused {
+                    true => frame.set_cursor(
+                        actual_area.x + self.contents.len() as u16,
+                        actual_area.y + 1,
+                    ),
+                    false => {}
+                }
             }
             Some(contents) => {
                 actual_area = Layout::default()
@@ -156,15 +163,6 @@ impl Component for CommandLine {
                 frame.render_widget(Clear, actual_area);
                 frame.render_widget(paragraph, actual_area);
             }
-        }
-        //regardless of what used to be, zero out the message (will just display the next
-        //batch soon)
-        match self.focused {
-            true => frame.set_cursor(
-                actual_area.x + self.contents.len() as u16,
-                actual_area.y + 1,
-            ),
-            false => {}
         }
         Ok(())
     }
