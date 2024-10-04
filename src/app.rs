@@ -77,6 +77,7 @@ pub struct App {
     pub command_history: HashMap<PathBuf, CommandHistory>,
     pub command_input: Option<String>,
     pub exit_status: Option<ExitResult>,
+    pub current_path: PathBuf,
 }
 impl App {
     pub fn new() -> Result<Self> {
@@ -94,6 +95,7 @@ impl App {
             command_history: HashMap::new(),
             command_input: None,
             exit_status: None,
+            current_path: PathBuf::new(),
         })
     }
 
@@ -299,8 +301,9 @@ impl App {
         )
     }
 
-    pub fn update_path(&mut self, path: PathBuf) {
-        self.explorer_table.update_path(path.clone())
+    pub fn update_path(&mut self, path: PathBuf, selected: Option<String>) {
+        self.current_path = path.clone();
+        self.explorer_table.update_path(path, selected);
     }
 
     pub fn command_line_message(&mut self, msg: String) {
@@ -309,5 +312,14 @@ impl App {
 
     pub fn command_line_contents(&self) -> String {
         self.command_line.get_contents()
+    }
+
+    pub fn go_up(&mut self) {
+        let prev_folder = self.current_path.file_name().map(|name| name.to_owned());
+        if let Some(prev_folder_name) = prev_folder {
+            let prev_folder_string = prev_folder_name.to_str().unwrap();
+            let new_absolute_path = self.current_path.parent().unwrap().to_owned();
+            self.update_path(new_absolute_path, Some(prev_folder_string.to_string()));
+        }
     }
 }

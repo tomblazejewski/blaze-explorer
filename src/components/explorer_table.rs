@@ -157,25 +157,19 @@ impl ExplorerTable {
         before_selected
     }
 
-    pub fn go_up(&mut self) {
-        let prev_folder = self.current_path.file_name().map(|name| name.to_owned());
-        if let Some(prev_folder_name) = prev_folder {
-            let prev_folder_string = prev_folder_name.to_str().unwrap();
-            let new_absolute_path = self.current_path.parent().unwrap().to_owned();
-            self.update_path(new_absolute_path);
-            let position_of_prev = self
-                .elements_list
-                .iter()
-                .position(|x| x.filename.as_str() == prev_folder_string);
-            self.state.select(position_of_prev);
-        }
-    }
-
-    pub fn update_path(&mut self, path: PathBuf) {
+    pub fn update_path(&mut self, path: PathBuf, selected: Option<String>) {
         self.current_path = path;
         let elements = get_file_data(&self.current_path);
         self.elements_list = elements;
-        self.state = TableState::default().with_selected(0);
+        if let Some(to_select) = selected {
+            let position_of_prev = self
+                .elements_list
+                .iter()
+                .position(|x| x.filename.as_str() == to_select.as_str());
+            self.state.select(position_of_prev);
+        } else {
+            self.state = TableState::default().with_selected(0);
+        }
     }
 
     fn refresh_contents(&mut self) {
@@ -293,44 +287,10 @@ impl ExplorerTable {
         // split the path by the last slash separator to get the folder and filename
         let folder = path.parent().unwrap();
         let filename = path.file_name().unwrap();
-        self.update_path(folder.to_path_buf());
-        self.state.select(
-            self.elements_list
-                .iter()
-                .position(|x| x.filename == filename.to_str().unwrap()),
+        self.update_path(
+            folder.to_path_buf(),
+            Some(filename.to_str().unwrap().to_string()),
         );
-    }
-    pub fn explorer_action(&mut self, explorer_act: ExplorerAction) -> Option<Action> {
-        match explorer_act {
-            ExplorerAction::SelectDirectory => {
-                // either navigate to a folder or open using a default app
-                let target_directory = self.select_directory();
-                if let Some(found_directory) = target_directory {
-                    match found_directory.is_dir() {
-                        true => {
-                            return Some(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
-                                found_directory,
-                            )))
-                        }
-                        false => return None,
-                    }
-                } else {
-                    return None;
-                }
-            }
-            ExplorerAction::ChangeDirectory(path) => {
-                self.update_path(path);
-            }
-            ExplorerAction::ParentDirectory => {
-                self.go_up();
-            }
-            ExplorerAction::SelectUp => self.previous(),
-            ExplorerAction::SelectDown => self.next(),
-            ExplorerAction::UpdateSearchQuery(query) => self.update_search_query(query),
-            ExplorerAction::ClearSearchQuery => self.search_phrase = None,
-            ExplorerAction::NextSearchResult => self.next_search_result(),
-        }
-        None
     }
 
     pub fn switch_mode(&mut self, mode: Mode) {

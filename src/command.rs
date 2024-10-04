@@ -63,7 +63,7 @@ impl ChangeDirectory {
 
 impl Command for ChangeDirectory {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.explorer_table.update_path(self.new_path.clone());
+        app.update_path(self.new_path.clone(), None);
         None
     }
 }
@@ -79,7 +79,7 @@ impl ParentDirectory {
 
 impl Command for ParentDirectory {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.explorer_table.go_up();
+        app.go_up();
         None
     }
 }
@@ -131,7 +131,7 @@ impl Command for SelectDirectory {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         match &self.path {
             Some(path) => match path.is_dir() {
-                true => app.update_path(path.clone()),
+                true => app.update_path(path.clone(), None),
                 false => app.open_default(path.clone()),
             },
             None => {}
