@@ -1,4 +1,5 @@
 use std::collections::{HashMap, VecDeque};
+use std::env::set_current_dir;
 use std::io::{stdout, Stdout};
 use std::path::{self, PathBuf};
 
@@ -303,6 +304,7 @@ impl App {
 
     pub fn update_path(&mut self, path: PathBuf, selected: Option<String>) {
         self.current_path = path.clone();
+        let _ = set_current_dir(path.clone());
         self.explorer_table.update_path(path, selected);
     }
 
