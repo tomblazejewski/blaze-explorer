@@ -690,9 +690,57 @@ impl TerminalCommand {
     }
 }
 
+fn parse_shell_command(input: String) -> (String, Option<Vec<String>>) {
+    let mut chars = input.chars().peekable();
+    let mut command = String::new();
+    let mut args = Vec::new();
+    let mut current_arg = String::new();
+    let mut in_quotes = false;
+
+    while let Some(c) = chars.next() {
+        match c {
+            '"' => {
+                in_quotes = !in_quotes;
+            }
+            ' ' if !in_quotes => {
+                if !current_arg.is_empty() {
+                    if command.is_empty() {
+                        command = current_arg.clone();
+                    } else {
+                        args.push(current_arg.clone());
+                    }
+                    current_arg.clear();
+                }
+            }
+            _ => {
+                current_arg.push(c);
+            }
+        }
+    }
+
+    if !current_arg.is_empty() {
+        if command.is_empty() {
+            command = current_arg;
+        } else {
+            args.push(current_arg);
+        }
+    }
+
+    // Return the command and None if no arguments were parsed
+    if args.is_empty() {
+        (command, None)
+    } else {
+        (command, Some(args))
+    }
+}
+
 impl Command for TerminalCommand {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        let output = ProcessCommand::new(self.command.clone()).output();
+        let command_args = parse_shell_command(self.command.clone());
+        let output = match command_args {
+            (command, Some(args)) => ProcessCommand::new(command).args(args).output(),
+            (command, None) => ProcessCommand::new(command).output(),
+        };
         let output_message = match output {
             Ok(output) => {
                 let output = output.stdout;
@@ -860,5 +908,30 @@ mod tests {
         let mut duplicate_selection = DeleteSelection::new(app.get_app_context());
         let after = duplicate_selection.affected_files.clone();
         assert_eq!(before, after);
+    }
+
+    #[test]
+    fn test_parse_shell_command() {
+        let command_string = "git".to_string();
+        let (command, args) = parse_shell_command(command_string);
+        assert_eq!(command, "git");
+        assert_eq!(args, None);
+
+        let command_string = "git blame".to_string();
+        let (command, args) = parse_shell_command(command_string);
+        assert_eq!(command, "git");
+        assert_eq!(args, Some(vec!["blame".to_string()]));
+
+        let command_string = format!(r#"git commit -m "{}""#, "commit message");
+        let (command, args) = parse_shell_command(command_string);
+        assert_eq!(command, "git");
+        assert_eq!(
+            args,
+            Some(vec![
+                "commit".to_string(),
+                "-m".to_string(),
+                "commit message".to_string()
+            ])
+        );
     }
 }
