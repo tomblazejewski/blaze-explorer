@@ -1,5 +1,8 @@
 use crate::{
-    command::{DisplayMessage, OpenNeovimHere, TelescopeQuit, TerminalCommand},
+    command::{
+        DisplayMessage, OpenNeovimHere, SplitHorizontally, SplitVertically, TelescopeQuit,
+        TerminalCommand,
+    },
     popup::PopUp,
 };
 use std::path::PathBuf;
@@ -36,6 +39,8 @@ pub enum ExplorerAction {
     UpdateSearchQuery(String),
     ClearSearchQuery,
     NextSearchResult,
+    SplitHorizontally,
+    SplitVertically,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -105,6 +110,10 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::ExplorerAct(ExplorerAction::NextSearchResult) => {
             Box::new(NextSearchResult::new(ctx))
         }
+        Action::ExplorerAct(ExplorerAction::SplitHorizontally) => {
+            Box::new(SplitHorizontally::new(ctx))
+        }
+        Action::ExplorerAct(ExplorerAction::SplitVertically) => Box::new(SplitVertically::new(ctx)),
         Action::AppAct(AppAction::Quit) => Box::new(Quit::new()),
         Action::AppAct(AppAction::SwitchMode(mode)) => Box::new(SwitchMode::new(ctx, mode)),
         Action::AppAct(AppAction::ConfirmSearchQuery) => Box::new(ConfirmSearchQuery::new()),

@@ -89,13 +89,48 @@ impl ExplorerManager {
 
     pub fn new_child(&self, index: usize) -> Self {
         let self_reference = RefCell::new(self.to_owned());
+        let explorer_table = match &self.split {
+            Split::Single(table) => table.clone(),
+            _ => panic!("Impossible!"),
+        };
         Self {
             focused: true,
-            split: Split::Single(ExplorerTable::new()),
+            split: Split::Single(explorer_table),
             parent: ParentRelationship::SomeParent(index, Rc::downgrade(&Rc::new(self_reference))),
         }
     }
 
+    pub fn split_vertically_action(&mut self) {
+        match self.split {
+            Split::Horizontal(ref mut top, ref mut bottom) => match top.focused {
+                true => top.split_vertically_action(),
+                false => bottom.split_vertically_action(),
+            },
+            Split::Vertical(ref mut left, ref mut right) => match left.focused {
+                true => left.split_vertically_action(),
+                false => right.split_vertically_action(),
+            },
+            Split::Single(ref mut table) => {
+                self.split_vertically();
+            }
+        }
+    }
+
+    pub fn split_horizontally_action(&mut self) {
+        match self.split {
+            Split::Horizontal(ref mut top, ref mut bottom) => match top.focused {
+                true => top.split_horizontally_action(),
+                false => bottom.split_horizontally_action(),
+            },
+            Split::Vertical(ref mut left, ref mut right) => match left.focused {
+                true => left.split_horizontally_action(),
+                false => right.split_horizontally_action(),
+            },
+            Split::Single(ref mut table) => {
+                self.split_horizontally();
+            }
+        }
+    }
     pub fn split_vertically(&mut self) {
         let manager_0 = self.new_child(0);
         let manager_1 = self.new_child(1);
@@ -284,6 +319,7 @@ impl ExplorerManager {
         table.focus();
     }
     fn perform_focus(&mut self, split_direction: SplitDirection) {
+        self.defocus();
         let out_result = self.outside(split_direction, VecDeque::new());
         if let SplitResult::SomeResult(first_index, leading_split, stack, default_index) =
             out_result

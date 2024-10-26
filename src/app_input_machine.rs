@@ -149,6 +149,20 @@ pub fn default_key_map() -> KeyMapNode<Action> {
             "message \n message \n message".to_string(),
         )),
     );
+    root.add_sequence(
+        vec![
+            KeyEvent::new(KeyCode::Char('w'), KeyModifiers::CONTROL),
+            KeyEvent::new(KeyCode::Char('v'), KeyModifiers::NONE),
+        ],
+        Action::ExplorerAct(ExplorerAction::SplitVertically),
+    );
+    root.add_sequence(
+        vec![
+            KeyEvent::new(KeyCode::Char('w'), KeyModifiers::CONTROL),
+            KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE),
+        ],
+        Action::ExplorerAct(ExplorerAction::SplitHorizontally),
+    );
 
     root
 }

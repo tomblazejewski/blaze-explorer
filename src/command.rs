@@ -776,6 +776,37 @@ impl Command for OpenNeovimHere {
         None
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct SplitVertically {}
+
+impl SplitVertically {
+    pub fn new(mut ctx: AppContext) -> Self {
+        Self {}
+    }
+}
+
+impl Command for SplitVertically {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.explorer_manager.split_vertically_action();
+        None
+    }
+}
+#[derive(Clone, Debug)]
+pub struct SplitHorizontally {}
+
+impl SplitHorizontally {
+    pub fn new(mut ctx: AppContext) -> Self {
+        Self {}
+    }
+}
+
+impl Command for SplitHorizontally {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.explorer_manager.split_horizontally_action();
+        None
+    }
+}
 #[cfg(test)]
 mod tests {
     use std::{thread, time::Duration};
