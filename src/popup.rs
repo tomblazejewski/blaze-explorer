@@ -293,9 +293,9 @@ pub struct ActionInput<T> {
 }
 
 impl ActionInput<RenameActive> {
-    pub fn new(ctx: AppContext) -> Self {
+    pub fn new(mut ctx: AppContext) -> Self {
         let suffix = ctx
-            .explorer_table
+            .explorer_manager
             .select_directory()
             .unwrap()
             .extension()

@@ -23,6 +23,7 @@ use crate::app_input_machine::AppInputMachine;
 use crate::command::Command;
 use crate::command_history::CommandHistory;
 use crate::components::command_line::CommandLine;
+use crate::components::explorer_manager::ExplorerManager;
 use crate::focus::Focus;
 use crate::input_machine::{InputMachine, KeyProcessingResult};
 use crate::line_entry::LineEntry;
@@ -69,7 +70,7 @@ pub struct App {
     pub action_list: VecDeque<Action>,
     pub should_quit: bool,
     pub mode: Mode,
-    pub explorer_table: ExplorerTable,
+    pub explorer_manager: ExplorerManager,
     pub command_line: CommandLine,
     pub focus: Focus,
     pub current_sequence: Vec<KeyEvent>,
@@ -87,7 +88,7 @@ impl App {
             action_list: VecDeque::new(),
             should_quit: false,
             mode: Mode::Normal,
-            explorer_table: ExplorerTable::new(),
+            explorer_manager: ExplorerManager::new(),
             command_line: CommandLine::new(),
             focus: Focus::ExplorerTable,
             current_sequence: Vec::new(),
@@ -206,23 +207,23 @@ impl App {
 
     pub fn enter_search_mode(&mut self) {
         self.mode = Mode::Search;
-        self.explorer_table.switch_mode(Mode::Search);
+        self.explorer_manager.switch_mode(Mode::Search);
         self.command_line.focus();
-        self.explorer_table.unfocus();
+        self.explorer_manager.unfocus();
     }
 
     pub fn enter_normal_mode(&mut self) {
         self.mode = Mode::Normal;
-        self.explorer_table.switch_mode(Mode::Normal);
+        self.explorer_manager.switch_mode(Mode::Normal);
         self.command_line.unfocus();
-        self.explorer_table.focus();
+        self.explorer_manager.focus();
     }
 
     pub fn enter_command_mode(&mut self) {
         self.mode = Mode::Command;
-        self.explorer_table.switch_mode(Mode::Command);
+        self.explorer_manager.switch_mode(Mode::Command);
         self.command_line.focus();
-        self.explorer_table.unfocus();
+        self.explorer_manager.unfocus();
     }
 
     pub fn confirm_search_query(&mut self) -> Option<Action> {
@@ -231,7 +232,7 @@ impl App {
     }
 
     pub fn record_command(&mut self, command: Box<dyn Command>) {
-        let current_path = self.explorer_table.get_current_path();
+        let current_path = self.explorer_manager.get_current_path();
         let c_history = self.command_history.get_mut(&current_path);
         if let Some(history) = c_history {
             if command.is_reversible() {
@@ -246,7 +247,7 @@ impl App {
         }
     }
     fn undo(&mut self) {
-        let path = self.explorer_table.get_current_path();
+        let path = self.explorer_manager.get_current_path();
         let path_history = self.command_history.get_mut(&path);
         let command = path_history.unwrap().undo();
         if let Some(mut c) = command {
@@ -254,7 +255,7 @@ impl App {
         }
     }
     fn redo(&mut self) {
-        let path = self.explorer_table.get_current_path();
+        let path = self.explorer_manager.get_current_path();
         let path_history = self.command_history.get_mut(&path);
         let command = path_history.unwrap().redo();
         if let Some(mut c) = command {
@@ -285,7 +286,7 @@ impl App {
     pub fn render(&mut self) -> Result<()> {
         self.terminal.draw(|frame| {
             let areas = get_component_areas(frame);
-            self.explorer_table
+            self.explorer_manager
                 .draw(frame, *areas.get("explorer_table").unwrap());
             self.command_line
                 .draw(frame, *areas.get("command_line").unwrap());
@@ -294,10 +295,10 @@ impl App {
         Ok(())
     }
 
-    pub fn get_app_context(&self) -> AppContext {
+    pub fn get_app_context(&mut self) -> AppContext {
         AppContext::new(
-            self.explorer_table.get_current_path().clone(),
-            self.explorer_table.clone(),
+            self.explorer_manager.get_current_path().clone(),
+            self.explorer_manager.clone(),
             self.command_line_contents().clone(),
         )
     }
@@ -305,7 +306,7 @@ impl App {
     pub fn update_path(&mut self, path: PathBuf, selected: Option<String>) {
         self.current_path = path.clone();
         let _ = set_current_dir(path.clone());
-        self.explorer_table.update_path(path, selected);
+        self.explorer_manager.update_path(path, selected);
     }
 
     pub fn command_line_message(&mut self, msg: String) {

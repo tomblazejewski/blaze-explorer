@@ -94,7 +94,7 @@ impl SelectUp {
 }
 impl Command for SelectUp {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.explorer_table.previous();
+        app.explorer_manager.previous();
         None
     }
 }
@@ -109,7 +109,7 @@ impl SelectDown {
 }
 impl Command for SelectDown {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.explorer_table.next();
+        app.explorer_manager.next();
         None
     }
 }
@@ -122,7 +122,7 @@ pub struct SelectDirectory {
 impl SelectDirectory {
     pub fn new(mut ctx: AppContext) -> Self {
         Self {
-            path: ctx.explorer_table.select_directory(),
+            path: ctx.explorer_manager.select_directory(),
         }
     }
 }
@@ -153,7 +153,7 @@ impl UpdateSearchQuery {
 
 impl Command for UpdateSearchQuery {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.explorer_table.update_search_query(self.query.clone());
+        app.explorer_manager.update_search_query(self.query.clone());
         None
     }
 }
@@ -169,7 +169,7 @@ impl ClearSearchQuery {
 
 impl Command for ClearSearchQuery {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.explorer_table.clear_search_query();
+        app.explorer_manager.clear_search_query();
         None
     }
 }
@@ -184,7 +184,7 @@ impl NextSearchResult {
 }
 impl Command for NextSearchResult {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.explorer_table.next_search_result();
+        app.explorer_manager.next_search_result();
         None
     }
 }
@@ -198,7 +198,7 @@ pub struct ShowInFolder {
 impl ShowInFolder {
     pub fn new(mut ctx: AppContext, path: PathBuf) -> Self {
         Self {
-            current_file_path: ctx.explorer_table.select_directory().unwrap().clone(),
+            current_file_path: ctx.explorer_manager.select_directory().unwrap().clone(),
             target_path: path,
         }
     }
@@ -207,7 +207,8 @@ impl ShowInFolder {
 impl Command for ShowInFolder {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         app.popup = PopUp::None;
-        app.explorer_table.show_in_folder(self.target_path.clone());
+        app.explorer_manager
+            .show_in_folder(self.target_path.clone());
         None
     }
 }
@@ -518,8 +519,8 @@ pub struct DeleteSelection {
 
 /// Command used to delete files. Considers all selected items at the time of creating the struct.
 impl DeleteSelection {
-    pub fn new(ctx: AppContext) -> Self {
-        let affected_files = ctx.explorer_table.get_selected_files();
+    pub fn new(mut ctx: AppContext) -> Self {
+        let affected_files = ctx.explorer_manager.get_selected_files();
         Self {
             affected_files,
             backup_path: None,
@@ -634,7 +635,7 @@ pub struct RenameActive {
 /// Rename currently selected file
 impl RenameActive {
     // pub fn new(ctx: AppContext, new_name: String) -> Self {
-    //     let first_path = ctx.explorer_table.select_directory().unwrap();
+    //     let first_path = ctx.explorer_manager.select_directory().unwrap();
     //     let second_path = first_path.parent().unwrap().join(new_name);
     //     Self {
     //         first_path,
@@ -643,8 +644,8 @@ impl RenameActive {
     //     }
     // }
 
-    pub fn default(ctx: AppContext) -> Self {
-        let first_path = ctx.explorer_table.select_directory().unwrap();
+    pub fn default(mut ctx: AppContext) -> Self {
+        let first_path = ctx.explorer_manager.select_directory().unwrap();
         let second_path = None;
         Self {
             first_path,
@@ -762,8 +763,8 @@ pub struct OpenNeovimHere {
 }
 
 impl OpenNeovimHere {
-    pub fn new(ctx: AppContext) -> Self {
-        let path = ctx.explorer_table.get_current_path();
+    pub fn new(mut ctx: AppContext) -> Self {
+        let path = ctx.explorer_manager.get_current_path();
         Self { path }
     }
 }
@@ -795,7 +796,7 @@ mod tests {
             )));
         app.handle_new_actions();
         assert_eq!(
-            app.explorer_table.get_current_path(),
+            app.explorer_manager.get_current_path(),
             PathBuf::from("tests/")
         );
     }
@@ -810,7 +811,7 @@ mod tests {
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::SelectDown));
         app.handle_new_actions();
-        assert_eq!(app.explorer_table.get_selected(), Some(1));
+        assert_eq!(app.explorer_manager.get_selected(), Some(1));
     }
     #[test]
     fn test_select_down() {
@@ -822,11 +823,11 @@ mod tests {
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::SelectDown));
         app.handle_new_actions();
-        assert_eq!(app.explorer_table.get_selected(), Some(1));
+        assert_eq!(app.explorer_manager.get_selected(), Some(1));
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::SelectUp));
         app.handle_new_actions();
-        assert_eq!(app.explorer_table.get_selected(), Some(0));
+        assert_eq!(app.explorer_manager.get_selected(), Some(0));
     }
 
     #[test]
@@ -842,7 +843,7 @@ mod tests {
             )));
         app.handle_new_actions();
         assert_eq!(
-            app.explorer_table.get_search_phrase(),
+            app.explorer_manager.get_search_phrase(),
             Some(String::from("test_query"))
         );
     }
@@ -859,13 +860,13 @@ mod tests {
             )));
         app.handle_new_actions();
         assert_eq!(
-            app.explorer_table.get_search_phrase(),
+            app.explorer_manager.get_search_phrase(),
             Some(String::from("test_query"))
         );
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ClearSearchQuery));
         app.handle_new_actions();
-        assert_eq!(app.explorer_table.get_search_phrase(), None)
+        assert_eq!(app.explorer_manager.get_search_phrase(), None)
     }
 
     #[test]
@@ -877,7 +878,7 @@ mod tests {
             )));
         app.handle_new_actions();
         assert_eq!(
-            app.explorer_table.get_current_path(),
+            app.explorer_manager.get_current_path(),
             PathBuf::from("tests/folder_1")
         );
 
@@ -886,7 +887,7 @@ mod tests {
         app.handle_new_actions();
 
         assert_eq!(
-            app.explorer_table.get_current_path(),
+            app.explorer_manager.get_current_path(),
             PathBuf::from("tests")
         );
     }

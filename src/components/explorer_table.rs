@@ -25,7 +25,7 @@ use crate::{
 
 use super::Component;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FileData {
     id: usize,
     filename: String,
@@ -117,7 +117,7 @@ fn highlight_search_result(
         Line::from(line_text)
     }
 }
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ExplorerTable {
     state: TableState,
     current_path: PathBuf,

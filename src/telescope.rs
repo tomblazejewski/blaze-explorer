@@ -11,27 +11,33 @@ use sfs_telescope::SearchFileshereSearch;
 
 use crate::{
     action::{Action, AppAction, ExplorerAction, PopupAction},
-    components::explorer_table::ExplorerTable,
+    components::{
+        explorer_manager::{self, ExplorerManager},
+        explorer_table::ExplorerTable,
+    },
     telescope_query::TelescopeQuery,
     themes::CustomTheme,
 };
 
 pub struct AppContext {
     pub current_directory: PathBuf,
-    pub explorer_table: ExplorerTable,
+    pub explorer_manager: ExplorerManager,
     pub command: String,
 }
 
 impl AppContext {
-    pub fn new(current_directory: PathBuf, explorer_table: ExplorerTable, command: String) -> Self {
+    pub fn new(
+        current_directory: PathBuf,
+        explorer_manager: ExplorerManager,
+        command: String,
+    ) -> Self {
         Self {
             current_directory,
-            explorer_table,
+            explorer_manager,
             command,
         }
     }
 }
-
 pub trait TelescopeSearch {
     /// Perform necessary actions to return the search results
     fn search(&mut self, query: String);
