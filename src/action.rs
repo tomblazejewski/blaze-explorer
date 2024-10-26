@@ -1,7 +1,7 @@
 use crate::{
     command::{
-        DisplayMessage, OpenNeovimHere, SplitHorizontally, SplitVertically, TelescopeQuit,
-        TerminalCommand,
+        DisplayMessage, FocusDown, FocusLeft, FocusRight, FocusUp, OpenNeovimHere,
+        SplitHorizontally, SplitVertically, TelescopeQuit, TerminalCommand,
     },
     popup::PopUp,
 };
@@ -41,6 +41,10 @@ pub enum ExplorerAction {
     NextSearchResult,
     SplitHorizontally,
     SplitVertically,
+    FocusUp,
+    FocusDown,
+    FocusLeft,
+    FocusRight,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -114,6 +118,10 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
             Box::new(SplitHorizontally::new(ctx))
         }
         Action::ExplorerAct(ExplorerAction::SplitVertically) => Box::new(SplitVertically::new(ctx)),
+        Action::ExplorerAct(ExplorerAction::FocusUp) => Box::new(FocusUp::new(ctx)),
+        Action::ExplorerAct(ExplorerAction::FocusDown) => Box::new(FocusDown::new(ctx)),
+        Action::ExplorerAct(ExplorerAction::FocusLeft) => Box::new(FocusLeft::new(ctx)),
+        Action::ExplorerAct(ExplorerAction::FocusRight) => Box::new(FocusRight::new(ctx)),
         Action::AppAct(AppAction::Quit) => Box::new(Quit::new()),
         Action::AppAct(AppAction::SwitchMode(mode)) => Box::new(SwitchMode::new(ctx, mode)),
         Action::AppAct(AppAction::ConfirmSearchQuery) => Box::new(ConfirmSearchQuery::new()),

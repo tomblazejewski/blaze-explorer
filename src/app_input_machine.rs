@@ -163,6 +163,22 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         ],
         Action::ExplorerAct(ExplorerAction::SplitHorizontally),
     );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('h'), KeyModifiers::CONTROL)],
+        Action::ExplorerAct(ExplorerAction::FocusLeft),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('j'), KeyModifiers::CONTROL)],
+        Action::ExplorerAct(ExplorerAction::FocusDown),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('k'), KeyModifiers::CONTROL)],
+        Action::ExplorerAct(ExplorerAction::FocusUp),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('l'), KeyModifiers::CONTROL)],
+        Action::ExplorerAct(ExplorerAction::FocusRight),
+    );
 
     root
 }

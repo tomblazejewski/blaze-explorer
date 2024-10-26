@@ -344,16 +344,16 @@ impl ExplorerManager {
             );
         }
     }
-    fn go_up(&mut self) {
+    pub fn go_up(&mut self) {
         self.perform_focus(SplitDirection::Up)
     }
-    fn go_down(&mut self) {
+    pub fn go_down(&mut self) {
         self.perform_focus(SplitDirection::Down)
     }
-    fn go_left(&mut self) {
+    pub fn go_left(&mut self) {
         self.perform_focus(SplitDirection::Left)
     }
-    fn go_right(&mut self) {
+    pub fn go_right(&mut self) {
         self.perform_focus(SplitDirection::Right)
     }
 

@@ -4,6 +4,8 @@ use tracing::info;
 
 use crate::action::PopupType;
 use crate::app::ExitResult;
+use crate::components::explorer_manager::SplitDirection;
+use crate::focus::Focus;
 use crate::popup::ActionInput;
 use crate::{action::Action, line_entry::LineEntry};
 use core::panic;
@@ -804,6 +806,66 @@ impl SplitHorizontally {
 impl Command for SplitHorizontally {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         app.explorer_manager.split_horizontally_action();
+        None
+    }
+}
+#[derive(Clone, Debug)]
+pub struct FocusUp {}
+
+impl FocusUp {
+    pub fn new(mut ctx: AppContext) -> Self {
+        Self {}
+    }
+}
+
+impl Command for FocusUp {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.explorer_manager.go_up();
+        None
+    }
+}
+#[derive(Clone, Debug)]
+pub struct FocusDown {}
+
+impl FocusDown {
+    pub fn new(mut ctx: AppContext) -> Self {
+        Self {}
+    }
+}
+
+impl Command for FocusDown {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.explorer_manager.go_down();
+        None
+    }
+}
+#[derive(Clone, Debug)]
+pub struct FocusLeft {}
+
+impl FocusLeft {
+    pub fn new(mut ctx: AppContext) -> Self {
+        Self {}
+    }
+}
+
+impl Command for FocusLeft {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.explorer_manager.go_left();
+        None
+    }
+}
+#[derive(Clone, Debug)]
+pub struct FocusRight {}
+
+impl FocusRight {
+    pub fn new(mut ctx: AppContext) -> Self {
+        Self {}
+    }
+}
+
+impl Command for FocusRight {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.explorer_manager.go_right();
         None
     }
 }
