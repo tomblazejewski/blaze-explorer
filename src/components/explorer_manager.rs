@@ -94,6 +94,18 @@ impl ExplorerManager {
             _ => panic!("Impossible!"),
         };
         Self {
+            focused: false,
+            split: Split::Single(explorer_table),
+            parent: ParentRelationship::SomeParent(index, Rc::downgrade(&Rc::new(self_reference))),
+        }
+    }
+    pub fn new_child_focused(&self, index: usize) -> Self {
+        let self_reference = RefCell::new(self.to_owned());
+        let explorer_table = match &self.split {
+            Split::Single(table) => table.clone(),
+            _ => panic!("Impossible!"),
+        };
+        Self {
             focused: true,
             split: Split::Single(explorer_table),
             parent: ParentRelationship::SomeParent(index, Rc::downgrade(&Rc::new(self_reference))),
@@ -133,12 +145,12 @@ impl ExplorerManager {
     }
     pub fn split_vertically(&mut self) {
         let manager_0 = self.new_child(0);
-        let manager_1 = self.new_child(1);
+        let manager_1 = self.new_child_focused(1);
         self.split = Split::Vertical(Box::new(manager_0), Box::new(manager_1));
     }
     pub fn split_horizontally(&mut self) {
         let manager_0 = self.new_child(0);
-        let manager_1 = self.new_child(1);
+        let manager_1 = self.new_child_focused(1);
         self.split = Split::Horizontal(Box::new(manager_0), Box::new(manager_1));
     }
 
