@@ -265,9 +265,7 @@ impl ExplorerManager {
     pub fn focus(&mut self) {
         delegate_to_focused!(self, focus);
     }
-    pub fn unfocus(&mut self) {
-        delegate_to_focused!(self, unfocus);
-    }
+    pub fn unfocus(&mut self) {}
 
     pub fn get_selected_files(&mut self) -> Option<Vec<PathBuf>> {
         delegate_to_focused!(self, get_selected_files)

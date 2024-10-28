@@ -397,7 +397,10 @@ impl Component for ExplorerTable {
         );
         let path_span = Span::from(self.current_path.to_str().unwrap());
 
-        let status_line = Line::from(vec![mode_span, path_span]);
+        let status_line = match self.focused {
+            true => Line::from(vec![mode_span, path_span]),
+            false => Line::from(vec![path_span]),
+        };
 
         //divide the available area into one for the table and one for the paragraph
         let explorer_area_blocks = Layout::default()
