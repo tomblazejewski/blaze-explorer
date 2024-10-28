@@ -820,7 +820,7 @@ impl FocusUp {
 
 impl Command for FocusUp {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.explorer_manager.go_up();
+        app.explorer_manager.move_focus(SplitDirection::Up);
         None
     }
 }
@@ -835,7 +835,7 @@ impl FocusDown {
 
 impl Command for FocusDown {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.explorer_manager.go_down();
+        app.explorer_manager.move_focus(SplitDirection::Down);
         None
     }
 }
@@ -850,7 +850,7 @@ impl FocusLeft {
 
 impl Command for FocusLeft {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.explorer_manager.go_left();
+        app.explorer_manager.move_focus(SplitDirection::Left);
         None
     }
 }
@@ -865,7 +865,7 @@ impl FocusRight {
 
 impl Command for FocusRight {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.explorer_manager.go_right();
+        app.explorer_manager.move_focus(SplitDirection::Right);
         None
     }
 }
