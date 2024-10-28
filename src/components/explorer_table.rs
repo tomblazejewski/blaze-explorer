@@ -332,9 +332,9 @@ impl Component for ExplorerTable {
         self.refresh_contents();
         let widths = [
             Constraint::Percentage(5),
-            Constraint::Percentage(50),
-            Constraint::Percentage(20),
-            Constraint::Percentage(25),
+            Constraint::Fill(1),
+            Constraint::Length(6),
+            Constraint::Length(20),
         ];
         let header = ["", "Name", "Size", "Last modified"]
             .into_iter()
