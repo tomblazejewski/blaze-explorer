@@ -165,7 +165,6 @@ impl ExplorerManager {
         let node_areas = self.last_layout.clone();
         let rect = node_areas.get(&self.focused_id).unwrap();
         let (current_x, current_y) = (rect.x, rect.y);
-        info!("Node areas: {:?}", node_areas);
         let focusable = match focus {
             SplitDirection::Up => node_areas
                 .iter()
@@ -229,8 +228,6 @@ impl ExplorerManager {
                 .collect::<HashMap<usize, f32>>(),
         };
 
-        info!("Self id: {}", self.focused_id);
-        info!("focusable: {:?}", focusable);
         if focusable.is_empty() {
             return;
         }
@@ -241,7 +238,6 @@ impl ExplorerManager {
             .unwrap()
             .0
             .clone();
-        info!("Decided Id: {}", id);
         if let Split::Single(table) = &mut current_node.split {
             table.unfocus();
         }
