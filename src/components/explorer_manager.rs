@@ -2,9 +2,10 @@ use core::panic;
 use std::borrow::BorrowMut;
 use std::cell::{Ref, RefCell};
 use std::cmp::{Eq, PartialEq};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::ops::Deref;
 use std::rc::Weak;
+use std::usize;
 use std::{path::PathBuf, rc::Rc};
 
 use ratatui::{
@@ -42,14 +43,14 @@ macro_rules! delegate_to_focused {
 
 #[derive(Clone, Debug)]
 pub enum ParentRelationship {
-    SomeParent(usize, Weak<RefCell<ExplorerManager>>),
+    SomeParent(usize, usize),
     NoParent,
 }
 
 #[derive(Debug, Clone)]
 pub enum Split {
-    Horizontal(Box<ExplorerManager>, Box<ExplorerManager>),
-    Vertical(Box<ExplorerManager>, Box<ExplorerManager>),
+    Horizontal(usize, usize),
+    Vertical(usize, usize),
     Single(ExplorerTable),
 }
 
@@ -71,6 +72,144 @@ pub enum SplitResult {
     NoResult,
 }
 
+pub struct ExplorerDirector {
+    pub explorers: HashMap<usize, ExplorerNode>,
+    pub focused_id: usize,
+    pub next_id: usize,
+}
+
+impl ExplorerDirector {
+    pub fn new() -> Self {
+        let mut explorer_map = HashMap::new();
+        explorer_map.insert(0, ExplorerNode::new(0));
+        Self {
+            explorers: explorer_map,
+            focused_id: 0,
+            next_id: 1,
+        }
+    }
+
+    pub fn get_new_id(&mut self) -> usize {
+        let new_id = self.next_id;
+        self.next_id += 1;
+        new_id
+    }
+    pub fn split_vertically_action(&mut self) {
+        let id_0 = self.get_new_id();
+        let id_1 = self.get_new_id();
+        let focused_node = self.explorers.get_mut(&self.focused_id).unwrap();
+        let (node_0, node_1) = focused_node.split_vertically(id_0, id_1);
+        self.explorers.insert(id_0, node_0);
+        self.explorers.insert(id_1, node_1);
+        self.focused_id = id_1;
+    }
+
+    pub fn split_horizontally_action(&mut self) {
+        let id_0 = self.get_new_id();
+        let id_1 = self.get_new_id();
+        let focused_node = self.explorers.get_mut(&self.focused_id).unwrap();
+        let (node_0, node_1) = focused_node.split_horizontally(id_0, id_1);
+        self.explorers.insert(id_0, node_0);
+        self.explorers.insert(id_1, node_1);
+        self.focused_id = id_1;
+    }
+
+    pub fn draw(&mut self, frame: &mut Frame, area: Rect) {
+        let mut draw_map: HashMap<usize, Rect> = HashMap::new();
+        self.get_drawable(frame, area, 0, &mut draw_map);
+        for (key, value) in draw_map.iter() {
+            let table = self.explorers.get_mut(&key).unwrap();
+            match &mut table.split {
+                Split::Single(table) => {
+                    let _ = table.draw(frame, *value);
+                }
+                _ => {}
+            }
+        }
+    }
+    pub fn get_drawable(
+        &self,
+        frame: &mut Frame,
+        area: Rect,
+        id: usize,
+        draw_map: &mut HashMap<usize, Rect>,
+    ) {
+        let explorer = self.explorers.get(&id).unwrap();
+        let split = &explorer.split;
+        match split {
+            Split::Horizontal(id_0, id_1) => {
+                let component_areas = Layout::default()
+                    .direction(Direction::Horizontal)
+                    .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
+                    .split(area);
+                self.get_drawable(frame, component_areas[0], id_0.clone(), draw_map);
+                self.get_drawable(frame, component_areas[1], id_1.clone(), draw_map);
+            }
+            Split::Vertical(id_0, id_1) => {
+                let component_areas = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
+                    .split(area);
+                self.get_drawable(frame, component_areas[0], id_0.clone(), draw_map);
+                self.get_drawable(frame, component_areas[1], id_1.clone(), draw_map);
+            }
+            Split::Single(_) => {
+                draw_map.insert(id, area);
+            }
+        }
+    }
+}
+
+pub struct ExplorerNode {
+    pub id: usize,
+    pub focused: bool,
+    pub parent: ParentRelationship,
+    pub split: Split,
+}
+impl ExplorerNode {
+    pub fn new(id: usize) -> Self {
+        Self {
+            id,
+            focused: true,
+            parent: ParentRelationship::NoParent,
+            split: Split::Single(ExplorerTable::new()),
+        }
+    }
+
+    pub fn new_with_explorer(id: usize, table: ExplorerTable) -> Self {
+        Self {
+            id,
+            focused: true,
+            parent: ParentRelationship::NoParent,
+            split: Split::Single(table),
+        }
+    }
+
+    pub fn split_vertically(&mut self, id_0: usize, id_1: usize) -> (Self, Self) {
+        self.split = Split::Vertical(id_0, id_1);
+        let explorer_table = match &self.split {
+            Split::Single(table) => table.clone(),
+            _ => panic!("Impossible!"),
+        };
+        let mut node_0 = ExplorerNode::new_with_explorer(id_0, explorer_table.clone());
+        node_0.parent = ParentRelationship::SomeParent(self.id, 0);
+        let mut node_1 = ExplorerNode::new_with_explorer(id_1, explorer_table);
+        node_1.parent = ParentRelationship::SomeParent(self.id, 1);
+        (node_0, node_1)
+    }
+    pub fn split_horizontally(&mut self, id_0: usize, id_1: usize) -> (Self, Self) {
+        self.split = Split::Horizontal(id_0, id_1);
+        let explorer_table = match &self.split {
+            Split::Single(table) => table.clone(),
+            _ => panic!("Impossible!"),
+        };
+        let mut node_0 = ExplorerNode::new_with_explorer(id_0, explorer_table.clone());
+        node_0.parent = ParentRelationship::SomeParent(self.id, 0);
+        let mut node_1 = ExplorerNode::new_with_explorer(id_1, explorer_table);
+        node_1.parent = ParentRelationship::SomeParent(self.id, 1);
+        (node_0, node_1)
+    }
+}
 #[derive(Clone, Debug)]
 pub struct ExplorerManager {
     focused: bool,
