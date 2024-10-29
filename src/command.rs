@@ -588,6 +588,11 @@ fn move_recursively(from: &PathBuf, to: &PathBuf) -> io::Result<()> {
     fs::create_dir_all(to)?;
 
     // Iterate over the directory entries
+    if !from.is_dir() {
+        let dst_path = to.join(from.file_name().unwrap());
+        fs::rename(from, &dst_path)?;
+        return Ok(());
+    }
     for entry in fs::read_dir(from)? {
         let entry = entry?;
         let file_type = entry.file_type()?;
@@ -614,7 +619,9 @@ fn move_path(from: &PathBuf, to: &PathBuf) -> Result<(), std::io::Error> {
 fn remove_path(path: &PathBuf, backup_path: &PathBuf) {
     //write contents to a file so this can be recovered later on
     move_recursively(path, &PathBuf::from(backup_path.clone())).unwrap();
-    fs::remove_dir_all(path).unwrap();
+    if path.is_dir() {
+        fs::remove_dir_all(path).unwrap();
+    }
 }
 
 fn backup_dir() -> PathBuf {
