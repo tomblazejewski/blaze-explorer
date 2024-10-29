@@ -2,7 +2,7 @@ use chrono::offset;
 use directories::ProjectDirs;
 use tracing::info;
 
-use crate::action::PopupType;
+use crate::action::{AppAction, PopupType};
 use crate::app::ExitResult;
 use crate::components::explorer_manager::SplitDirection;
 use crate::focus::Focus;
@@ -809,6 +809,23 @@ impl Command for SplitHorizontally {
         None
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct DeleteSplit {}
+
+impl DeleteSplit {
+    pub fn new(mut ctx: AppContext) -> Self {
+        Self {}
+    }
+}
+
+impl Command for DeleteSplit {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        let should_quit = app.explorer_manager.delete_split();
+        app.should_quit = should_quit;
+        Some(Action::AppAct(AppAction::SwitchMode(Mode::Normal)))
+    }
+}
 #[derive(Clone, Debug)]
 pub struct FocusUp {}
 
@@ -869,6 +886,7 @@ impl Command for FocusRight {
         None
     }
 }
+
 #[cfg(test)]
 mod tests {
     use std::{thread, time::Duration};

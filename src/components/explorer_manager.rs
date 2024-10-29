@@ -114,6 +114,53 @@ impl ExplorerManager {
         self.focused_id = id_1;
     }
 
+    pub fn delete_split(&mut self) -> bool {
+        //get the focused_id node and seek its parent
+        if self.focused_id == 0 {
+            return true;
+        }
+        let focused_node = self.explorers.get(&self.focused_id).unwrap();
+        let parent_id: usize;
+        match focused_node.parent {
+            ParentRelationship::SomeParent(an_id, _) => {
+                parent_id = an_id;
+            }
+            ParentRelationship::NoParent => return true,
+        };
+        let parent_node = self.explorers.get(&parent_id).unwrap();
+        let other_id = match parent_node.split {
+            Split::Horizontal(id_0, id_1) => {
+                if id_0 == self.focused_id {
+                    id_1
+                } else {
+                    id_0
+                }
+            }
+            Split::Vertical(id_0, id_1) => {
+                if id_0 == self.focused_id {
+                    id_1
+                } else {
+                    id_0
+                }
+            }
+            Split::Single(_) => panic!("Impossible!"),
+        };
+
+        let other_node = self.explorers.get(&other_id).unwrap();
+
+        let table_to_use = if let Split::Single(table) = &other_node.split {
+            table.clone()
+        } else {
+            panic!("Impossible!")
+        };
+        let parent_node = self.explorers.get_mut(&parent_id).unwrap();
+        parent_node.split = Split::Single(table_to_use);
+        self.explorers.remove(&self.focused_id);
+        self.explorers.remove(&other_id);
+        self.focused_id = parent_id;
+        false
+    }
+
     pub fn draw(&mut self, frame: &mut Frame, area: Rect) {
         let mut draw_map: HashMap<usize, Rect> = HashMap::new();
         self.get_drawable(frame, area, 0, &mut draw_map);

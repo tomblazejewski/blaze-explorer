@@ -1,6 +1,6 @@
 use crate::{
     command::{
-        DisplayMessage, FocusDown, FocusLeft, FocusRight, FocusUp, OpenNeovimHere,
+        DeleteSplit, DisplayMessage, FocusDown, FocusLeft, FocusRight, FocusUp, OpenNeovimHere,
         SplitHorizontally, SplitVertically, TelescopeQuit, TerminalCommand,
     },
     popup::PopUp,
@@ -45,6 +45,7 @@ pub enum ExplorerAction {
     FocusDown,
     FocusLeft,
     FocusRight,
+    DeleteSplit,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -122,6 +123,7 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::ExplorerAct(ExplorerAction::FocusDown) => Box::new(FocusDown::new(ctx)),
         Action::ExplorerAct(ExplorerAction::FocusLeft) => Box::new(FocusLeft::new(ctx)),
         Action::ExplorerAct(ExplorerAction::FocusRight) => Box::new(FocusRight::new(ctx)),
+        Action::ExplorerAct(ExplorerAction::DeleteSplit) => Box::new(DeleteSplit::new(ctx)),
         Action::AppAct(AppAction::Quit) => Box::new(Quit::new()),
         Action::AppAct(AppAction::SwitchMode(mode)) => Box::new(SwitchMode::new(ctx, mode)),
         Action::AppAct(AppAction::ConfirmSearchQuery) => Box::new(ConfirmSearchQuery::new()),
