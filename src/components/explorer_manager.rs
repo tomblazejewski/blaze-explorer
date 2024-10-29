@@ -116,6 +116,7 @@ impl ExplorerManager {
 
     pub fn delete_split(&mut self) -> bool {
         //get the focused_id node and seek its parent
+        info!("Focused id: {}", self.focused_id);
         if self.focused_id == 0 {
             return true;
         }
@@ -127,6 +128,8 @@ impl ExplorerManager {
             }
             ParentRelationship::NoParent => return true,
         };
+        info!("PArent id: {}", parent_id);
+        info!("Structure: {:?}", self.explorers);
         let parent_node = self.explorers.get(&parent_id).unwrap();
         let other_id = match parent_node.split {
             Split::Horizontal(id_0, id_1) => {
@@ -143,21 +146,49 @@ impl ExplorerManager {
                     id_0
                 }
             }
+
             Split::Single(_) => panic!("Impossible!"),
         };
 
         let other_node = self.explorers.get(&other_id).unwrap();
 
-        let table_to_use = if let Split::Single(table) = &other_node.split {
-            table.clone()
-        } else {
-            panic!("Impossible!")
-        };
+        let other_split = other_node.split.clone();
+        match other_split {
+            Split::Single(_) => {}
+            Split::Horizontal(id_0, id_1) => {
+                let explorer_1 = self.explorers.get_mut(&id_0).unwrap();
+                explorer_1.parent = ParentRelationship::SomeParent(parent_id, 0);
+                let explorer_2 = self.explorers.get_mut(&id_1).unwrap();
+                explorer_2.parent = ParentRelationship::SomeParent(parent_id, 1);
+            }
+            Split::Vertical(id_0, id_1) => {
+                let explorer_1 = self.explorers.get_mut(&id_0).unwrap();
+                explorer_1.parent = ParentRelationship::SomeParent(parent_id, 0);
+                let explorer_2 = self.explorers.get_mut(&id_1).unwrap();
+                explorer_2.parent = ParentRelationship::SomeParent(parent_id, 1);
+            }
+        }
         let parent_node = self.explorers.get_mut(&parent_id).unwrap();
-        parent_node.split = Split::Single(table_to_use);
+        parent_node.split = other_split;
+        let mut current_node = parent_node.clone();
         self.explorers.remove(&self.focused_id);
         self.explorers.remove(&other_id);
         self.focused_id = parent_id;
+        loop {
+            match current_node.split {
+                Split::Single(table) => {
+                    self.focused_id = current_node.id;
+                    break;
+                }
+
+                Split::Horizontal(id_0, id_1) => {
+                    current_node = self.explorers.get(&id_0).unwrap().clone();
+                }
+                Split::Vertical(id_0, id_1) => {
+                    current_node = self.explorers.get(&id_0).unwrap().clone();
+                }
+            }
+        }
         false
     }
 
@@ -355,7 +386,7 @@ impl ExplorerManager {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ExplorerNode {
     pub id: usize,
     pub focused: bool,
