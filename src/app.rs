@@ -8,11 +8,7 @@ use ratatui::crossterm::event::KeyEvent;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
 use ratatui::{
-    crossterm::{
-        event::{self, KeyEventKind},
-        terminal::{disable_raw_mode, LeaveAlternateScreen},
-        ExecutableCommand,
-    },
+    crossterm::event::{self, KeyEventKind},
     prelude::CrosstermBackend,
     Terminal,
 };
@@ -27,14 +23,10 @@ use crate::components::explorer_manager::ExplorerManager;
 use crate::focus::Focus;
 use crate::input_machine::{InputMachine, KeyProcessingResult};
 use crate::line_entry::LineEntry;
-use crate::popup::{self, PopUp, PopupEngine};
+use crate::popup::{PopUp, PopupEngine};
 use crate::telescope::AppContext;
 use crate::tools::center_rect;
-use crate::{
-    action::Action,
-    components::{explorer_table::ExplorerTable, Component},
-    mode::Mode,
-};
+use crate::{action::Action, components::Component, mode::Mode};
 
 #[derive(Clone)]
 pub enum ExitResult {
@@ -115,9 +107,9 @@ impl App {
                     starting_path,
                 )));
         }
-        self.handle_new_actions();
+        let _ = self.handle_new_actions();
         loop {
-            self.render();
+            let _ = self.render();
             if let event::Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
                     match &mut self.popup {
@@ -150,7 +142,7 @@ impl App {
                 if self.should_quit {
                     break;
                 }
-                self.handle_new_actions();
+                let _ = self.handle_new_actions();
             }
         }
 
@@ -288,9 +280,10 @@ impl App {
             let areas = get_component_areas(frame);
             self.explorer_manager
                 .draw(frame, *areas.get("explorer_table").unwrap());
-            self.command_line
+            let _ = self
+                .command_line
                 .draw(frame, *areas.get("command_line").unwrap());
-            self.popup.draw(frame, *areas.get("popup").unwrap());
+            let _ = self.popup.draw(frame, *areas.get("popup").unwrap());
         })?;
         Ok(())
     }
