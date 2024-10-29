@@ -1,19 +1,9 @@
 use core::panic;
-use std::borrow::BorrowMut;
-use std::cell::{Ref, RefCell};
-use std::cmp::{Eq, PartialEq};
 use std::collections::{HashMap, VecDeque};
-use std::ops::Deref;
-use std::rc::Weak;
-use std::usize;
-use std::{path::PathBuf, rc::Rc};
+use std::path::PathBuf;
 
-use mockall::predicate::float;
-use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
-    Frame,
-};
-use std::cmp::Ord;
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::Frame;
 use tracing::info;
 
 use super::explorer_table::ExplorerTable;
@@ -49,22 +39,11 @@ pub enum Split {
     Single(ExplorerTable),
 }
 
-#[derive(PartialEq, Eq, Clone)]
-pub enum SplitPreference {
-    Horizontal,
-    Vertical,
-}
-
 pub enum SplitDirection {
     Up,
     Down,
     Left,
     Right,
-}
-
-pub enum SplitResult {
-    SomeResult(usize, SplitPreference, VecDeque<usize>, usize),
-    NoResult,
 }
 
 #[derive(Clone)]
@@ -73,6 +52,12 @@ pub struct ExplorerManager {
     pub focused_id: usize,
     pub next_id: usize,
     pub last_layout: HashMap<usize, Rect>,
+}
+
+impl Default for ExplorerManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ExplorerManager {
@@ -121,11 +106,8 @@ impl ExplorerManager {
             return true;
         }
         let focused_node = self.explorers.get(&self.focused_id).unwrap();
-        let parent_id: usize;
-        match focused_node.parent {
-            ParentRelationship::SomeParent(an_id, _) => {
-                parent_id = an_id;
-            }
+        let parent_id = match focused_node.parent {
+            ParentRelationship::SomeParent(an_id, _) => an_id,
             ParentRelationship::NoParent => return true,
         };
         info!("PArent id: {}", parent_id);
@@ -176,15 +158,15 @@ impl ExplorerManager {
         self.focused_id = parent_id;
         loop {
             match current_node.split {
-                Split::Single(table) => {
+                Split::Single(_) => {
                     self.focused_id = current_node.id;
                     break;
                 }
 
-                Split::Horizontal(id_0, id_1) => {
+                Split::Horizontal(id_0, _) => {
                     current_node = self.explorers.get(&id_0).unwrap().clone();
                 }
-                Split::Vertical(id_0, id_1) => {
+                Split::Vertical(id_0, _) => {
                     current_node = self.explorers.get(&id_0).unwrap().clone();
                 }
             }
@@ -197,12 +179,9 @@ impl ExplorerManager {
         self.get_drawable(frame, area, 0, &mut draw_map);
         self.last_layout = draw_map.clone();
         for (key, value) in draw_map.iter() {
-            let table = self.explorers.get_mut(&key).unwrap();
-            match &mut table.split {
-                Split::Single(table) => {
-                    let _ = table.draw(frame, *value);
-                }
-                _ => {}
+            let table = self.explorers.get_mut(key).unwrap();
+            if let Split::Single(table) = &mut table.split {
+                let _ = table.draw(frame, *value);
             }
         }
     }
@@ -221,16 +200,16 @@ impl ExplorerManager {
                     .direction(Direction::Vertical)
                     .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
                     .split(area);
-                self.get_drawable(frame, component_areas[0], id_0.clone(), draw_map);
-                self.get_drawable(frame, component_areas[1], id_1.clone(), draw_map);
+                self.get_drawable(frame, component_areas[0], *id_0, draw_map);
+                self.get_drawable(frame, component_areas[1], *id_1, draw_map);
             }
             Split::Vertical(id_0, id_1) => {
                 let component_areas = Layout::default()
                     .direction(Direction::Horizontal)
                     .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
                     .split(area);
-                self.get_drawable(frame, component_areas[0], id_0.clone(), draw_map);
-                self.get_drawable(frame, component_areas[1], id_1.clone(), draw_map);
+                self.get_drawable(frame, component_areas[0], *id_0, draw_map);
+                self.get_drawable(frame, component_areas[1], *id_1, draw_map);
             }
             Split::Single(_) => {
                 draw_map.insert(id, area);
@@ -310,12 +289,11 @@ impl ExplorerManager {
             return;
         }
 
-        let id = focusable
+        let id = *focusable
             .iter()
             .min_by(|a, b| a.1.partial_cmp(b.1).unwrap())
             .unwrap()
-            .0
-            .clone();
+            .0;
         if let Split::Single(table) = &mut current_node.split {
             table.unfocus();
         }
