@@ -1,15 +1,12 @@
+use crate::components::Component;
 use color_eyre::eyre::Result;
 use ratatui::{
     crossterm::event::{KeyCode, KeyEvent},
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::Rect,
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
-use tracing::info;
 
-use crate::{action::Action, action_agent::ActionAgent};
-
-use super::Component;
 use crate::key_handler::KeyHandler;
 
 pub struct KeyTracker {
@@ -51,13 +48,5 @@ impl Component for KeyTracker {
 
         frame.render_widget(key_paragraph, area);
         Ok(())
-    }
-}
-impl ActionAgent for KeyTracker {
-    fn update(&mut self, action: Action) -> Result<Option<Action>> {
-        match action {
-            _ => {}
-        }
-        Ok(None)
     }
 }

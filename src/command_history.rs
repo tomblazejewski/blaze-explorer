@@ -6,6 +6,12 @@ pub struct CommandHistory {
     future_commands: Vec<Box<dyn Command>>,
 }
 
+impl Default for CommandHistory {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CommandHistory {
     pub fn new() -> Self {
         Self {

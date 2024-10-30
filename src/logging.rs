@@ -1,10 +1,8 @@
-use std::thread::sleep;
-use std::{path::PathBuf, time::Duration};
+use std::path::PathBuf;
 
-use color_eyre::eyre::{Context, Result};
+use color_eyre::eyre::Result;
 use directories::ProjectDirs;
 use lazy_static::lazy_static;
-use tracing::{error, info};
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{self, layer::SubscriberExt, util::SubscriberInitExt, Layer};
 

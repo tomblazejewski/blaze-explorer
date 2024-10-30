@@ -1,13 +1,11 @@
 use color_eyre::eyre::Result;
 use ratatui::{
-    crossterm::event::{KeyCode, KeyEvent},
     layout::{Constraint, Direction, Layout, Rect},
     text::{Line, Text},
-    widgets::{Block, Borders, Clear, Paragraph},
+    widgets::{Block, Clear, Paragraph},
     Frame,
 };
 use std::cmp::min;
-use tracing::info;
 
 use crate::{
     action::{Action, AppAction, ExplorerAction, TextAction},
@@ -116,6 +114,12 @@ impl CommandLine {
                 self.current_message = Some(batch);
             }
         }
+    }
+}
+
+impl Default for CommandLine {
+    fn default() -> Self {
+        Self::new()
     }
 }
 impl Component for CommandLine {

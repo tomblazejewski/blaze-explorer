@@ -1,5 +1,5 @@
 use core::panic;
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use ratatui::layout::{Constraint, Direction, Layout, Rect};

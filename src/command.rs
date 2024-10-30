@@ -1,19 +1,14 @@
 use chrono::offset;
 use directories::ProjectDirs;
-use tracing::info;
 
 use crate::action::{AppAction, PopupType};
 use crate::app::ExitResult;
 use crate::components::explorer_manager::SplitDirection;
-use crate::focus::Focus;
 use crate::popup::ActionInput;
 use crate::{action::Action, line_entry::LineEntry};
-use core::panic;
 use std::fmt::Debug;
-use std::fs::File;
-use std::path::Path;
 use std::process::Command as ProcessCommand;
-use std::{collections::HashMap, error::Error, fs, io::Write, ops::Rem, path::PathBuf};
+use std::{collections::HashMap, fs, path::PathBuf};
 use std::{fmt, io};
 
 use crate::{
@@ -25,7 +20,7 @@ use crate::{
 
 pub trait Command: CommandClone {
     fn execute(&mut self, app: &mut App) -> Option<Action>;
-    fn undo(&mut self, app: &mut App) -> Option<Action> {
+    fn undo(&mut self, _app: &mut App) -> Option<Action> {
         None
     }
     fn is_reversible(&self) -> bool {
@@ -58,7 +53,7 @@ pub struct ChangeDirectory {
 }
 
 impl ChangeDirectory {
-    pub fn new(mut ctx: AppContext, path: PathBuf) -> Self {
+    pub fn new(mut _ctx: AppContext, path: PathBuf) -> Self {
         Self { new_path: path }
     }
 }
@@ -74,7 +69,7 @@ impl Command for ChangeDirectory {
 pub struct ParentDirectory {}
 
 impl ParentDirectory {
-    pub fn new(mut ctx: AppContext) -> Self {
+    pub fn new(mut _ctx: AppContext) -> Self {
         ParentDirectory {}
     }
 }
@@ -90,7 +85,7 @@ impl Command for ParentDirectory {
 pub struct SelectUp {}
 
 impl SelectUp {
-    pub fn new(ctx: AppContext) -> Self {
+    pub fn new(_ctx: AppContext) -> Self {
         Self {}
     }
 }
@@ -105,7 +100,7 @@ impl Command for SelectUp {
 pub struct SelectDown {}
 
 impl SelectDown {
-    pub fn new(ctx: AppContext) -> Self {
+    pub fn new(_ctx: AppContext) -> Self {
         Self {}
     }
 }
@@ -148,7 +143,7 @@ pub struct UpdateSearchQuery {
 }
 
 impl UpdateSearchQuery {
-    pub fn new(ctx: AppContext, query: String) -> Self {
+    pub fn new(_ctx: AppContext, query: String) -> Self {
         Self { query }
     }
 }
@@ -164,7 +159,7 @@ impl Command for UpdateSearchQuery {
 pub struct ClearSearchQuery {}
 
 impl ClearSearchQuery {
-    pub fn new(ctx: AppContext) -> Self {
+    pub fn new(_ctx: AppContext) -> Self {
         Self {}
     }
 }
@@ -180,7 +175,7 @@ impl Command for ClearSearchQuery {
 pub struct NextSearchResult {}
 
 impl NextSearchResult {
-    pub fn new(ctx: AppContext) -> Self {
+    pub fn new(_ctx: AppContext) -> Self {
         Self {}
     }
 }
@@ -236,7 +231,7 @@ pub struct SwitchMode {
 }
 
 impl SwitchMode {
-    pub fn new(ctx: AppContext, mode: Mode) -> Self {
+    pub fn new(_ctx: AppContext, mode: Mode) -> Self {
         Self { mode }
     }
 }
@@ -508,7 +503,7 @@ impl Noop {
     }
 }
 impl Command for Noop {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
+    fn execute(&mut self, _app: &mut App) -> Option<Action> {
         None
     }
 }
@@ -530,7 +525,7 @@ impl DeleteSelection {
     }
 }
 impl Command for DeleteSelection {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
+    fn execute(&mut self, _app: &mut App) -> Option<Action> {
         match &self.affected_files {
             Some(contents) => {
                 match &self.backup_path {
@@ -556,7 +551,7 @@ impl Command for DeleteSelection {
         None
     }
 
-    fn undo(&mut self, app: &mut App) -> Option<Action> {
+    fn undo(&mut self, _app: &mut App) -> Option<Action> {
         match &self.backup_path {
             Some(contents) => {
                 let _ = contents
@@ -670,18 +665,20 @@ impl RenameActive {
 }
 
 fn rename_path(first_path: PathBuf, second_path: PathBuf) {
-    fs::rename(first_path.clone(), second_path)
-        .expect(format!("Failed to rename {}", first_path.to_str().unwrap()).as_str());
+    Result::expect(
+        fs::rename(first_path.clone(), second_path),
+        format!("Failed to rename {}", first_path.to_str().unwrap()).as_str(),
+    );
 }
 
 impl Command for RenameActive {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
+    fn execute(&mut self, _app: &mut App) -> Option<Action> {
         rename_path(self.first_path.clone(), self.second_path.clone().unwrap());
         self.reversible = true;
         None
     }
 
-    fn undo(&mut self, app: &mut App) -> Option<Action> {
+    fn undo(&mut self, _app: &mut App) -> Option<Action> {
         rename_path(self.second_path.clone().unwrap(), self.first_path.clone());
         None
     }
@@ -695,19 +692,19 @@ pub struct TerminalCommand {
 }
 
 impl TerminalCommand {
-    pub fn new(ctx: AppContext, command: String) -> Self {
+    pub fn new(_ctx: AppContext, command: String) -> Self {
         Self { command }
     }
 }
 
 fn parse_shell_command(input: String) -> (String, Option<Vec<String>>) {
-    let mut chars = input.chars().peekable();
+    let chars = input.chars().peekable();
     let mut command = String::new();
     let mut args = Vec::new();
     let mut current_arg = String::new();
     let mut in_quotes = false;
 
-    while let Some(c) = chars.next() {
+    for c in chars {
         match c {
             '"' => {
                 in_quotes = !in_quotes;
@@ -745,7 +742,7 @@ fn parse_shell_command(input: String) -> (String, Option<Vec<String>>) {
 }
 
 impl Command for TerminalCommand {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
+    fn execute(&mut self, _app: &mut App) -> Option<Action> {
         let command_args = parse_shell_command(self.command.clone());
         let output = match command_args {
             (command, Some(args)) => ProcessCommand::new(command).args(args).output(),
@@ -790,7 +787,7 @@ impl Command for OpenNeovimHere {
 pub struct SplitVertically {}
 
 impl SplitVertically {
-    pub fn new(mut ctx: AppContext) -> Self {
+    pub fn new(mut _ctx: AppContext) -> Self {
         Self {}
     }
 }
@@ -805,7 +802,7 @@ impl Command for SplitVertically {
 pub struct SplitHorizontally {}
 
 impl SplitHorizontally {
-    pub fn new(mut ctx: AppContext) -> Self {
+    pub fn new(mut _ctx: AppContext) -> Self {
         Self {}
     }
 }
@@ -821,7 +818,7 @@ impl Command for SplitHorizontally {
 pub struct DeleteSplit {}
 
 impl DeleteSplit {
-    pub fn new(mut ctx: AppContext) -> Self {
+    pub fn new(mut _ctx: AppContext) -> Self {
         Self {}
     }
 }
@@ -837,7 +834,7 @@ impl Command for DeleteSplit {
 pub struct FocusUp {}
 
 impl FocusUp {
-    pub fn new(mut ctx: AppContext) -> Self {
+    pub fn new(mut _ctx: AppContext) -> Self {
         Self {}
     }
 }
@@ -852,7 +849,7 @@ impl Command for FocusUp {
 pub struct FocusDown {}
 
 impl FocusDown {
-    pub fn new(mut ctx: AppContext) -> Self {
+    pub fn new(mut _ctx: AppContext) -> Self {
         Self {}
     }
 }
@@ -867,7 +864,7 @@ impl Command for FocusDown {
 pub struct FocusLeft {}
 
 impl FocusLeft {
-    pub fn new(mut ctx: AppContext) -> Self {
+    pub fn new(mut _ctx: AppContext) -> Self {
         Self {}
     }
 }
@@ -882,7 +879,7 @@ impl Command for FocusLeft {
 pub struct FocusRight {}
 
 impl FocusRight {
-    pub fn new(mut ctx: AppContext) -> Self {
+    pub fn new(mut _ctx: AppContext) -> Self {
         Self {}
     }
 }
@@ -898,8 +895,6 @@ impl Command for FocusRight {
 mod tests {
     use std::{thread, time::Duration};
 
-    use fs::File;
-
     use crate::action::ExplorerAction;
 
     // Note this useful idiom: importing names from outer (for mod tests) scope.
@@ -912,7 +907,7 @@ mod tests {
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
                 PathBuf::from("tests/"),
             )));
-        app.handle_new_actions();
+        let _ = app.handle_new_actions();
         assert_eq!(
             app.explorer_manager.get_current_path(),
             PathBuf::from("tests/")
@@ -928,7 +923,7 @@ mod tests {
             )));
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::SelectDown));
-        app.handle_new_actions();
+        let _ = app.handle_new_actions();
         assert_eq!(app.explorer_manager.get_selected(), Some(1));
     }
     #[test]
@@ -940,11 +935,11 @@ mod tests {
             )));
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::SelectDown));
-        app.handle_new_actions();
+        let _ = app.handle_new_actions();
         assert_eq!(app.explorer_manager.get_selected(), Some(1));
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::SelectUp));
-        app.handle_new_actions();
+        let _ = app.handle_new_actions();
         assert_eq!(app.explorer_manager.get_selected(), Some(0));
     }
 
@@ -959,7 +954,7 @@ mod tests {
             .push_back(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
                 "test_query".into(),
             )));
-        app.handle_new_actions();
+        let _ = app.handle_new_actions();
         assert_eq!(
             app.explorer_manager.get_search_phrase(),
             Some(String::from("test_query"))
@@ -976,14 +971,14 @@ mod tests {
             .push_back(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
                 "test_query".into(),
             )));
-        app.handle_new_actions();
+        let _ = app.handle_new_actions();
         assert_eq!(
             app.explorer_manager.get_search_phrase(),
             Some(String::from("test_query"))
         );
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ClearSearchQuery));
-        app.handle_new_actions();
+        let _ = app.handle_new_actions();
         assert_eq!(app.explorer_manager.get_search_phrase(), None)
     }
 
@@ -994,7 +989,7 @@ mod tests {
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
                 PathBuf::from("tests/folder_1"),
             )));
-        app.handle_new_actions();
+        let _ = app.handle_new_actions();
         assert_eq!(
             app.explorer_manager.get_current_path(),
             PathBuf::from("tests/folder_1")
@@ -1002,7 +997,7 @@ mod tests {
 
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ParentDirectory));
-        app.handle_new_actions();
+        let _ = app.handle_new_actions();
 
         assert_eq!(
             app.explorer_manager.get_current_path(),
@@ -1016,7 +1011,7 @@ mod tests {
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
                 PathBuf::from("tests/folder_1"),
             )));
-        app.handle_new_actions();
+        let _ = app.handle_new_actions();
         let mut delete_selection = DeleteSelection::new(app.get_app_context());
         let before = delete_selection.affected_files.clone();
 
@@ -1024,7 +1019,7 @@ mod tests {
         thread::sleep(Duration::from_secs(5));
         let _ = delete_selection.undo(&mut app);
 
-        let mut duplicate_selection = DeleteSelection::new(app.get_app_context());
+        let duplicate_selection = DeleteSelection::new(app.get_app_context());
         let after = duplicate_selection.affected_files.clone();
         assert_eq!(before, after);
     }

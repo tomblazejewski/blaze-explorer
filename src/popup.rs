@@ -93,7 +93,7 @@ impl PopUp {
                     search_query,
                 )))
             }
-            PopUp::InputPopUp(action_input) => None,
+            PopUp::InputPopUp(_action_input) => None,
         }
     }
 
@@ -179,7 +179,7 @@ pub trait PopupEngine {
 
     fn previous_result(&mut self) {}
 
-    fn update_search_query(&mut self, query: String) {}
+    fn update_search_query(&mut self, _query: String) {}
 
     fn push_search_char(&mut self, ch: char);
 
@@ -237,8 +237,7 @@ impl PopupEngine for TelescopeWindow {
             self.should_quit = true;
             return None;
         }
-        let new_action = self.telescope_backend.handle_action(action);
-        new_action
+        self.telescope_backend.handle_action(action)
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
@@ -345,7 +344,7 @@ impl PopupEngine for ActionInput<RenameActive> {
                     self.next_result();
                 }
                 PopupAction::PreviousResult => self.previous_result(),
-                PopupAction::UpdateSearchQuery(query) => {}
+                PopupAction::UpdateSearchQuery(_query) => {}
                 action => return self.query.handle_text_action(action),
             }
         }

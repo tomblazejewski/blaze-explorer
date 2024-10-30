@@ -5,10 +5,8 @@ use std::{
     fs,
     path::{self, Path},
 };
-use style::Styled;
-use tracing::info;
 
-use color_eyre::{eyre::Result, owo_colors::OwoColorize};
+use color_eyre::eyre::Result;
 use ratatui::{
     prelude::*,
     style::{palette::tailwind, Style},
@@ -16,12 +14,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::{
-    action::{Action, AppAction, ExplorerAction},
-    action_agent::ActionAgent,
-    mode::Mode,
-    themes::CustomTheme,
-};
+use crate::{mode::Mode, themes::CustomTheme};
 
 use super::Component;
 
@@ -40,7 +33,7 @@ pub fn format_file_size(size: u64) -> String {
         if size > 1024.0 {
             size /= 1024.0;
         } else {
-            return format!("{:.2}{}", size, suffix.to_string());
+            return format!("{:.2}{}", size, suffix);
         }
     }
     String::from("0")
@@ -106,10 +99,10 @@ fn highlight_search_result(
         return Line::from(line_text);
     }
     let query = query.unwrap();
-    if line_text.contains(&query) {
+    if line_text.contains(query) {
         let splits = line_text.split(&query);
         let chunks = splits.into_iter().map(|c| Span::from(c.to_owned()));
-        let pattern = Span::styled(query.clone(), highlighted_style);
+        let pattern = Span::styled(query, highlighted_style);
         itertools::intersperse(chunks, pattern)
             .collect::<Vec<Span>>()
             .into()
@@ -128,6 +121,12 @@ pub struct ExplorerTable {
     theme: CustomTheme,
     focused: bool,
 }
+impl Default for ExplorerTable {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ExplorerTable {
     pub fn new() -> Self {
         let stating_path = path::absolute("./").unwrap();
@@ -361,13 +360,10 @@ impl Component for ExplorerTable {
                     format_last_time(&element.modified).into(),
                 ])
                 .style(Style::new().bg(match &self.selected_ids {
-                    Some(selected_ids) => {
-                        if selected_ids.contains(&element.id) {
-                            tailwind::BLACK
-                        } else {
-                            tailwind::BLACK
-                        }
-                    }
+                    Some(selected_ids) => match selected_ids.contains(&element.id) {
+                        true => tailwind::BLACK,
+                        false => tailwind::BLACK,
+                    },
                     None => tailwind::BLACK,
                 }))
                 .fg(tailwind::WHITE)

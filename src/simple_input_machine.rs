@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::{
-    action::{Action, AppAction, ExplorerAction, PopupAction, TextAction},
+    action::{Action, PopupAction},
     input_machine::{InputMachine, KeyMapNode, KeyProcessingResult},
     mode::Mode,
 };

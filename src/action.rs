@@ -1,13 +1,8 @@
-use crate::{
-    command::{
-        DeleteSplit, DisplayMessage, FocusDown, FocusLeft, FocusRight, FocusUp, OpenNeovimHere,
-        SplitHorizontally, SplitVertically, TelescopeQuit, TerminalCommand,
-    },
-    popup::PopUp,
+use crate::command::{
+    DeleteSplit, DisplayMessage, FocusDown, FocusLeft, FocusRight, FocusUp, OpenNeovimHere,
+    SplitHorizontally, SplitVertically, TelescopeQuit, TerminalCommand,
 };
 use std::path::PathBuf;
-
-use ratatui::crossterm::event::KeyEvent;
 
 use crate::{
     app::App,

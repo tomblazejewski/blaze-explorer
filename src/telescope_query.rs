@@ -1,5 +1,5 @@
 use crate::{
-    action::{Action, ExplorerAction, PopupAction, TextAction},
+    action::{Action, PopupAction},
     line_entry::LineEntry,
 };
 

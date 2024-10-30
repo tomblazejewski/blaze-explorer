@@ -10,11 +10,8 @@ use ratatui::{
 use sfs_telescope::SearchFileshereSearch;
 
 use crate::{
-    action::{Action, AppAction, ExplorerAction, PopupAction},
-    components::{
-        explorer_manager::{self, ExplorerManager},
-        explorer_table::ExplorerTable,
-    },
+    action::{Action, PopupAction},
+    components::explorer_manager::ExplorerManager,
     telescope_query::TelescopeQuery,
     themes::CustomTheme,
 };

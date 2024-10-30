@@ -1,19 +1,14 @@
 use logging::initialize_logging;
-use ratatui::{
-    crossterm::{
-        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-        ExecutableCommand,
-    },
-    prelude::*,
+use ratatui::crossterm::{
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    ExecutableCommand,
 };
 use std::process::Command;
 use std::{env::set_current_dir, io::stdout};
 use std::{error::Error, path::PathBuf};
-use tracing::info;
 mod app;
 use app::{App, ExitResult};
 mod action;
-mod action_agent;
 mod app_input_machine;
 mod command;
 mod command_history;
@@ -38,7 +33,7 @@ fn bring_app_back(app: &mut App) {
 }
 fn open_neovim(path: &PathBuf) -> Result<(), Box<dyn Error>> {
     set_current_dir(path)?;
-    let output = Command::new("nvim").status()?;
+    let _output = Command::new("nvim").status()?;
     Ok(())
 }
 fn main() -> Result<(), Box<dyn Error>> {
