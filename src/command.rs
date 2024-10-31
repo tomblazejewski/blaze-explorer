@@ -4,6 +4,7 @@ use directories::ProjectDirs;
 use crate::action::{AppAction, PopupType};
 use crate::app::ExitResult;
 use crate::components::explorer_manager::SplitDirection;
+use crate::components::explorer_table::GlobalStyling;
 use crate::popup::ActionInput;
 use crate::{action::Action, line_entry::LineEntry};
 use std::fmt::Debug;
@@ -150,7 +151,8 @@ impl UpdateSearchQuery {
 
 impl Command for UpdateSearchQuery {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.explorer_manager.update_search_query(self.query.clone());
+        app.explorer_manager
+            .set_styling(GlobalStyling::HighlightSearch(self.query.clone()));
         None
     }
 }

@@ -8,6 +8,8 @@ pub struct CustomTheme {
     pub header: Style,
     pub focused_border: Style,
     pub unfocused_border: Style,
+    pub highlight_query: Style,
+    pub highlight_jump_char: Style,
 }
 
 impl Default for CustomTheme {
@@ -25,6 +27,8 @@ impl Default for CustomTheme {
                 .fg(Color::Rgb(0, 0, 0)),
             focused_border: Style::new().fg(Color::Rgb(255, 255, 255)),
             unfocused_border: Style::new().fg(Color::Rgb(49, 50, 68)),
+            highlight_query: Style::new().fg(Color::Rgb(128, 0, 128)),
+            highlight_jump_char: Style::new().fg(Color::Rgb(255, 255, 0)),
         }
     }
 }

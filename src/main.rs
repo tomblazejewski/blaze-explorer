@@ -13,6 +13,7 @@ mod app_input_machine;
 mod command;
 mod command_history;
 mod components;
+mod flash_input_machine;
 mod focus;
 mod input_machine;
 mod key_handler;

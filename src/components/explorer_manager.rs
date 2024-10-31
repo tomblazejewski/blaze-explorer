@@ -6,7 +6,7 @@ use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
 use tracing::info;
 
-use super::explorer_table::ExplorerTable;
+use super::explorer_table::{ExplorerTable, FileData, GlobalStyling};
 use crate::components::Component;
 use crate::mode::Mode;
 
@@ -351,16 +351,24 @@ impl ExplorerManager {
         delegate_to_focused!(self, clear_search_query);
     }
 
-    pub fn update_search_query(&mut self, query: String) {
-        delegate_to_focused!(self, update_search_query, query);
-    }
-
     pub fn next(&mut self) {
         delegate_to_focused!(self, next);
     }
 
     pub fn previous(&mut self) {
         delegate_to_focused!(self, previous);
+    }
+
+    pub fn find_elements(&mut self, query: &str) -> Vec<FileData> {
+        delegate_to_focused!(self, find_elements, query)
+    }
+
+    pub fn reset_formatting(&mut self) {
+        delegate_to_focused!(self, reset_formatting);
+    }
+
+    pub fn set_styling(&mut self, styling: GlobalStyling) {
+        delegate_to_focused!(self, set_styling, styling);
     }
 }
 

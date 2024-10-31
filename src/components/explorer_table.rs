@@ -1,5 +1,6 @@
 use chrono::{offset::Utc, DateTime};
 use layout::Alignment;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::{
     fs,
@@ -20,12 +21,17 @@ use super::Component;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FileData {
-    id: usize,
+    pub id: usize,
     filename: String,
     size: u64,
     modified: Option<DateTime<Utc>>,
 }
 
+impl FileData {
+    pub fn contains(&self, query: &str) -> bool {
+        self.filename.contains(query)
+    }
+}
 pub(crate) const SUFFIXES: [&str; 5] = ["B", "K", "M", "G", "T"];
 pub fn format_file_size(size: u64) -> String {
     let mut size = size as f32;
@@ -90,15 +96,7 @@ fn get_line_numbers(n_lines: usize, current_line: usize) -> Vec<String> {
     current_lines
 }
 
-fn highlight_search_result(
-    line_text: String,
-    query: Option<&str>,
-    highlighted_style: Style,
-) -> Line {
-    if query.is_none() {
-        return Line::from(line_text);
-    }
-    let query = query.unwrap();
+fn highlight_search_result(line_text: String, query: &str, highlighted_style: Style) -> Line {
     if line_text.contains(query) {
         let splits = line_text.split(&query);
         let chunks = splits.into_iter().map(|c| Span::from(c.to_owned()));
@@ -110,16 +108,46 @@ fn highlight_search_result(
         Line::from(line_text)
     }
 }
+
+pub fn jump_highlight(
+    line_text: String,
+    query: &str,
+    char: char,
+    query_style: Style,
+    char_style: Style,
+) -> Line {
+    if line_text.contains(&query) {
+        let mut splits = line_text.split(&query);
+        let beginning = Span::from(splits.next().unwrap().to_string());
+        let query_span = Span::styled(query, query_style);
+        let mut remainder = splits.remainder().unwrap().to_string();
+        remainder.remove(0);
+        let char_span = Span::styled(char.to_string(), char_style);
+        let remainder_span = Span::from(remainder);
+        Line::from(vec![beginning, query_span, char_span, remainder_span])
+    } else {
+        Line::from(line_text)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum GlobalStyling {
+    HighlightSearch(String), //highlight background of the text with the search query
+    HighlightJump(String, HashMap<char, usize>), //highlight foreground text with search query
+    //+ the char used for the jumping action
+    None, //no styling
+}
+
 #[derive(Clone, Debug)]
 pub struct ExplorerTable {
     state: TableState,
     current_path: PathBuf,
     elements_list: Vec<FileData>,
     mode: Mode,
-    search_phrase: Option<String>,
     selected_ids: Option<Vec<usize>>,
     theme: CustomTheme,
     focused: bool,
+    styling: GlobalStyling,
 }
 impl Default for ExplorerTable {
     fn default() -> Self {
@@ -129,16 +157,16 @@ impl Default for ExplorerTable {
 
 impl ExplorerTable {
     pub fn new() -> Self {
-        let stating_path = path::absolute("./").unwrap();
+        let starting_path = path::absolute("./").unwrap();
         Self {
             state: TableState::default().with_selected(0),
-            current_path: stating_path,
+            current_path: starting_path,
             elements_list: Vec::new(),
             mode: Mode::Normal,
-            search_phrase: None,
             selected_ids: None,
             theme: CustomTheme::default(),
             focused: true,
+            styling: GlobalStyling::None,
         }
     }
 
@@ -230,16 +258,15 @@ impl ExplorerTable {
     }
 
     pub fn update_search_query(&mut self, new_query: String) {
-        if !new_query.is_empty() {
-            self.search_phrase = Some(new_query)
-        } else {
-            self.search_phrase = None
-        }
+        self.styling = GlobalStyling::HighlightSearch(new_query);
         self.search_elements();
     }
 
     pub fn get_search_phrase(&self) -> Option<String> {
-        self.search_phrase.clone()
+        match &self.styling {
+            GlobalStyling::HighlightSearch(query) => Some(query.clone()),
+            _ => None,
+        }
     }
 
     pub fn next_search_result(&mut self) {
@@ -269,7 +296,7 @@ impl ExplorerTable {
         }
     }
     pub fn search_elements(&mut self) {
-        let element_ids = if let Some(query) = &self.search_phrase {
+        let element_ids = if let GlobalStyling::HighlightSearch(query) = &self.styling {
             Some(
                 self.elements_list
                     .iter()
@@ -282,6 +309,19 @@ impl ExplorerTable {
         };
         self.selected_ids = element_ids;
     }
+
+    pub fn find_elements(&mut self, query: &str) -> Vec<FileData> {
+        self.elements_list
+            .iter()
+            .filter(|x| x.filename.contains(query))
+            .map(|x| x.clone())
+            .collect()
+    }
+
+    pub fn reset_formatting(&mut self) {
+        todo!()
+    }
+
     pub fn show_in_folder(&mut self, path: PathBuf) {
         // split the path by the last slash separator to get the folder and filename
         let folder = path.parent().unwrap();
@@ -312,7 +352,7 @@ impl ExplorerTable {
     }
 
     pub fn clear_search_query(&mut self) {
-        self.search_phrase = None
+        self.set_styling(GlobalStyling::None)
     }
 
     pub fn get_selected_files(&self) -> Option<Vec<PathBuf>> {
@@ -322,6 +362,10 @@ impl ExplorerTable {
             return Some(vec![path]);
         }
         None
+    }
+
+    pub fn set_styling(&mut self, styling: GlobalStyling) {
+        self.styling = styling
     }
 }
 
@@ -343,6 +387,13 @@ impl Component for ExplorerTable {
             .style(self.theme.header);
         let line_numbers =
             get_line_numbers(self.elements_list.len(), self.state.selected().unwrap() + 1);
+        let (query, inverted_map) = match &self.styling {
+            GlobalStyling::HighlightJump(query, map) => {
+                (query.clone(), map.iter().map(|(k, v)| (*v, *k)).collect())
+            }
+            GlobalStyling::HighlightSearch(query) => (query.clone(), HashMap::new()),
+            GlobalStyling::None => (String::new(), HashMap::new()),
+        };
         let rows = self
             .elements_list
             .iter()
@@ -350,11 +401,23 @@ impl Component for ExplorerTable {
             .map(|(element, row_number)| {
                 Row::new([
                     Cell::from(Text::from(row_number).alignment(Alignment::Right)),
-                    highlight_search_result(
-                        element.filename.clone(),
-                        self.search_phrase.as_deref(),
-                        self.theme.search_result,
-                    )
+                    {
+                        match self.styling {
+                            GlobalStyling::None => Line::from(element.filename.clone()),
+                            GlobalStyling::HighlightSearch(_) => highlight_search_result(
+                                element.filename.clone(),
+                                &query,
+                                self.theme.search_result,
+                            ),
+                            GlobalStyling::HighlightJump(_, _) => jump_highlight(
+                                element.filename.clone(),
+                                &query,
+                                inverted_map.get(&element.id).unwrap_or(&' ').to_owned(),
+                                self.theme.highlight_query.clone(),
+                                self.theme.highlight_jump_char.clone(),
+                            ),
+                        }
+                    }
                     .into(),
                     format_file_size(element.size).into(),
                     format_last_time(&element.modified).into(),
