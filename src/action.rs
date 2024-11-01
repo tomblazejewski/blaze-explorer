@@ -1,5 +1,5 @@
 use crate::command::{
-    DeleteSplit, DisplayMessage, FocusDown, FocusLeft, FocusRight, FocusUp, JumpToId,
+    DeleteSplit, DisplayMessage, FocusDown, FocusLeft, FocusRight, FocusUp, JumpAndClose, JumpToId,
     OpenNeovimHere, SplitHorizontally, SplitVertically, TelescopeQuit, TerminalCommand,
     UpdatePlugin,
 };
@@ -23,6 +23,7 @@ pub enum PopupType {
     None,
     Telescope,
     Rename,
+    Flash,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -86,6 +87,7 @@ pub enum PopupAction {
     EraseText,
     UpdateSearchQuery(String),
     UpdatePlugin,
+    JumpAndClose(usize),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -149,6 +151,7 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
             Box::new(TelescopeUpdateSearchQuery::new(query))
         }
         Action::PopupAct(PopupAction::UpdatePlugin) => Box::new(UpdatePlugin::new()),
+        Action::PopupAct(PopupAction::JumpAndClose(id)) => Box::new(JumpAndClose::new(id)),
         Action::Noop => Box::new(Noop::new()),
         Action::CommandAct(_) => Box::new(Noop::new()),
     }

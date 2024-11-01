@@ -6,6 +6,7 @@ use std::{
     fs,
     path::{self, Path},
 };
+use tracing::info;
 
 use color_eyre::eyre::Result;
 use ratatui::{
@@ -97,7 +98,9 @@ fn get_line_numbers(n_lines: usize, current_line: usize) -> Vec<String> {
 }
 
 fn highlight_search_result(line_text: String, query: &str, highlighted_style: Style) -> Line {
+    info!("Query: {}", query);
     if line_text.contains(query) {
+        info!("contains");
         let splits = line_text.split(&query);
         let chunks = splits.into_iter().map(|c| Span::from(c.to_owned()));
         let pattern = Span::styled(query, highlighted_style);
@@ -261,9 +264,12 @@ impl ExplorerTable {
         self.state.select(Some(id));
     }
 
-    pub fn update_search_query(&mut self, new_query: String) {
-        self.styling = GlobalStyling::HighlightSearch(new_query);
-        self.search_elements();
+    pub fn update_search_query(&mut self) {
+        if let GlobalStyling::HighlightSearch(query) = &mut self.styling {
+            if !query.is_empty() {
+                self.search_elements();
+            }
+        }
     }
 
     pub fn get_search_phrase(&self) -> Option<String> {
@@ -365,7 +371,8 @@ impl ExplorerTable {
     }
 
     pub fn set_styling(&mut self, styling: GlobalStyling) {
-        self.styling = styling
+        self.styling = styling;
+        self.update_search_query();
     }
 }
 
@@ -394,6 +401,7 @@ impl Component for ExplorerTable {
             GlobalStyling::HighlightSearch(query) => (query.clone(), HashMap::new()),
             GlobalStyling::None => (String::new(), HashMap::new()),
         };
+        info!("Styling: {:?}", self.styling);
         let rows = self
             .elements_list
             .iter()

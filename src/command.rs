@@ -1,11 +1,12 @@
 use chrono::offset;
 use directories::ProjectDirs;
+use tracing::info;
 
-use crate::action::{AppAction, PopupType};
+use crate::action::{AppAction, ExplorerAction, PopupType};
 use crate::app::ExitResult;
 use crate::components::explorer_manager::SplitDirection;
 use crate::components::explorer_table::GlobalStyling;
-use crate::popup::ActionInput;
+use crate::popup::{ActionInput, FlashJump};
 use crate::{action::Action, line_entry::LineEntry};
 use std::fmt::Debug;
 use std::process::Command as ProcessCommand;
@@ -126,6 +127,25 @@ impl Command for JumpToId {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         app.explorer_manager.jump_to_id(self.id);
         None
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct JumpAndClose {
+    id: usize,
+}
+
+impl JumpAndClose {
+    pub fn new(id: usize) -> Self {
+        Self { id }
+    }
+}
+
+impl Command for JumpAndClose {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.popup.quit();
+        app.explorer_manager.set_styling(GlobalStyling::None);
+        Some(Action::ExplorerAct(ExplorerAction::JumpToId(self.id)))
     }
 }
 
@@ -341,6 +361,9 @@ impl Command for OpenPopup {
                 app.popup =
                     PopUp::InputPopUp(ActionInput::<RenameActive>::new(app.get_app_context()))
             }
+            PopupType::Flash => {
+                app.popup = PopUp::FlashPopUp(FlashJump::new(app.get_app_context()))
+            }
         }
         None
     }
@@ -356,11 +379,8 @@ impl UpdatePlugin {
 }
 impl Command for UpdatePlugin {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &mut app.popup {
-            PopUp::FlashPopUp(ref mut flash) => {
-                flash.update_interface(&app.explorer_manager);
-            }
-            _ => {}
+        if let PopUp::FlashPopUp(ref mut flash) = &mut app.popup {
+            flash.update_interface(&mut app.explorer_manager);
         }
         None
     }
@@ -378,7 +398,9 @@ impl InsertKey {
 impl Command for InsertKey {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         app.command_line.append_char(self.ch);
-        None
+        Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
+            app.command_line.get_contents(),
+        )))
     }
 }
 
@@ -393,7 +415,9 @@ impl EraseText {
 impl Command for EraseText {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         app.command_line.clear_contents();
-        None
+        Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
+            app.command_line.get_contents(),
+        )))
     }
 }
 

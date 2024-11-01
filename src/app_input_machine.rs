@@ -117,6 +117,10 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         Action::AppAct(AppAction::OpenPopup(PopupType::Rename)),
     );
     root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('m'), KeyModifiers::NONE)],
+        Action::AppAct(AppAction::OpenPopup(PopupType::Flash)),
+    );
+    root.add_sequence(
         vec![
             KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),

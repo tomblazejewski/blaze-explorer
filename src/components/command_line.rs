@@ -6,6 +6,7 @@ use ratatui::{
     Frame,
 };
 use std::cmp::min;
+use tracing::info;
 
 use crate::{
     action::{Action, AppAction, ExplorerAction, TextAction},
@@ -73,6 +74,12 @@ impl CommandLine {
             TextAction::EraseText => self.clear_contents(),
             TextAction::DropKey => return self.remove_char(),
         }
+        info!(
+            "Should return {:?}",
+            Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
+                self.contents.clone()
+            )))
+        );
         Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
             self.contents.clone(),
         )))

@@ -9,6 +9,7 @@ use tracing::info;
 use crate::action::PopupAction;
 use crate::command::{Command, RenameActive};
 use crate::components::explorer_manager::ExplorerManager;
+use crate::components::explorer_table::GlobalStyling;
 use crate::flash_input_machine::FlashInputMachine;
 use crate::line_entry::LineEntry;
 use crate::simple_input_machine::SimpleInputMachine;
@@ -112,7 +113,7 @@ impl PopUp {
                 )))
             }
             PopUp::InputPopUp(_action_input) => None,
-            PopUp::FlashPopUp(_flash_popup) => None,
+            PopUp::FlashPopUp(flash_popup) => None,
         }
     }
 
@@ -129,7 +130,7 @@ impl PopUp {
             }
             PopUp::FlashPopUp(flash_popup) => {
                 flash_popup.push_search_char(ch);
-                None
+                self.search_query_action()
             }
         }
     }
@@ -147,7 +148,7 @@ impl PopUp {
             }
             PopUp::FlashPopUp(flash_popup) => {
                 flash_popup.drop_search_char();
-                None
+                self.search_query_action()
             }
         }
     }
@@ -165,7 +166,7 @@ impl PopUp {
             }
             PopUp::FlashPopUp(flash_popup) => {
                 flash_popup.erase_text();
-                None
+                self.search_query_action()
             }
         }
     }
@@ -431,7 +432,7 @@ impl FlashJump {
         self.query = query;
     }
 
-    pub fn update_interface(&mut self, explorer_manager: &ExplorerManager) {
+    pub fn update_interface(&mut self, explorer_manager: &mut ExplorerManager) {
         if !&self.query.is_empty() {
             let resulting_file_data = explorer_manager.find_elements(&self.query);
             let mut new_map = HashMap::new();
@@ -461,6 +462,10 @@ impl FlashJump {
             self.jump_map = HashMap::new();
         };
         self.input_machine.merge_jump_actions(self.jump_map.clone());
+        explorer_manager.set_styling(GlobalStyling::HighlightJump(
+            self.query.clone(),
+            self.jump_map.clone(),
+        ));
     }
 }
 impl PopupEngine for FlashJump {
@@ -470,12 +475,19 @@ impl PopupEngine for FlashJump {
                 .process_keys(&Mode::Normal, &mut self.current_sequence, key_event);
         match keymap_result {
             KeyProcessingResult::Complete(action) => {
+                info!("Action: {:?}", action);
+                self.should_quit = true;
                 return Some(action);
             }
             KeyProcessingResult::Invalid => {
+                info!(
+                    "Invalid: {:?}",
+                    self.input_machine
+                        .get_default_action(&Mode::Normal, key_event)
+                );
                 return self
                     .input_machine
-                    .get_default_action(&Mode::Normal, key_event)
+                    .get_default_action(&Mode::Normal, key_event);
             }
             _ => {}
         }
