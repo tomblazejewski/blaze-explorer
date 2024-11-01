@@ -460,6 +460,7 @@ impl FlashJump {
         } else {
             self.jump_map = HashMap::new();
         };
+        self.input_machine.merge_jump_actions(self.jump_map.clone());
     }
 }
 impl PopupEngine for FlashJump {
