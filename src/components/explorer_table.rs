@@ -123,8 +123,10 @@ pub fn jump_highlight(
         let mut splits = line_text.split(&query);
         let beginning = Span::from(splits.next().unwrap().to_string());
         let query_span = Span::styled(query, query_style);
-        let mut remainder = splits.remainder().unwrap().to_string();
-        remainder.remove(0);
+        let mut remainder = splits.remainder().unwrap_or("").to_string();
+        if !remainder.is_empty() {
+            remainder.remove(0);
+        }
         let char_span = Span::styled(char.to_string(), char_style);
         let remainder_span = Span::from(remainder);
         Line::from(vec![beginning, query_span, char_span, remainder_span])
