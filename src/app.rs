@@ -128,25 +128,20 @@ impl App {
                         }
                         PopUp::FlashPopUp(flashpopup) => {
                             if let Some(action) = flashpopup.handle_key_event(key) {
-                                info!("Pushing action: {:?}", action);
                                 self.action_list.push_back(action);
                             }
                             self.action_list
                                 .push_back(Action::PopupAct(PopupAction::UpdatePlugin));
-                            info!("Pushing updateplugin");
                         }
                     }
                 };
-                info!("Matching Popup: {:?}", self.popup);
                 match &self.popup {
                     PopUp::None => {}
                     active_popup => {
                         if active_popup.should_quit() {
-                            info!("Should quit");
                             if let Some(command) = active_popup.destruct() {
                                 self.run_command(command);
                             }
-                            info!("Setting to none");
                             self.popup = PopUp::None;
                         }
                     }

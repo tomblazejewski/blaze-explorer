@@ -429,15 +429,17 @@ pub struct FlashJump {
     pub should_quit: bool,
     current_sequence: Vec<KeyEvent>,
     jump_map: HashMap<char, usize>,
+    open_immediately: bool,
 }
 impl FlashJump {
-    pub fn new(mut _ctx: AppContext) -> Self {
+    pub fn new(mut _ctx: AppContext, open: bool) -> Self {
         FlashJump {
             query: String::new(),
-            input_machine: FlashInputMachine::new(),
+            input_machine: FlashInputMachine::new(open),
             should_quit: false,
             current_sequence: Vec::new(),
             jump_map: HashMap::new(),
+            open_immediately: open,
         }
     }
 
@@ -478,7 +480,7 @@ impl FlashJump {
             }
             self.jump_map = HashMap::new();
         };
-        self.input_machine = FlashInputMachine::new();
+        self.input_machine = FlashInputMachine::new(self.open_immediately);
         self.input_machine.merge_jump_actions(self.jump_map.clone());
         explorer_manager.set_styling(GlobalStyling::HighlightJump(
             self.query.clone(),

@@ -149,6 +149,24 @@ impl Command for JumpAndClose {
 }
 
 #[derive(Clone, Debug)]
+pub struct JumpAndOpen {
+    id: usize,
+}
+
+impl JumpAndOpen {
+    pub fn new(id: usize) -> Self {
+        Self { id }
+    }
+}
+
+impl Command for JumpAndOpen {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.popup.quit();
+        app.explorer_manager.jump_to_id(self.id);
+        Some(Action::ExplorerAct(ExplorerAction::SelectDirectory))
+    }
+}
+#[derive(Clone, Debug)]
 pub struct ResetStyling {}
 
 impl ResetStyling {
@@ -376,8 +394,8 @@ impl Command for OpenPopup {
                 app.popup =
                     PopUp::InputPopUp(ActionInput::<RenameActive>::new(app.get_app_context()))
             }
-            PopupType::Flash => {
-                app.popup = PopUp::FlashPopUp(FlashJump::new(app.get_app_context()))
+            PopupType::Flash(open) => {
+                app.popup = PopUp::FlashPopUp(FlashJump::new(app.get_app_context(), *open))
             }
         }
         None
