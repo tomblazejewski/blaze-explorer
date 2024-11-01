@@ -144,8 +144,23 @@ impl JumpAndClose {
 impl Command for JumpAndClose {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         app.popup.quit();
-        app.explorer_manager.set_styling(GlobalStyling::None);
         Some(Action::ExplorerAct(ExplorerAction::JumpToId(self.id)))
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ResetStyling {}
+
+impl ResetStyling {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Command for ResetStyling {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.explorer_manager.set_styling(GlobalStyling::None);
+        None
     }
 }
 
@@ -523,6 +538,7 @@ impl TelescopeDropSearchChar {
 }
 impl Command for TelescopeDropSearchChar {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
+        info!("Calling drop on popup through the command");
         app.popup.drop_search_char()
     }
 }

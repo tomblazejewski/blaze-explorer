@@ -267,11 +267,7 @@ impl ExplorerTable {
     }
 
     pub fn update_search_query(&mut self) {
-        if let GlobalStyling::HighlightSearch(query) = &mut self.styling {
-            if !query.is_empty() {
-                self.search_elements();
-            }
-        }
+        self.search_elements();
     }
 
     pub fn get_search_phrase(&self) -> Option<String> {
@@ -373,6 +369,7 @@ impl ExplorerTable {
     }
 
     pub fn set_styling(&mut self, styling: GlobalStyling) {
+        info!("set styling: {:?}", styling);
         self.styling = styling;
         self.update_search_query();
     }

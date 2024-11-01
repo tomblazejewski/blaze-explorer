@@ -59,6 +59,7 @@ pub trait TelescopeResult {
 
     fn from<S: ToString + Display>(s: S) -> Self;
 }
+
 pub struct Telescope {
     pub query: TelescopeQuery,
     pub search: Box<dyn TelescopeSearch>,

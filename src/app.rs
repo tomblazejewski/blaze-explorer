@@ -128,20 +128,25 @@ impl App {
                         }
                         PopUp::FlashPopUp(flashpopup) => {
                             if let Some(action) = flashpopup.handle_key_event(key) {
+                                info!("Pushing action: {:?}", action);
                                 self.action_list.push_back(action);
                             }
                             self.action_list
                                 .push_back(Action::PopupAct(PopupAction::UpdatePlugin));
+                            info!("Pushing updateplugin");
                         }
                     }
                 };
+                info!("Matching Popup: {:?}", self.popup);
                 match &self.popup {
                     PopUp::None => {}
                     active_popup => {
                         if active_popup.should_quit() {
+                            info!("Should quit");
                             if let Some(command) = active_popup.destruct() {
                                 self.run_command(command);
                             }
+                            info!("Setting to none");
                             self.popup = PopUp::None;
                         }
                     }
@@ -271,6 +276,8 @@ impl App {
     }
     pub fn handle_new_actions(&mut self) -> Result<()> {
         while let Some(action) = self.action_list.pop_front() {
+            info!("Handling Action: {:?}", action);
+            info!("Popup: {:?}", self.popup);
             match action {
                 Action::CommandAct(CommandAction::Undo) => self.undo(),
                 Action::CommandAct(CommandAction::Redo) => self.redo(),
@@ -279,6 +286,7 @@ impl App {
                     self.run_command(command);
                 }
             }
+            info!("Popup: {:?}", self.popup);
         }
         Ok(())
     }

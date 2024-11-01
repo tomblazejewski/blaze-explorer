@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 
 use color_eyre::eyre::Result;
 use ratatui::layout::Constraint;
@@ -7,7 +8,7 @@ use ratatui::{crossterm::event::KeyEvent, layout::Rect, widgets::Clear, Frame};
 use tracing::info;
 
 use crate::action::PopupAction;
-use crate::command::{Command, RenameActive};
+use crate::command::{Command, RenameActive, ResetStyling};
 use crate::components::explorer_manager::ExplorerManager;
 use crate::components::explorer_table::GlobalStyling;
 use crate::flash_input_machine::FlashInputMachine;
@@ -67,6 +68,16 @@ pub enum PopUp {
     FlashPopUp(FlashJump),
 }
 
+impl fmt::Debug for PopUp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PopUp::None => write!(f, "None"),
+            PopUp::TelescopePopUp(_) => write!(f, "TelescopePopUp"),
+            PopUp::InputPopUp(_) => write!(f, "InputPopUp"),
+            PopUp::FlashPopUp(_) => write!(f, "FlashPopUp"),
+        }
+    }
+}
 impl PopUp {
     pub fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action> {
         match_enum_return!(self, handle_key_event, key_event)
@@ -136,6 +147,7 @@ impl PopUp {
     }
 
     pub fn drop_search_char(&mut self) -> Option<Action> {
+        info!("Currently {:?}", self);
         match self {
             PopUp::None => None,
             PopUp::TelescopePopUp(popup_window) => {
@@ -147,6 +159,7 @@ impl PopUp {
                 None
             }
             PopUp::FlashPopUp(flash_popup) => {
+                info!("dropping search char");
                 flash_popup.drop_search_char();
                 self.search_query_action()
             }
@@ -459,8 +472,13 @@ impl FlashJump {
                 self.jump_map = new_map;
             }
         } else {
+            if !self.jump_map.is_empty() {
+                self.quit();
+                return;
+            }
             self.jump_map = HashMap::new();
         };
+        self.input_machine = FlashInputMachine::new();
         self.input_machine.merge_jump_actions(self.jump_map.clone());
         explorer_manager.set_styling(GlobalStyling::HighlightJump(
             self.query.clone(),
@@ -476,7 +494,6 @@ impl PopupEngine for FlashJump {
         match keymap_result {
             KeyProcessingResult::Complete(action) => {
                 info!("Action: {:?}", action);
-                self.should_quit = true;
                 return Some(action);
             }
             KeyProcessingResult::Invalid => {
@@ -503,7 +520,9 @@ impl PopupEngine for FlashJump {
     }
 
     fn drop_search_char(&mut self) {
+        info!("Query: {}", self.query);
         self.query.pop();
+        info!("Query: {}", self.query);
     }
 
     fn quit(&mut self) {
@@ -515,7 +534,7 @@ impl PopupEngine for FlashJump {
     }
 
     fn destruct(&self) -> Option<Box<dyn Command>> {
-        None
+        Some(Box::new(ResetStyling::new()))
     }
 
     fn erase_text(&mut self) {}
