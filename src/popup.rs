@@ -1,17 +1,14 @@
 use std::collections::HashMap;
 
 use color_eyre::eyre::Result;
-use itertools::Itertools;
 use ratatui::layout::Constraint;
 use ratatui::widgets::{Block, Borders, Paragraph};
 use ratatui::{crossterm::event::KeyEvent, layout::Rect, widgets::Clear, Frame};
 use tracing::info;
 
 use crate::action::PopupAction;
-use crate::app::App;
 use crate::command::{Command, RenameActive};
-use crate::components::explorer_manager;
-use crate::components::explorer_table::GlobalStyling;
+use crate::components::explorer_manager::ExplorerManager;
 use crate::flash_input_machine::FlashInputMachine;
 use crate::line_entry::LineEntry;
 use crate::simple_input_machine::SimpleInputMachine;
@@ -30,6 +27,28 @@ const JUMP_KEYS: [char; 25] = [
     'x', 'c', 'v', 'b', 'n', 'm',
 ];
 
+macro_rules! match_enum_call {
+    ($self:ident, $func:ident $(, $arg:expr)*) => {
+        match $self {
+            PopUp::None => {},
+            PopUp::TelescopePopUp(inner) => inner.$func($($arg),*),
+            PopUp::InputPopUp(inner) => inner.$func($($arg),*),
+            PopUp::FlashPopUp(inner) => inner.$func($($arg),*),
+        }
+    };
+
+}
+macro_rules! match_enum_return {
+    ($self:ident, $func:ident $(, $arg:expr)*) => {
+        match $self {
+            PopUp::None => None,
+            PopUp::TelescopePopUp(inner) => inner.$func($($arg),*),
+            PopUp::InputPopUp(inner) => inner.$func($($arg),*),
+            PopUp::FlashPopUp(inner) => inner.$func($($arg),*),
+        }
+    };
+}
+
 pub fn pop_char(key_list: &mut Vec<char>, ch: Option<char>) -> char {
     match ch {
         Some(ch) => {
@@ -44,25 +63,12 @@ pub enum PopUp {
     None,
     TelescopePopUp(TelescopeWindow),
     InputPopUp(ActionInput<RenameActive>),
+    FlashPopUp(FlashJump),
 }
 
 impl PopUp {
     pub fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action> {
-        match self {
-            PopUp::None => {}
-            PopUp::TelescopePopUp(popup_window) => return popup_window.handle_key_event(key_event),
-            PopUp::InputPopUp(action_input) => return action_input.handle_key_event(key_event),
-        }
-        None
-    }
-
-    pub fn handle_action(&mut self, action: Action) -> Option<Action> {
-        match self {
-            PopUp::None => {}
-            PopUp::TelescopePopUp(popup_window) => return popup_window.handle_action(action),
-            PopUp::InputPopUp(action_input) => return action_input.handle_action(action),
-        }
-        None
+        match_enum_return!(self, handle_key_event, key_event)
     }
 
     pub(crate) fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
@@ -70,32 +76,21 @@ impl PopUp {
             PopUp::None => {}
             PopUp::TelescopePopUp(popup_window) => popup_window.draw(frame, area)?,
             PopUp::InputPopUp(action_input) => action_input.draw(frame, area)?,
+            PopUp::FlashPopUp(flash_popup) => flash_popup.draw(frame, area)?,
         }
         Ok(())
     }
 
     pub fn confirm_result(&mut self) -> Option<Action> {
-        match self {
-            PopUp::None => None,
-            PopUp::TelescopePopUp(popup_window) => popup_window.confirm_result(),
-            PopUp::InputPopUp(action_input) => action_input.confirm_result(),
-        }
+        match_enum_return!(self, confirm_result)
     }
 
     pub fn next_result(&mut self) {
-        match self {
-            PopUp::None => {}
-            PopUp::TelescopePopUp(popup_window) => popup_window.next_result(),
-            PopUp::InputPopUp(action_input) => action_input.next_result(),
-        }
+        match_enum_call!(self, next_result)
     }
 
     pub fn previous_result(&mut self) {
-        match self {
-            PopUp::None => {}
-            PopUp::TelescopePopUp(popup_window) => popup_window.previous_result(),
-            PopUp::InputPopUp(action_input) => action_input.previous_result(),
-        }
+        match_enum_call!(self, previous_result)
     }
 
     pub fn update_search_query(&mut self, query: String) {
@@ -103,6 +98,7 @@ impl PopUp {
             PopUp::None => {}
             PopUp::TelescopePopUp(popup_window) => popup_window.update_search_query(query),
             PopUp::InputPopUp(action_input) => action_input.update_search_query(query),
+            PopUp::FlashPopUp(flash_popup) => flash_popup.update_search_query(query),
         }
     }
 
@@ -116,6 +112,7 @@ impl PopUp {
                 )))
             }
             PopUp::InputPopUp(_action_input) => None,
+            PopUp::FlashPopUp(_flash_popup) => None,
         }
     }
 
@@ -128,6 +125,10 @@ impl PopUp {
             }
             PopUp::InputPopUp(action_input) => {
                 action_input.push_search_char(ch);
+                None
+            }
+            PopUp::FlashPopUp(flash_popup) => {
+                flash_popup.push_search_char(ch);
                 None
             }
         }
@@ -144,6 +145,10 @@ impl PopUp {
                 action_input.drop_search_char();
                 None
             }
+            PopUp::FlashPopUp(flash_popup) => {
+                flash_popup.drop_search_char();
+                None
+            }
         }
     }
 
@@ -158,23 +163,19 @@ impl PopUp {
                 action_input.erase_text();
                 None
             }
+            PopUp::FlashPopUp(flash_popup) => {
+                flash_popup.erase_text();
+                None
+            }
         }
     }
 
     pub fn quit(&mut self) {
-        match self {
-            PopUp::None => {}
-            PopUp::TelescopePopUp(popup_window) => popup_window.quit(),
-            PopUp::InputPopUp(action_input) => action_input.quit(),
-        }
+        match_enum_call!(self, quit)
     }
 
     pub fn destruct(&self) -> Option<Box<dyn Command>> {
-        match self {
-            PopUp::None => None,
-            PopUp::TelescopePopUp(popup_window) => popup_window.destruct(),
-            PopUp::InputPopUp(action_input) => action_input.destruct(),
-        }
+        match_enum_return!(self, destruct)
     }
 
     pub fn should_quit(&self) -> bool {
@@ -182,14 +183,13 @@ impl PopUp {
             PopUp::None => false,
             PopUp::TelescopePopUp(popup_window) => popup_window.should_quit,
             PopUp::InputPopUp(action_input) => action_input.should_quit,
+            PopUp::FlashPopUp(flash_popup) => flash_popup.should_quit,
         }
     }
 }
 
 pub trait PopupEngine {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action>;
-
-    fn handle_action(&mut self, action: Action) -> Option<Action>;
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
 
@@ -252,14 +252,6 @@ impl PopupEngine for TelescopeWindow {
             _ => {}
         }
         None
-    }
-
-    fn handle_action(&mut self, action: Action) -> Option<Action> {
-        if action == Action::PopupAct(PopupAction::Quit) {
-            self.should_quit = true;
-            return None;
-        }
-        self.telescope_backend.handle_action(action)
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
@@ -357,22 +349,6 @@ impl PopupEngine for ActionInput<RenameActive> {
         None
     }
 
-    fn handle_action(&mut self, action: Action) -> Option<Action> {
-        if let Action::PopupAct(action) = action {
-            match action {
-                PopupAction::Quit => self.should_quit = true,
-                PopupAction::ConfirmResult => return self.confirm_result(),
-                PopupAction::NextResult => {
-                    self.next_result();
-                }
-                PopupAction::PreviousResult => self.previous_result(),
-                PopupAction::UpdateSearchQuery(_query) => {}
-                action => return self.query.handle_text_action(action),
-            }
-        }
-        None
-    }
-
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let query_area = center_rect(
             frame.size(),
@@ -441,7 +417,7 @@ pub struct FlashJump {
     jump_map: HashMap<char, usize>,
 }
 impl FlashJump {
-    pub fn new(mut ctx: AppContext) -> Self {
+    pub fn new(mut _ctx: AppContext) -> Self {
         FlashJump {
             query: String::new(),
             input_machine: FlashInputMachine::new(),
@@ -451,9 +427,13 @@ impl FlashJump {
         }
     }
 
-    pub fn update_interface(&mut self, app: &mut App) {
-        let styling = if !&self.query.is_empty() {
-            let resulting_file_data = app.explorer_manager.find_elements(&self.query);
+    pub fn update_search_query(&mut self, query: String) {
+        self.query = query;
+    }
+
+    pub fn update_interface(&mut self, explorer_manager: &ExplorerManager) {
+        if !&self.query.is_empty() {
+            let resulting_file_data = explorer_manager.find_elements(&self.query);
             let mut new_map = HashMap::new();
             let mut key_list = JUMP_KEYS.to_vec();
             let current_map_reverted = self
@@ -463,7 +443,6 @@ impl FlashJump {
                 .collect::<HashMap<usize, char>>();
             if resulting_file_data.len() > JUMP_KEYS.len() {
                 self.jump_map = HashMap::new();
-                GlobalStyling::None
             } else {
                 //if an id already exists in the map, it should have the same char
                 for file_data in resulting_file_data {
@@ -477,13 +456,10 @@ impl FlashJump {
                     }
                 }
                 self.jump_map = new_map;
-                GlobalStyling::HighlightJump(self.query.clone(), self.jump_map.clone())
             }
         } else {
             self.jump_map = HashMap::new();
-            GlobalStyling::None
         };
-        app.explorer_manager.set_styling(styling);
     }
 }
 impl PopupEngine for FlashJump {
@@ -505,49 +481,16 @@ impl PopupEngine for FlashJump {
         None
     }
 
-    fn handle_action(&mut self, action: Action) -> Option<Action> {
-        if let Action::PopupAct(action) = action {
-            match action {
-                PopupAction::Quit => self.should_quit = true,
-                PopupAction::ConfirmResult => {}
-                PopupAction::NextResult => {}
-                PopupAction::PreviousResult => {}
-                PopupAction::UpdateSearchQuery(_query) => {}
-                action => return self.query.handle_text_action(action),
-            }
-        }
-        None
-    }
-
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let query_area = center_rect(
-            frame.size(),
-            Constraint::Percentage(50),
-            Constraint::Length(3),
-        );
-        let title = format!(
-            "Rename {}",
-            self.resulting_action.first_path.to_str().unwrap()
-        );
-        let query_block = Block::default().borders(Borders::ALL).title(title);
-        let new_name = self.query.contents.clone();
-        let extension = self.resulting_action.first_path.extension().unwrap();
-        let rename_field_output = format!("{}.{}", new_name, extension.to_str().unwrap());
-        let query_paragraph = Paragraph::new(rename_field_output);
-        let query_paragraph = query_paragraph.block(query_block);
-
-        frame.render_widget(Clear, area);
-        frame.render_widget(query_paragraph, query_area);
-
         Ok(())
     }
 
     fn push_search_char(&mut self, ch: char) {
-        self.query.append_char(ch)
+        self.query.push(ch)
     }
 
     fn drop_search_char(&mut self) {
-        self.query.drop_char()
+        self.query.pop();
     }
 
     fn quit(&mut self) {
@@ -555,13 +498,10 @@ impl PopupEngine for FlashJump {
     }
 
     fn get_search_query(&self) -> String {
-        self.query.get_contents()
+        self.query.clone()
     }
 
     fn destruct(&self) -> Option<Box<dyn Command>> {
-        if self.resulting_action.second_path.is_some() {
-            return Some(Box::new(self.resulting_action.clone()));
-        }
         None
     }
 

@@ -111,6 +111,23 @@ impl Command for SelectDown {
         None
     }
 }
+#[derive(Clone, Debug)]
+pub struct JumpToId {
+    id: usize,
+}
+
+impl JumpToId {
+    pub fn new(mut ctx: AppContext, id: usize) -> Self {
+        Self { id }
+    }
+}
+
+impl Command for JumpToId {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.explorer_manager.jump_to_id(self.id);
+        None
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct SelectDirectory {
@@ -330,6 +347,25 @@ impl Command for OpenPopup {
 }
 
 #[derive(Clone, Debug)]
+pub struct UpdatePlugin {}
+
+impl UpdatePlugin {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+impl Command for UpdatePlugin {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        match &mut app.popup {
+            PopUp::FlashPopUp(ref mut flash) => {
+                flash.update_interface(&app.explorer_manager);
+            }
+            _ => {}
+        }
+        None
+    }
+}
+#[derive(Clone, Debug)]
 pub struct InsertKey {
     ch: char,
 }
@@ -493,6 +529,23 @@ impl TelescopeEraseText {
 impl Command for TelescopeEraseText {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         app.popup.erase_text()
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct UpdateStyling {
+    styling: GlobalStyling,
+}
+
+impl UpdateStyling {
+    pub fn new(styling: GlobalStyling) -> Self {
+        Self { styling }
+    }
+}
+impl Command for UpdateStyling {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.explorer_manager.set_styling(self.styling.clone());
+        None
     }
 }
 

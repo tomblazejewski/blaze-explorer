@@ -359,12 +359,15 @@ impl ExplorerManager {
         delegate_to_focused!(self, previous);
     }
 
-    pub fn find_elements(&mut self, query: &str) -> Vec<FileData> {
-        delegate_to_focused!(self, find_elements, query)
+    pub fn jump_to_id(&mut self, id: usize) {
+        delegate_to_focused!(self, jump_to_id, id);
     }
 
-    pub fn reset_formatting(&mut self) {
-        delegate_to_focused!(self, reset_formatting);
+    pub fn find_elements(&self, query: &str) -> Vec<FileData> {
+        match &self.explorers.get(&self.focused_id).unwrap().split {
+            Split::Single(table) => table.find_elements(query),
+            _ => panic!("Impossible!"),
+        }
     }
 
     pub fn set_styling(&mut self, styling: GlobalStyling) {

@@ -14,7 +14,7 @@ use ratatui::{
 };
 use tracing::info;
 
-use crate::action::{get_command, AppAction, CommandAction, ExplorerAction};
+use crate::action::{get_command, AppAction, CommandAction, ExplorerAction, PopupAction};
 use crate::app_input_machine::AppInputMachine;
 use crate::command::Command;
 use crate::command_history::CommandHistory;
@@ -125,6 +125,13 @@ impl App {
                             if let Some(action) = input.handle_key_event(key) {
                                 self.action_list.push_back(action);
                             }
+                        }
+                        PopUp::FlashPopUp(flashpopup) => {
+                            if let Some(action) = flashpopup.handle_key_event(key) {
+                                self.action_list.push_back(action);
+                            }
+                            self.action_list
+                                .push_back(Action::PopupAct(PopupAction::UpdatePlugin));
                         }
                     }
                 };

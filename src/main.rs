@@ -1,3 +1,4 @@
+#![feature(str_split_remainder)]
 use logging::initialize_logging;
 use ratatui::crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},

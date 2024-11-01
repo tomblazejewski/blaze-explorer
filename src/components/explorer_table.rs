@@ -257,6 +257,10 @@ impl ExplorerTable {
         }
     }
 
+    pub fn jump_to_id(&mut self, id: usize) {
+        self.state.select(Some(id));
+    }
+
     pub fn update_search_query(&mut self, new_query: String) {
         self.styling = GlobalStyling::HighlightSearch(new_query);
         self.search_elements();
@@ -310,16 +314,12 @@ impl ExplorerTable {
         self.selected_ids = element_ids;
     }
 
-    pub fn find_elements(&mut self, query: &str) -> Vec<FileData> {
+    pub fn find_elements(&self, query: &str) -> Vec<FileData> {
         self.elements_list
             .iter()
             .filter(|x| x.filename.contains(query))
             .map(|x| x.clone())
             .collect()
-    }
-
-    pub fn reset_formatting(&mut self) {
-        todo!()
     }
 
     pub fn show_in_folder(&mut self, path: PathBuf) {

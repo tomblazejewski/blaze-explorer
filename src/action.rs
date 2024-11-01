@@ -1,6 +1,7 @@
 use crate::command::{
-    DeleteSplit, DisplayMessage, FocusDown, FocusLeft, FocusRight, FocusUp, OpenNeovimHere,
-    SplitHorizontally, SplitVertically, TelescopeQuit, TerminalCommand,
+    DeleteSplit, DisplayMessage, FocusDown, FocusLeft, FocusRight, FocusUp, JumpToId,
+    OpenNeovimHere, SplitHorizontally, SplitVertically, TelescopeQuit, TerminalCommand,
+    UpdatePlugin,
 };
 use std::path::PathBuf;
 
@@ -41,6 +42,7 @@ pub enum ExplorerAction {
     FocusLeft,
     FocusRight,
     DeleteSplit,
+    JumpToId(usize),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -83,6 +85,7 @@ pub enum PopupAction {
     Quit,
     EraseText,
     UpdateSearchQuery(String),
+    UpdatePlugin,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -119,6 +122,7 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::ExplorerAct(ExplorerAction::FocusLeft) => Box::new(FocusLeft::new(ctx)),
         Action::ExplorerAct(ExplorerAction::FocusRight) => Box::new(FocusRight::new(ctx)),
         Action::ExplorerAct(ExplorerAction::DeleteSplit) => Box::new(DeleteSplit::new(ctx)),
+        Action::ExplorerAct(ExplorerAction::JumpToId(id)) => Box::new(JumpToId::new(ctx, id)),
         Action::AppAct(AppAction::Quit) => Box::new(Quit::new()),
         Action::AppAct(AppAction::SwitchMode(mode)) => Box::new(SwitchMode::new(ctx, mode)),
         Action::AppAct(AppAction::ConfirmSearchQuery) => Box::new(ConfirmSearchQuery::new()),
@@ -144,7 +148,7 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::PopupAct(PopupAction::UpdateSearchQuery(query)) => {
             Box::new(TelescopeUpdateSearchQuery::new(query))
         }
-
+        Action::PopupAct(PopupAction::UpdatePlugin) => Box::new(UpdatePlugin::new()),
         Action::Noop => Box::new(Noop::new()),
         Action::CommandAct(_) => Box::new(Noop::new()),
     }
