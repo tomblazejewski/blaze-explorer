@@ -448,6 +448,11 @@ impl FlashJump {
     pub fn update_interface(&mut self, explorer_manager: &mut ExplorerManager) {
         if !&self.query.is_empty() {
             let resulting_file_data = explorer_manager.find_elements(&self.query);
+            //If the query gives no result, end immediately
+            if resulting_file_data.is_empty() {
+                self.quit();
+                return;
+            }
             let mut new_map = HashMap::new();
             let mut key_list = JUMP_KEYS.to_vec();
             let current_map_reverted = self
