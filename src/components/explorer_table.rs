@@ -6,7 +6,6 @@ use std::{
     fs,
     path::{self, Path},
 };
-use tracing::info;
 
 use color_eyre::eyre::Result;
 use ratatui::{
@@ -98,9 +97,7 @@ fn get_line_numbers(n_lines: usize, current_line: usize) -> Vec<String> {
 }
 
 fn highlight_search_result(line_text: String, query: &str, highlighted_style: Style) -> Line {
-    info!("Query: {}", query);
     if line_text.contains(query) {
-        info!("contains");
         let splits = line_text.split(&query);
         let chunks = splits.into_iter().map(|c| Span::from(c.to_owned()));
         let pattern = Span::styled(query, highlighted_style);
@@ -153,6 +150,7 @@ pub struct ExplorerTable {
     theme: CustomTheme,
     focused: bool,
     styling: GlobalStyling,
+    plugin_display: Option<String>,
 }
 impl Default for ExplorerTable {
     fn default() -> Self {
@@ -172,6 +170,7 @@ impl ExplorerTable {
             theme: CustomTheme::default(),
             focused: true,
             styling: GlobalStyling::None,
+            plugin_display: None,
         }
     }
 
@@ -369,9 +368,12 @@ impl ExplorerTable {
     }
 
     pub fn set_styling(&mut self, styling: GlobalStyling) {
-        info!("set styling: {:?}", styling);
         self.styling = styling;
         self.update_search_query();
+    }
+
+    pub fn set_plugin_display(&mut self, plugin_display: Option<String>) {
+        self.plugin_display = plugin_display
     }
 }
 
@@ -400,7 +402,6 @@ impl Component for ExplorerTable {
             GlobalStyling::HighlightSearch(query) => (query.clone(), HashMap::new()),
             GlobalStyling::None => (String::new(), HashMap::new()),
         };
-        info!("Styling: {:?}", self.styling);
         let rows = self
             .elements_list
             .iter()
@@ -462,9 +463,18 @@ impl Component for ExplorerTable {
                 .fg(tailwind::BLACK),
         );
         let path_span = Span::from(self.current_path.to_str().unwrap());
+        let plugin_span = match &self.plugin_display {
+            Some(plugin) => Span::styled(
+                plugin,
+                Style::default()
+                    .bg(tailwind::GREEN.c200)
+                    .fg(tailwind::BLACK),
+            ),
+            None => Span::from(String::from("")),
+        };
 
         let status_line = match self.focused {
-            true => Line::from(vec![mode_span, path_span]),
+            true => Line::from(vec![mode_span, plugin_span, path_span]),
             false => Line::from(vec![path_span]),
         };
 

@@ -23,6 +23,7 @@ use crate::components::explorer_manager::ExplorerManager;
 use crate::focus::Focus;
 use crate::input_machine::{InputMachine, KeyProcessingResult};
 use crate::line_entry::LineEntry;
+use crate::plugin::Plugin;
 use crate::popup::{PopUp, PopupEngine};
 use crate::telescope::AppContext;
 use crate::tools::center_rect;
@@ -143,6 +144,7 @@ impl App {
                                 self.run_command(command);
                             }
                             self.popup = PopUp::None;
+                            self.explorer_manager.set_plugin_display(None);
                         }
                     }
                 }
@@ -271,8 +273,6 @@ impl App {
     }
     pub fn handle_new_actions(&mut self) -> Result<()> {
         while let Some(action) = self.action_list.pop_front() {
-            info!("Handling Action: {:?}", action);
-            info!("Popup: {:?}", self.popup);
             match action {
                 Action::CommandAct(CommandAction::Undo) => self.undo(),
                 Action::CommandAct(CommandAction::Redo) => self.redo(),
@@ -281,7 +281,18 @@ impl App {
                     self.run_command(command);
                 }
             }
-            info!("Popup: {:?}", self.popup);
+        }
+        self.handle_post_actions()?;
+        Ok(())
+    }
+
+    pub fn handle_post_actions(&mut self) -> Result<()> {
+        if let PopUp::FlashPopUp(flashpopup) = &self.popup {
+            info!("Flash popup: {}", flashpopup.display_details());
+            self.explorer_manager
+                .set_plugin_display(Some(flashpopup.display_details()));
+        } else {
+            self.explorer_manager.set_plugin_display(None);
         }
         Ok(())
     }

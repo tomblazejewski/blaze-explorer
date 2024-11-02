@@ -21,6 +21,7 @@ mod key_handler;
 mod line_entry;
 mod logging;
 mod mode;
+mod plugin;
 mod popup;
 mod simple_input_machine;
 mod telescope;

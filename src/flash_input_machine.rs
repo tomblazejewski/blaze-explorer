@@ -28,7 +28,6 @@ impl InputMachine for FlashInputMachine {
     }
 
     fn get_default_action(&self, mode: &Mode, last_key: KeyEvent) -> Option<Action> {
-        info!("Last key: {:?}", last_key);
         match mode {
             Mode::Normal => match last_key.code {
                 KeyCode::Char(ch) => Some(Action::PopupAct(PopupAction::PushSearchChar(ch))),

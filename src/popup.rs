@@ -13,6 +13,7 @@ use crate::components::explorer_manager::ExplorerManager;
 use crate::components::explorer_table::GlobalStyling;
 use crate::flash_input_machine::FlashInputMachine;
 use crate::line_entry::LineEntry;
+use crate::plugin::Plugin;
 use crate::simple_input_machine::SimpleInputMachine;
 use crate::telescope_input_machine::TelescopeInputMachine;
 use crate::telescope_query::TelescopeQuery;
@@ -147,7 +148,6 @@ impl PopUp {
     }
 
     pub fn drop_search_char(&mut self) -> Option<Action> {
-        info!("Currently {:?}", self);
         match self {
             PopUp::None => None,
             PopUp::TelescopePopUp(popup_window) => {
@@ -159,7 +159,6 @@ impl PopUp {
                 None
             }
             PopUp::FlashPopUp(flash_popup) => {
-                info!("dropping search char");
                 flash_popup.drop_search_char();
                 self.search_query_action()
             }
@@ -253,7 +252,6 @@ impl PopupEngine for TelescopeWindow {
         let keymap_result =
             self.input_machine
                 .process_keys(&Mode::Normal, &mut self.current_sequence, key_event);
-        info!("Telescope Keymap result: {:?}", keymap_result);
         match keymap_result {
             KeyProcessingResult::Complete(action) => {
                 return Some(action);
@@ -522,9 +520,7 @@ impl PopupEngine for FlashJump {
     }
 
     fn drop_search_char(&mut self) {
-        info!("Query: {}", self.query);
         self.query.pop();
-        info!("Query: {}", self.query);
     }
 
     fn quit(&mut self) {
@@ -540,4 +536,22 @@ impl PopupEngine for FlashJump {
     }
 
     fn erase_text(&mut self) {}
+}
+
+impl Plugin for FlashJump {
+    fn display_details(&self) -> String {
+        format!(
+            "{}{}",
+            match self.open_immediately {
+                true => String::from("Open"),
+                false => String::from("Jump"),
+            },
+            {
+                match self.query.is_empty() {
+                    true => String::new(),
+                    false => format!(":{}", &self.query),
+                }
+            }
+        )
+    }
 }

@@ -101,7 +101,6 @@ impl ExplorerManager {
 
     pub fn delete_split(&mut self) -> bool {
         //get the focused_id node and seek its parent
-        info!("Focused id: {}", self.focused_id);
         if self.focused_id == 0 {
             return true;
         }
@@ -110,8 +109,6 @@ impl ExplorerManager {
             ParentRelationship::SomeParent(an_id, _) => an_id,
             ParentRelationship::NoParent => return true,
         };
-        info!("PArent id: {}", parent_id);
-        info!("Structure: {:?}", self.explorers);
         let parent_node = self.explorers.get(&parent_id).unwrap();
         let other_id = match parent_node.split {
             Split::Horizontal(id_0, id_1) => {
@@ -372,6 +369,9 @@ impl ExplorerManager {
 
     pub fn set_styling(&mut self, styling: GlobalStyling) {
         delegate_to_focused!(self, set_styling, styling);
+    }
+    pub fn set_plugin_display(&mut self, plugin_display: Option<String>) {
+        delegate_to_focused!(self, set_plugin_display, plugin_display);
     }
 }
 

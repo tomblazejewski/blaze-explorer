@@ -74,12 +74,6 @@ impl CommandLine {
             TextAction::EraseText => self.clear_contents(),
             TextAction::DropKey => return self.remove_char(),
         }
-        info!(
-            "Should return {:?}",
-            Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
-                self.contents.clone()
-            )))
-        );
         Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
             self.contents.clone(),
         )))

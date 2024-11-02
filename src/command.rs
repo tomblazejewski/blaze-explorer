@@ -556,7 +556,6 @@ impl TelescopeDropSearchChar {
 }
 impl Command for TelescopeDropSearchChar {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        info!("Calling drop on popup through the command");
         app.popup.drop_search_char()
     }
 }
