@@ -205,6 +205,10 @@ impl ExplorerTable {
 
     fn refresh_contents(&mut self) {
         //get currently selected item
+        if self.elements_list.is_empty() {
+            self.state.select(None);
+            return;
+        }
         let mut selected = self.state.selected().unwrap();
         let selected_element_path = self.elements_list[selected].filename.clone();
         // if that element still exists, select it once more
@@ -393,8 +397,6 @@ impl Component for ExplorerTable {
             .collect::<Row>()
             .height(1)
             .style(self.theme.header);
-        let line_numbers =
-            get_line_numbers(self.elements_list.len(), self.state.selected().unwrap() + 1);
         let (query, inverted_map) = match &self.styling {
             GlobalStyling::HighlightJump(query, map) => {
                 (query.clone(), map.iter().map(|(k, v)| (*v, *k)).collect())
@@ -402,44 +404,50 @@ impl Component for ExplorerTable {
             GlobalStyling::HighlightSearch(query) => (query.clone(), HashMap::new()),
             GlobalStyling::None => (String::new(), HashMap::new()),
         };
-        let rows = self
-            .elements_list
-            .iter()
-            .zip(line_numbers)
-            .map(|(element, row_number)| {
-                Row::new([
-                    Cell::from(Text::from(row_number).alignment(Alignment::Right)),
-                    {
-                        match self.styling {
-                            GlobalStyling::None => Line::from(element.filename.clone()),
-                            GlobalStyling::HighlightSearch(_) => highlight_search_result(
-                                element.filename.clone(),
-                                &query,
-                                self.theme.search_result,
-                            ),
-                            GlobalStyling::HighlightJump(_, _) => jump_highlight(
-                                element.filename.clone(),
-                                &query,
-                                inverted_map.get(&element.id).unwrap_or(&' ').to_owned(),
-                                self.theme.highlight_query.clone(),
-                                self.theme.highlight_jump_char.clone(),
-                            ),
-                        }
-                    }
-                    .into(),
-                    format_file_size(element.size).into(),
-                    format_last_time(&element.modified).into(),
-                ])
-                .style(Style::new().bg(match &self.selected_ids {
-                    Some(selected_ids) => match selected_ids.contains(&element.id) {
-                        true => tailwind::BLACK,
-                        false => tailwind::BLACK,
-                    },
-                    None => tailwind::BLACK,
-                }))
-                .fg(tailwind::WHITE)
-            })
-            .collect::<Vec<Row>>();
+        let rows = match self.elements_list.is_empty() {
+            false => {
+                let line_numbers =
+                    get_line_numbers(self.elements_list.len(), self.state.selected().unwrap() + 1);
+                self.elements_list
+                    .iter()
+                    .zip(line_numbers)
+                    .map(|(element, row_number)| {
+                        Row::new([
+                            Cell::from(Text::from(row_number).alignment(Alignment::Right)),
+                            {
+                                match self.styling {
+                                    GlobalStyling::None => Line::from(element.filename.clone()),
+                                    GlobalStyling::HighlightSearch(_) => highlight_search_result(
+                                        element.filename.clone(),
+                                        &query,
+                                        self.theme.search_result,
+                                    ),
+                                    GlobalStyling::HighlightJump(_, _) => jump_highlight(
+                                        element.filename.clone(),
+                                        &query,
+                                        inverted_map.get(&element.id).unwrap_or(&' ').to_owned(),
+                                        self.theme.highlight_query.clone(),
+                                        self.theme.highlight_jump_char.clone(),
+                                    ),
+                                }
+                            }
+                            .into(),
+                            format_file_size(element.size).into(),
+                            format_last_time(&element.modified).into(),
+                        ])
+                        .style(Style::new().bg(match &self.selected_ids {
+                            Some(selected_ids) => match selected_ids.contains(&element.id) {
+                                true => tailwind::BLACK,
+                                false => tailwind::BLACK,
+                            },
+                            None => tailwind::BLACK,
+                        }))
+                        .fg(tailwind::WHITE)
+                    })
+                    .collect::<Vec<Row>>()
+            }
+            true => Vec::new(),
+        };
         let style = match self.focused {
             true => self.theme.focused_border,
             false => self.theme.unfocused_border,
