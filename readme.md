@@ -1,4 +1,4 @@
-A neovim-imspired file explorer.
+A neovim-inspired file explorer.
 
 Key bindings:
 
