@@ -29,7 +29,7 @@ Splits:
 
 Plugins/custom actions:
 
-- m - jump to item (similar to flash)
+- m - jump to item (similar to [flash](https://github.com/folke/flash.nvim))
 - M - jump and open selected item
-- space+sg - search files by name (similar to telescope)
+- space+sg - search files by name (similar to [telescope](https://github.com/nvim-telescope/telescope.nvim))
 - space+on - open neovim in current directory (comes back to the app after closing neovim)
