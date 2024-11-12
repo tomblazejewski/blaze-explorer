@@ -1,6 +1,6 @@
 A neovim-inspired, non-async file explorer, written purely in Rust.
 
-#App Mappings
+# App Mappings
 
 ## Normal mode
 
@@ -35,3 +35,8 @@ A neovim-inspired, non-async file explorer, written purely in Rust.
 | `<C-n>`   | Next item          |
 | `<C-p>`   | Previous item      |
 | `<Enter>` | Open selected item |
+
+# Commands
+
+The only built-in command is the quit command, "q".
+One can use the terminal commands, such as "git status", similarly in neovim, by pre-pending them with an exclamation mark: "!git status".
