@@ -1,4 +1,5 @@
 A neovim-inspired, non-async file explorer, written purely in Rust.
+Currently under development and unstable.
 
 ![App preview](docs/preview.png)
 
