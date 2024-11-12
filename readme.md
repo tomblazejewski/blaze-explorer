@@ -1,6 +1,8 @@
 A neovim-inspired, non-async file explorer, written purely in Rust.
 
-# App Mappings (Normal Mode)
+#App Mappings
+
+## Normal mode
 
 | Mappings      | Action                                                                                          |
 | ------------- | ----------------------------------------------------------------------------------------------- |
@@ -26,7 +28,7 @@ A neovim-inspired, non-async file explorer, written purely in Rust.
 | `m`           | Jump to item (similar to [flash](https://github.com/folke/flash.nvim))                          |
 | `M`           | Jump to item and open it (see above)                                                            |
 
-# Telescope Mappings
+## Telescope
 
 | Mappings  | Action             |
 | --------- | ------------------ |
