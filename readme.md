@@ -38,5 +38,5 @@ A neovim-inspired, non-async file explorer, written purely in Rust.
 
 # Commands
 
-The only built-in command is the quit command, "q".
-One can use the terminal commands, such as "git status", similarly in neovim, by pre-pending them with an exclamation mark: "!git status".
+The only built-in command is the quit command, `q`, which closes the app.
+One can use the terminal commands, such as `git status`, similarly in neovim, by pre-pending them with an exclamation mark: `!git status`, when in command mode.
