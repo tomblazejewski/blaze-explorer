@@ -1005,7 +1005,7 @@ impl Command for FocusRight {
 
 #[cfg(test)]
 mod tests {
-    use std::{thread, time::Duration};
+    use std::{env, path, thread, time::Duration};
 
     use crate::action::ExplorerAction;
 
@@ -1015,35 +1015,25 @@ mod tests {
     #[test]
     fn test_change_directory() {
         let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        let abs_path = path::absolute("tests/").unwrap();
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
-                PathBuf::from("tests/"),
+                abs_path.clone(),
             )));
         let _ = app.handle_new_actions();
-        assert_eq!(
-            app.explorer_manager.get_current_path(),
-            PathBuf::from("tests/")
-        );
+        assert_eq!(app.explorer_manager.get_current_path(), abs_path);
+        app.update_path(starting_path, None);
     }
 
     #[test]
-    fn test_select_up() {
+    fn test_select_up_down() {
         let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        let abs_path = path::absolute("tests/").unwrap();
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
-                PathBuf::from("tests/"),
-            )));
-        app.action_list
-            .push_back(Action::ExplorerAct(ExplorerAction::SelectDown));
-        let _ = app.handle_new_actions();
-        assert_eq!(app.explorer_manager.get_selected(), Some(1));
-    }
-    #[test]
-    fn test_select_down() {
-        let mut app = App::new().unwrap();
-        app.action_list
-            .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
-                PathBuf::from("tests/"),
+                abs_path.clone(),
             )));
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::SelectDown));
@@ -1053,14 +1043,17 @@ mod tests {
             .push_back(Action::ExplorerAct(ExplorerAction::SelectUp));
         let _ = app.handle_new_actions();
         assert_eq!(app.explorer_manager.get_selected(), Some(0));
+        app.update_path(starting_path, None);
     }
 
     #[test]
     fn test_update_search_query() {
         let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        let abs_path = path::absolute("tests/").unwrap();
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
-                PathBuf::from("tests/"),
+                abs_path.clone(),
             )));
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
@@ -1071,13 +1064,16 @@ mod tests {
             app.explorer_manager.get_search_phrase(),
             Some(String::from("test_query"))
         );
+        app.update_path(starting_path, None);
     }
     #[test]
     fn test_clear_search_query() {
         let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        let abs_path = path::absolute("tests/").unwrap();
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
-                PathBuf::from("tests/"),
+                abs_path.clone(),
             )));
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
@@ -1091,37 +1087,39 @@ mod tests {
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ClearSearchQuery));
         let _ = app.handle_new_actions();
-        assert_eq!(app.explorer_manager.get_search_phrase(), None)
+        assert_eq!(app.explorer_manager.get_search_phrase(), None);
+        app.update_path(starting_path, None);
     }
 
     #[test]
     fn test_parent_directory() {
         let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        let abs_path = path::absolute("tests/folder_1").unwrap();
+        let parent_path = path::absolute("tests/").unwrap();
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
-                PathBuf::from("tests/folder_1"),
+                abs_path.clone(),
             )));
         let _ = app.handle_new_actions();
-        assert_eq!(
-            app.explorer_manager.get_current_path(),
-            PathBuf::from("tests/folder_1")
-        );
+        assert_eq!(app.explorer_manager.get_current_path(), abs_path);
 
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ParentDirectory));
         let _ = app.handle_new_actions();
 
-        assert_eq!(
-            app.explorer_manager.get_current_path(),
-            PathBuf::from("tests")
-        );
+        assert_eq!(app.explorer_manager.get_current_path(), parent_path);
+
+        app.update_path(starting_path, None);
     }
     #[test]
     fn test_delete() {
         let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        let abs_path = path::absolute("tests/folder_1").unwrap();
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
-                PathBuf::from("tests/folder_1"),
+                abs_path.clone(),
             )));
         let _ = app.handle_new_actions();
         let mut delete_selection = DeleteSelection::new(app.get_app_context());
@@ -1134,6 +1132,8 @@ mod tests {
         let duplicate_selection = DeleteSelection::new(app.get_app_context());
         let after = duplicate_selection.affected_files.clone();
         assert_eq!(before, after);
+
+        app.update_path(starting_path, None);
     }
 
     #[test]

@@ -318,9 +318,18 @@ impl App {
     }
 
     pub fn update_path(&mut self, path: PathBuf, selected: Option<String>) {
-        self.current_path = path.clone();
-        let _ = set_current_dir(path.clone());
-        self.explorer_manager.update_path(path, selected);
+        let abs_path = path::absolute(path.clone());
+        match abs_path {
+            Ok(abs_path) => {
+                self.current_path = abs_path.clone();
+                self.explorer_manager
+                    .update_path(abs_path.clone(), selected);
+                let _ = set_current_dir(abs_path);
+            }
+            Err(err) => {
+                self.command_line_message(err.to_string());
+            }
+        }
     }
 
     pub fn command_line_message(&mut self, msg: String) {
