@@ -1160,4 +1160,48 @@ mod tests {
             ])
         );
     }
+
+    #[test]
+    fn test_jump_to_id() {
+        let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::JumpToId(2)));
+        let _ = app.handle_new_actions();
+        assert_eq!(app.explorer_manager.get_selected(), Some(2));
+        app.update_path(starting_path, None);
+    }
+
+    #[test]
+    fn test_jump_and_open() {
+        let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        let first_path = path::absolute("tests/").unwrap();
+        let expected_path = path::absolute("tests/folder_1").unwrap();
+        app.update_path(first_path, None);
+        app.action_list
+            .push_back(Action::PopupAct(crate::action::PopupAction::JumpAndOpen(0)));
+        let _ = app.handle_new_actions();
+        assert_eq!(app.explorer_manager.get_current_path(), expected_path);
+
+        app.update_path(starting_path, None);
+    }
+
+    #[test]
+    fn test_select_directory() {
+        let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        let abs_path = path::absolute("tests/").unwrap();
+        let expected_path = path::absolute("tests/folder_1").unwrap();
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
+                abs_path.clone(),
+            )));
+        let _ = app.handle_new_actions();
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::SelectDirectory));
+        let _ = app.handle_new_actions();
+        assert_eq!(app.explorer_manager.get_current_path(), expected_path);
+        app.update_path(starting_path, None);
+    }
 }
