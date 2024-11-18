@@ -16,6 +16,7 @@ use ratatui::{
     Frame,
 };
 
+use crate::history_stack::directory_history::DirectoryHistory;
 use crate::{mode::Mode, themes::CustomTheme};
 
 use super::Component;
@@ -153,6 +154,7 @@ pub struct ExplorerTable {
     focused: bool,
     styling: GlobalStyling,
     plugin_display: Option<String>,
+    directory_history: DirectoryHistory,
 }
 impl Default for ExplorerTable {
     fn default() -> Self {
@@ -173,6 +175,7 @@ impl ExplorerTable {
             focused: true,
             styling: GlobalStyling::None,
             plugin_display: None,
+            directory_history: DirectoryHistory::default(),
         }
     }
 
@@ -360,6 +363,19 @@ impl ExplorerTable {
         self.state.selected()
     }
 
+    pub fn get_selected_string(&self) -> Option<String> {
+        if let Some(index) = self.state.selected() {
+            // quick-fix to avoid panic when launching the app
+            if index >= self.elements_list.len() {
+                return None;
+            }
+            let chosen_element = &self.elements_list[index];
+            Some(chosen_element.filename.clone())
+        } else {
+            None
+        }
+    }
+
     pub fn clear_search_query(&mut self) {
         self.set_styling(GlobalStyling::None)
     }
@@ -380,6 +396,10 @@ impl ExplorerTable {
 
     pub fn set_plugin_display(&mut self, plugin_display: Option<String>) {
         self.plugin_display = plugin_display
+    }
+
+    pub fn get_directory_history(&mut self) -> &mut DirectoryHistory {
+        &mut self.directory_history
     }
 }
 

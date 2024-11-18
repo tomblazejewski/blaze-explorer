@@ -1,3 +1,4 @@
+use super::HistoryStack;
 use crate::command::Command;
 
 #[derive(Debug)]
@@ -12,20 +13,20 @@ impl Default for CommandHistory {
     }
 }
 
-impl CommandHistory {
-    pub fn new() -> Self {
+impl HistoryStack<Box<dyn Command>> for CommandHistory {
+    fn new() -> Self {
         Self {
             past_commands: Vec::new(),
             future_commands: Vec::new(),
         }
     }
 
-    pub fn perform(&mut self, command: Box<dyn Command>) {
+    fn perform(&mut self, command: Box<dyn Command>) {
         self.past_commands.push(command);
         self.future_commands.clear();
     }
 
-    pub fn undo(&mut self) -> Option<Box<dyn Command>> {
+    fn undo(&mut self) -> Option<Box<dyn Command>> {
         let popped_command = self.past_commands.pop();
         if let Some(boxed_command) = &popped_command {
             self.future_commands.push(boxed_command.clone());
@@ -34,7 +35,7 @@ impl CommandHistory {
         popped_command
     }
 
-    pub fn redo(&mut self) -> Option<Box<dyn Command>> {
+    fn redo(&mut self) -> Option<Box<dyn Command>> {
         let popped_command = self.future_commands.pop();
         if let Some(boxed_command) = &popped_command {
             self.past_commands.push(boxed_command.clone());

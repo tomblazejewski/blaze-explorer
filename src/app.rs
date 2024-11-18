@@ -17,10 +17,11 @@ use tracing::info;
 use crate::action::{get_command, AppAction, CommandAction, ExplorerAction, PopupAction};
 use crate::app_input_machine::AppInputMachine;
 use crate::command::Command;
-use crate::command_history::CommandHistory;
 use crate::components::command_line::CommandLine;
 use crate::components::explorer_manager::ExplorerManager;
 use crate::focus::Focus;
+use crate::history_stack::directory_history::{self, DirectoryDetails};
+use crate::history_stack::{command_history::CommandHistory, HistoryStack};
 use crate::input_machine::{InputMachine, KeyProcessingResult};
 use crate::line_entry::LineEntry;
 use crate::plugin::Plugin;
@@ -296,6 +297,36 @@ impl App {
         }
         Ok(())
     }
+
+    pub fn undo_directory(&mut self) {
+        let directory_history = self.explorer_manager.get_directory_history();
+        let new_details = directory_history.undo();
+        info!("New history after undoing: {:?} ", directory_history);
+        if let Some(nd) = new_details {
+            self.update_path(nd.directory, nd.selected);
+        }
+    }
+    pub fn redo_directory(&mut self) {
+        let directory_history = self.explorer_manager.get_directory_history();
+        let new_details = directory_history.redo();
+        info!("New history after redoing: {:?} ", directory_history);
+        if let Some(nd) = new_details {
+            self.update_path(nd.directory, nd.selected);
+        }
+    }
+
+    pub fn move_directory(&mut self, path: PathBuf, selected: Option<String>) {
+        let current_path = self.explorer_manager.get_current_path();
+        let current_selected = self.explorer_manager.get_selected_string();
+        let directory_history = self.explorer_manager.get_directory_history();
+        // Save the directory to be left (not the one to be entered)
+        directory_history.perform(DirectoryDetails {
+            directory: current_path,
+            selected: current_selected,
+        });
+        self.update_path(path.clone(), selected.clone());
+    }
+
     pub fn render(&mut self) -> Result<()> {
         self.terminal.draw(|frame| {
             let areas = get_component_areas(frame);
@@ -345,7 +376,7 @@ impl App {
         if let Some(prev_folder_name) = prev_folder {
             let prev_folder_string = prev_folder_name.to_str().unwrap();
             let new_absolute_path = self.current_path.parent().unwrap().to_owned();
-            self.update_path(new_absolute_path, Some(prev_folder_string.to_string()));
+            self.move_directory(new_absolute_path, Some(prev_folder_string.to_string()));
         }
     }
 }

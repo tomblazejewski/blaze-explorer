@@ -187,6 +187,14 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         vec![KeyEvent::new(KeyCode::Char('l'), KeyModifiers::CONTROL)],
         Action::ExplorerAct(ExplorerAction::FocusRight),
     );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('o'), KeyModifiers::CONTROL)],
+        Action::AppAct(AppAction::UndoDirectory),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('i'), KeyModifiers::CONTROL)],
+        Action::AppAct(AppAction::RedoDirectory),
+    );
 
     root
 }

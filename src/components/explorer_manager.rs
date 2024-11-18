@@ -8,6 +8,7 @@ use tracing::info;
 
 use super::explorer_table::{ExplorerTable, FileData, GlobalStyling};
 use crate::components::Component;
+use crate::history_stack::directory_history::DirectoryHistory;
 use crate::mode::Mode;
 
 macro_rules! delegate_to_focused {
@@ -332,6 +333,10 @@ impl ExplorerManager {
         delegate_to_focused!(self, get_selected)
     }
 
+    pub fn get_selected_string(&mut self) -> Option<String> {
+        delegate_to_focused!(self, get_selected_string)
+    }
+
     pub fn get_search_phrase(&mut self) -> Option<String> {
         delegate_to_focused!(self, get_search_phrase)
     }
@@ -372,6 +377,10 @@ impl ExplorerManager {
     }
     pub fn set_plugin_display(&mut self, plugin_display: Option<String>) {
         delegate_to_focused!(self, set_plugin_display, plugin_display);
+    }
+
+    pub fn get_directory_history(&mut self) -> &mut DirectoryHistory {
+        delegate_to_focused!(self, get_directory_history)
     }
 }
 
