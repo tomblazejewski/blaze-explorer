@@ -321,10 +321,10 @@ impl App {
         let directory_history = self.explorer_manager.get_directory_history();
         // Save the directory to be left (not the one to be entered)
         directory_history.perform(DirectoryDetails {
-            directory: current_path,
-            selected: current_selected,
+            directory: path.clone(),
+            selected: selected.clone(),
         });
-        self.update_path(path.clone(), selected.clone());
+        self.update_path(path, selected);
     }
 
     pub fn render(&mut self) -> Result<()> {
