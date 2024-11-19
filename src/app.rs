@@ -301,7 +301,6 @@ impl App {
     pub fn undo_directory(&mut self) {
         let directory_history = self.explorer_manager.get_directory_history();
         let new_details = directory_history.undo();
-        info!("New history after undoing: {:?} ", directory_history);
         if let Some(nd) = new_details {
             self.update_path(nd.directory, nd.selected);
         }
@@ -309,17 +308,14 @@ impl App {
     pub fn redo_directory(&mut self) {
         let directory_history = self.explorer_manager.get_directory_history();
         let new_details = directory_history.redo();
-        info!("New history after redoing: {:?} ", directory_history);
         if let Some(nd) = new_details {
             self.update_path(nd.directory, nd.selected);
         }
     }
 
     pub fn move_directory(&mut self, path: PathBuf, selected: Option<String>) {
-        let current_path = self.explorer_manager.get_current_path();
-        let current_selected = self.explorer_manager.get_selected_string();
         let directory_history = self.explorer_manager.get_directory_history();
-        // Save the directory to be left (not the one to be entered)
+        // Save the directory to be entered
         directory_history.perform(DirectoryDetails {
             directory: path.clone(),
             selected: selected.clone(),
@@ -378,5 +374,46 @@ impl App {
             let new_absolute_path = self.current_path.parent().unwrap().to_owned();
             self.move_directory(new_absolute_path, Some(prev_folder_string.to_string()));
         }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use std::env;
+
+    use super::*;
+
+    #[test]
+    fn test_move_directory() {
+        let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        let abs_path = path::absolute("tests/").unwrap();
+        app.move_directory(abs_path.clone(), None);
+        assert_eq!(app.explorer_manager.get_current_path(), abs_path);
+        app.move_directory(starting_path, None);
+    }
+
+    #[test]
+    fn test_undo_directory() {
+        let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        app.move_directory(starting_path.clone(), None);
+        let abs_path = path::absolute("tests/").unwrap();
+        app.move_directory(abs_path.clone(), None);
+        app.undo_directory();
+        assert_eq!(app.explorer_manager.get_current_path(), starting_path);
+        app.move_directory(starting_path, None);
+    }
+    #[test]
+    fn test_redo_directory() {
+        let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        app.move_directory(starting_path.clone(), None);
+        let abs_path = path::absolute("tests/").unwrap();
+        app.move_directory(abs_path.clone(), None);
+        app.undo_directory();
+        assert_eq!(app.explorer_manager.get_current_path(), starting_path);
+        app.redo_directory();
+        assert_eq!(app.explorer_manager.get_current_path(), abs_path);
+        app.move_directory(starting_path, None);
     }
 }

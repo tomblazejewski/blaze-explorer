@@ -138,7 +138,6 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::AppAct(AppAction::OpenNeovimHere) => Box::new(OpenNeovimHere::new(ctx)),
         Action::AppAct(AppAction::DisplayMessage(msg)) => Box::new(DisplayMessage::new(msg)),
         Action::AppAct(AppAction::TerminalCommand(cmd)) => Box::new(TerminalCommand::new(ctx, cmd)),
-        Action::AppAct(AppAction::TerminalCommand(cmd)) => Box::new(TerminalCommand::new(ctx, cmd)),
         Action::AppAct(AppAction::UndoDirectory) => Box::new(UndoDirectory::new(ctx)),
         Action::AppAct(AppAction::RedoDirectory) => Box::new(RedoDirectory::new(ctx)),
         Action::TextAct(TextAction::InsertKey(ch)) => Box::new(InsertKey::new(ch)),

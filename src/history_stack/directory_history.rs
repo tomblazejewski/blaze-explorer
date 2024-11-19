@@ -50,7 +50,6 @@ impl HistoryStack<DirectoryDetails> for DirectoryHistory {
     }
 
     fn redo(&mut self) -> Option<DirectoryDetails> {
-        info!("Redo: {:?}", self.future_directories);
         let popped_directory = self.future_directories.pop();
         if let Some(directory) = &popped_directory {
             self.past_directories
