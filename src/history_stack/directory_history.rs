@@ -3,7 +3,7 @@ use tracing::info;
 use super::HistoryStack;
 use std::path::PathBuf;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DirectoryDetails {
     pub directory: PathBuf,
     pub selected: Option<String>,
@@ -57,5 +57,63 @@ impl HistoryStack<DirectoryDetails> for DirectoryHistory {
             self.current_directory = Some(directory.clone());
         }
         popped_directory
+    }
+}
+
+mod tests {
+    use std::{env, path};
+
+    use super::*;
+
+    #[test]
+    fn test_history_stack() {
+        let mut history = DirectoryHistory::new();
+        let starting_path = env::current_dir().unwrap();
+        history.perform(DirectoryDetails {
+            directory: starting_path.clone(),
+            selected: Some("src".into()),
+        });
+        let new_path = path::absolute("tests/").unwrap();
+        history.perform(DirectoryDetails {
+            directory: new_path.clone(),
+            selected: None,
+        });
+
+        let third_path = path::absolute("src/debug").unwrap();
+        history.perform(DirectoryDetails {
+            directory: third_path.clone(),
+            selected: None,
+        });
+        let undo = history.undo();
+        assert_eq!(undo.unwrap().directory, new_path.clone());
+        let undo = history.undo();
+        assert_eq!(undo.unwrap().directory, starting_path.clone());
+        let redo = history.redo();
+        assert_eq!(redo.unwrap().directory, new_path.clone());
+
+        let past_directories = history.past_directories.clone();
+        let future_directories = history.future_directories.clone();
+        let current_directory = history.current_directory.clone();
+        assert_eq!(
+            past_directories,
+            vec![DirectoryDetails {
+                directory: starting_path,
+                selected: Some("src".into()),
+            }]
+        );
+        assert_eq!(
+            future_directories,
+            vec![DirectoryDetails {
+                directory: third_path,
+                selected: None,
+            }]
+        );
+        assert_eq!(
+            current_directory,
+            Some(DirectoryDetails {
+                directory: new_path,
+                selected: None,
+            })
+        );
     }
 }
