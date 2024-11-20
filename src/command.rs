@@ -62,7 +62,7 @@ impl ChangeDirectory {
 
 impl Command for ChangeDirectory {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.update_path(self.new_path.clone(), None);
+        app.move_directory(self.new_path.clone(), None);
         None
     }
 }
@@ -199,7 +199,7 @@ impl Command for SelectDirectory {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         match &self.path {
             Some(path) => match path.is_dir() {
-                true => app.update_path(path.clone(), None),
+                true => app.move_directory(path.clone(), None),
                 false => app.open_default(path.clone()),
             },
             None => {}
@@ -276,8 +276,13 @@ impl ShowInFolder {
 impl Command for ShowInFolder {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         app.popup = PopUp::None;
-        app.explorer_manager
-            .show_in_folder(self.target_path.clone());
+        //split target_path into path and file to select
+        let folder = self.target_path.parent().unwrap();
+        let filename = self.target_path.file_name().unwrap();
+        app.move_directory(
+            folder.to_path_buf(),
+            Some(filename.to_str().unwrap().to_string()),
+        );
         None
     }
 }
@@ -1003,6 +1008,38 @@ impl Command for FocusRight {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct RedoDirectory {}
+
+impl RedoDirectory {
+    pub fn new(mut _ctx: AppContext) -> Self {
+        Self {}
+    }
+}
+
+impl Command for RedoDirectory {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.redo_directory();
+        None
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct UndoDirectory {}
+
+impl UndoDirectory {
+    pub fn new(mut _ctx: AppContext) -> Self {
+        Self {}
+    }
+}
+
+impl Command for UndoDirectory {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.undo_directory();
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::{env, path, thread, time::Duration};
@@ -1023,7 +1060,7 @@ mod tests {
             )));
         let _ = app.handle_new_actions();
         assert_eq!(app.explorer_manager.get_current_path(), abs_path);
-        app.update_path(starting_path, None);
+        app.move_directory(starting_path, None);
     }
 
     #[test]
@@ -1043,7 +1080,7 @@ mod tests {
             .push_back(Action::ExplorerAct(ExplorerAction::SelectUp));
         let _ = app.handle_new_actions();
         assert_eq!(app.explorer_manager.get_selected(), Some(0));
-        app.update_path(starting_path, None);
+        app.move_directory(starting_path, None);
     }
 
     #[test]
@@ -1064,7 +1101,7 @@ mod tests {
             app.explorer_manager.get_search_phrase(),
             Some(String::from("test_query"))
         );
-        app.update_path(starting_path, None);
+        app.move_directory(starting_path, None);
     }
     #[test]
     fn test_clear_search_query() {
@@ -1088,7 +1125,7 @@ mod tests {
             .push_back(Action::ExplorerAct(ExplorerAction::ClearSearchQuery));
         let _ = app.handle_new_actions();
         assert_eq!(app.explorer_manager.get_search_phrase(), None);
-        app.update_path(starting_path, None);
+        app.move_directory(starting_path, None);
     }
 
     #[test]
@@ -1110,7 +1147,7 @@ mod tests {
 
         assert_eq!(app.explorer_manager.get_current_path(), parent_path);
 
-        app.update_path(starting_path, None);
+        app.move_directory(starting_path, None);
     }
     #[test]
     fn test_delete() {
@@ -1133,7 +1170,7 @@ mod tests {
         let after = duplicate_selection.affected_files.clone();
         assert_eq!(before, after);
 
-        app.update_path(starting_path, None);
+        app.move_directory(starting_path, None);
     }
 
     #[test]
@@ -1169,7 +1206,7 @@ mod tests {
             .push_back(Action::ExplorerAct(ExplorerAction::JumpToId(2)));
         let _ = app.handle_new_actions();
         assert_eq!(app.explorer_manager.get_selected(), Some(2));
-        app.update_path(starting_path, None);
+        app.move_directory(starting_path, None);
     }
 
     #[test]
@@ -1178,13 +1215,13 @@ mod tests {
         let starting_path = env::current_dir().unwrap();
         let first_path = path::absolute("tests/").unwrap();
         let expected_path = path::absolute("tests/folder_1").unwrap();
-        app.update_path(first_path, None);
+        app.move_directory(first_path, None);
         app.action_list
             .push_back(Action::PopupAct(crate::action::PopupAction::JumpAndOpen(0)));
         let _ = app.handle_new_actions();
         assert_eq!(app.explorer_manager.get_current_path(), expected_path);
 
-        app.update_path(starting_path, None);
+        app.move_directory(starting_path, None);
     }
 
     #[test]
@@ -1202,6 +1239,6 @@ mod tests {
             .push_back(Action::ExplorerAct(ExplorerAction::SelectDirectory));
         let _ = app.handle_new_actions();
         assert_eq!(app.explorer_manager.get_current_path(), expected_path);
-        app.update_path(starting_path, None);
+        app.move_directory(starting_path, None);
     }
 }

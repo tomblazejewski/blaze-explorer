@@ -17,10 +17,11 @@ use tracing::info;
 use crate::action::{get_command, AppAction, CommandAction, ExplorerAction, PopupAction};
 use crate::app_input_machine::AppInputMachine;
 use crate::command::Command;
-use crate::command_history::CommandHistory;
 use crate::components::command_line::CommandLine;
 use crate::components::explorer_manager::ExplorerManager;
 use crate::focus::Focus;
+use crate::history_stack::directory_history::{self, DirectoryDetails};
+use crate::history_stack::{command_history::CommandHistory, HistoryStack};
 use crate::input_machine::{InputMachine, KeyProcessingResult};
 use crate::line_entry::LineEntry;
 use crate::plugin::Plugin;
@@ -296,6 +297,32 @@ impl App {
         }
         Ok(())
     }
+
+    pub fn undo_directory(&mut self) {
+        let directory_history = self.explorer_manager.get_directory_history();
+        let new_details = directory_history.undo();
+        if let Some(nd) = new_details {
+            self.update_path(nd.directory, nd.selected);
+        }
+    }
+    pub fn redo_directory(&mut self) {
+        let directory_history = self.explorer_manager.get_directory_history();
+        let new_details = directory_history.redo();
+        if let Some(nd) = new_details {
+            self.update_path(nd.directory, nd.selected);
+        }
+    }
+
+    pub fn move_directory(&mut self, path: PathBuf, selected: Option<String>) {
+        let directory_history = self.explorer_manager.get_directory_history();
+        // Save the directory to be entered
+        directory_history.perform(DirectoryDetails {
+            directory: path.clone(),
+            selected: selected.clone(),
+        });
+        self.update_path(path, selected);
+    }
+
     pub fn render(&mut self) -> Result<()> {
         self.terminal.draw(|frame| {
             let areas = get_component_areas(frame);
@@ -345,7 +372,48 @@ impl App {
         if let Some(prev_folder_name) = prev_folder {
             let prev_folder_string = prev_folder_name.to_str().unwrap();
             let new_absolute_path = self.current_path.parent().unwrap().to_owned();
-            self.update_path(new_absolute_path, Some(prev_folder_string.to_string()));
+            self.move_directory(new_absolute_path, Some(prev_folder_string.to_string()));
         }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use std::env;
+
+    use super::*;
+
+    #[test]
+    fn test_move_directory() {
+        let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        let abs_path = path::absolute("tests/").unwrap();
+        app.move_directory(abs_path.clone(), None);
+        assert_eq!(app.explorer_manager.get_current_path(), abs_path);
+        app.move_directory(starting_path, None);
+    }
+
+    #[test]
+    fn test_undo_directory() {
+        let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        app.move_directory(starting_path.clone(), None);
+        let abs_path = path::absolute("tests/").unwrap();
+        app.move_directory(abs_path.clone(), None);
+        app.undo_directory();
+        assert_eq!(app.explorer_manager.get_current_path(), starting_path);
+        app.move_directory(starting_path, None);
+    }
+    #[test]
+    fn test_redo_directory() {
+        let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        app.move_directory(starting_path.clone(), None);
+        let abs_path = path::absolute("tests/").unwrap();
+        app.move_directory(abs_path.clone(), None);
+        app.undo_directory();
+        assert_eq!(app.explorer_manager.get_current_path(), starting_path);
+        app.redo_directory();
+        assert_eq!(app.explorer_manager.get_current_path(), abs_path);
+        app.move_directory(starting_path, None);
     }
 }

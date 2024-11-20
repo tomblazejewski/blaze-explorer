@@ -13,9 +13,12 @@ Currently under development and unstable.
 | `k`           | Previous item                                                                                   |
 | `<Backspace>` | Move to parent directory                                                                        |
 | `<Enter>`     | Open selected item                                                                              |
+| `<C-o>`       | Go back in directory history                                                                    |
+| `<C-i>`       | Go forward in directory history                                                                 |
 | `dd`          | Delete selected item                                                                            |
 | `r`           | Rename selected item                                                                            |
 | `u`           | Undo last action (delete/rename)                                                                |
+| `<C-r>`       | Redo last action (delete/rename)                                                                |
 | `n`           | Next search result                                                                              |
 | `N`           | Previous search result                                                                          |
 | `<C-w>v`      | Split vertically                                                                                |
@@ -54,7 +57,7 @@ One can use the terminal commands, such as `git status`, similar to neovim, by p
   - [ ] Enable motions of all of the above (see Keymap system)
   - [ ] Delete backup files upon leaving the app
 - [ ] Dir navigation
-  - [ ] Go up and down the history of a single ExplorerTable
+  - [x] Go up and down the history of a single ExplorerTable
   - [ ] Show directory history of the currenct ExplorerTable
   - [ ] Show currently open directories and jump to one of them
 - [ ] Tooling
