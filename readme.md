@@ -15,7 +15,6 @@ Currently under development and unstable.
 | `<Enter>`     | Open selected item                                                                              |
 | `<C-o>`       | Go back in directory history                                                                    |
 | `<C-i>`       | Go forward in directory history                                                                 |
-| `<Enter>`     | Open selected item                                                                              |
 | `dd`          | Delete selected item                                                                            |
 | `r`           | Rename selected item                                                                            |
 | `u`           | Undo last action (delete/rename)                                                                |
