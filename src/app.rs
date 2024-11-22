@@ -4,6 +4,7 @@ use std::io::{stdout, Stdout};
 use std::path::{self, PathBuf};
 
 use color_eyre::Result;
+use enigo::{Enigo, Keyboard, Settings};
 use ratatui::crossterm::event::KeyEvent;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
@@ -16,6 +17,7 @@ use tracing::info;
 
 use crate::action::{get_command, AppAction, CommandAction, ExplorerAction, PopupAction};
 use crate::app_input_machine::AppInputMachine;
+use crate::command::key_press::EnigoKey;
 use crate::command::Command;
 use crate::components::command_line::CommandLine;
 use crate::components::explorer_manager::ExplorerManager;
@@ -194,12 +196,21 @@ impl App {
     }
 
     pub fn execute_command(&mut self, command: String) -> Option<Action> {
+        self.enter_normal_mode();
         match command.as_str() {
             "q" => Some(Action::ExplorerAct(ExplorerAction::DeleteSplit)),
+            "t" => Some(Action::AppAct(AppAction::ParseCommand(" sg".into()))),
             other_command => Some(Action::AppAct(AppAction::DisplayMessage(format!(
                 "Not a supported command: {}",
                 other_command
             )))),
+        }
+    }
+
+    pub fn execute_keys(&mut self, enigo_keys: Vec<EnigoKey>) {
+        for key in enigo_keys {
+            let mut enigo_machine = Enigo::new(&Settings::default()).unwrap();
+            enigo_machine.key(key.key, key.direction);
         }
     }
 
@@ -289,7 +300,6 @@ impl App {
 
     pub fn handle_post_actions(&mut self) -> Result<()> {
         if let PopUp::FlashPopUp(flashpopup) = &self.popup {
-            info!("Flash popup: {}", flashpopup.display_details());
             self.explorer_manager
                 .set_plugin_display(Some(flashpopup.display_details()));
         } else {

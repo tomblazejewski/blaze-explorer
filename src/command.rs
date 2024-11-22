@@ -1,5 +1,7 @@
+pub mod key_press;
 use chrono::offset;
 use directories::ProjectDirs;
+use key_press::decode_expression;
 use tracing::info;
 
 use crate::action::{AppAction, ExplorerAction, PopupType};
@@ -358,6 +360,24 @@ impl Command for ConfirmCommand {
         } else {
             app.execute_command(self.command.clone())
         }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ParseCommand {
+    command: String,
+}
+
+impl ParseCommand {
+    pub fn new(ctx: AppContext, command: String) -> Self {
+        Self { command }
+    }
+}
+impl Command for ParseCommand {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        let enigo_chain = decode_expression(self.command.clone());
+        app.execute_keys(enigo_chain);
+        None
     }
 }
 
@@ -944,7 +964,7 @@ impl Command for DeleteSplit {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         let should_quit = app.explorer_manager.delete_split();
         app.should_quit = should_quit;
-        Some(Action::AppAct(AppAction::SwitchMode(Mode::Normal)))
+        None
     }
 }
 #[derive(Clone, Debug)]
