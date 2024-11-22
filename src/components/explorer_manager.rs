@@ -158,6 +158,8 @@ impl ExplorerManager {
             match current_node.split {
                 Split::Single(_) => {
                     self.focused_id = current_node.id;
+                    // focus that ExplorerTable
+                    self.focus();
                     break;
                 }
 
