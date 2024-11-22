@@ -351,6 +351,7 @@ impl App {
             self.explorer_manager.get_current_path().clone(),
             self.explorer_manager.clone(),
             self.command_line_contents().clone(),
+            self.mode.clone(),
         )
     }
 

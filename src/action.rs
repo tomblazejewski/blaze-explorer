@@ -144,7 +144,7 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::AppAct(AppAction::ParseCommand(command)) => {
             Box::new(ParseCommand::new(ctx, command))
         }
-        Action::TextAct(TextAction::InsertKey(ch)) => Box::new(InsertKey::new(ch)),
+        Action::TextAct(TextAction::InsertKey(ch)) => Box::new(InsertKey::new(ctx, ch)),
         Action::TextAct(TextAction::EraseText) => Box::new(EraseText::new()),
         Action::TextAct(TextAction::DropKey) => Box::new(DropKey::new()),
         Action::PopupAct(PopupAction::ConfirmResult) => Box::new(TelescopeConfirmResult::new()),

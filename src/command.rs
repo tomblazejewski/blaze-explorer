@@ -446,19 +446,24 @@ impl Command for UpdatePlugin {
 #[derive(Clone, Debug)]
 pub struct InsertKey {
     ch: char,
+    search: bool,
 }
 
 impl InsertKey {
-    pub fn new(ch: char) -> Self {
-        Self { ch }
+    pub fn new(ctx: AppContext, ch: char) -> Self {
+        let search = matches!(ctx.mode, Mode::Search);
+        Self { ch, search }
     }
 }
 impl Command for InsertKey {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         app.command_line.append_char(self.ch);
-        Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
-            app.command_line.get_contents(),
-        )))
+        match &self.search {
+            true => Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
+                app.command_line.get_contents(),
+            ))),
+            false => None,
+        }
     }
 }
 

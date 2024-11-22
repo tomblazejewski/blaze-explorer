@@ -12,6 +12,7 @@ use sfs_telescope::SearchFileshereSearch;
 use crate::{
     action::{Action, PopupAction},
     components::explorer_manager::ExplorerManager,
+    mode::Mode,
     telescope_query::TelescopeQuery,
     themes::CustomTheme,
 };
@@ -20,6 +21,7 @@ pub struct AppContext {
     pub current_directory: PathBuf,
     pub explorer_manager: ExplorerManager,
     pub command: String,
+    pub mode: Mode,
 }
 
 impl AppContext {
@@ -27,11 +29,13 @@ impl AppContext {
         current_directory: PathBuf,
         explorer_manager: ExplorerManager,
         command: String,
+        mode: Mode,
     ) -> Self {
         Self {
             current_directory,
             explorer_manager,
             command,
+            mode,
         }
     }
 }
