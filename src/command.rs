@@ -1067,7 +1067,9 @@ impl Command for UndoDirectory {
 
 #[cfg(test)]
 mod tests {
-    use std::{env, path, thread, time::Duration};
+    use std::{collections::VecDeque, env, path, thread, time::Duration};
+
+    use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
     use crate::action::ExplorerAction;
 
@@ -1265,5 +1267,24 @@ mod tests {
         let _ = app.handle_new_actions();
         assert_eq!(app.explorer_manager.get_current_path(), expected_path);
         app.move_directory(starting_path, None);
+    }
+
+    #[test]
+    fn test_parse_command() {
+        let mut app = App::new().unwrap();
+        let mut new_parse_command = ParseCommand::new(app.get_app_context(), "Abc123".into());
+        let _ = new_parse_command.execute(&mut app);
+        let key_queue = app.key_queue;
+        assert_eq!(
+            key_queue,
+            VecDeque::from(vec![
+                KeyEvent::new(KeyCode::Char('A'), KeyModifiers::NONE),
+                KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE),
+                KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE),
+                KeyEvent::new(KeyCode::Char('1'), KeyModifiers::NONE),
+                KeyEvent::new(KeyCode::Char('2'), KeyModifiers::NONE),
+                KeyEvent::new(KeyCode::Char('3'), KeyModifiers::NONE)
+            ])
+        );
     }
 }

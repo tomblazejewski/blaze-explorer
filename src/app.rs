@@ -5,7 +5,7 @@ use std::path::{self, PathBuf};
 
 use color_eyre::Result;
 use enigo::{Enigo, Keyboard, Settings};
-use ratatui::crossterm::event::KeyEvent;
+use ratatui::crossterm::event::{Event, KeyEvent};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
 use ratatui::{
@@ -76,6 +76,7 @@ pub struct App {
     pub command_input: Option<String>,
     pub exit_status: Option<ExitResult>,
     pub current_path: PathBuf,
+    pub key_queue: VecDeque<KeyEvent>,
 }
 impl App {
     pub fn new() -> Result<Self> {
@@ -94,12 +95,20 @@ impl App {
             command_input: None,
             exit_status: None,
             current_path: PathBuf::new(),
+            key_queue: VecDeque::new(),
         })
     }
 
     /// Send a key event to the appropriate component based on the current mode
     pub fn queue_key_event(&mut self, action: Action) {
         self.action_list.push_back(action);
+    }
+
+    pub fn draw_key_event(&mut self) -> std::io::Result<Event> {
+        match self.key_queue.pop_front() {
+            Some(key) => Ok(event::Event::Key(key)),
+            None => event::read(),
+        }
     }
     pub fn run(&mut self, cold_start: bool) -> Result<ExitResult> {
         self.terminal.clear()?;
@@ -114,7 +123,8 @@ impl App {
         let _ = self.handle_new_actions();
         loop {
             let _ = self.render();
-            if let event::Event::Key(key) = event::read()? {
+            if let event::Event::Key(key) = self.draw_key_event()? {
+                info!("Key Pressed: {:#?}", key);
                 if key.kind == KeyEventKind::Press {
                     match &mut self.popup {
                         PopUp::TelescopePopUp(popup) => {
@@ -196,10 +206,9 @@ impl App {
     }
 
     pub fn execute_command(&mut self, command: String) -> Option<Action> {
-        self.enter_normal_mode();
         match command.as_str() {
             "q" => Some(Action::ExplorerAct(ExplorerAction::DeleteSplit)),
-            "t" => Some(Action::AppAct(AppAction::ParseCommand(" sg".into()))),
+            "t" => Some(Action::AppAct(AppAction::ParseCommand(":".into()))),
             other_command => Some(Action::AppAct(AppAction::DisplayMessage(format!(
                 "Not a supported command: {}",
                 other_command
@@ -207,10 +216,10 @@ impl App {
         }
     }
 
-    pub fn execute_keys(&mut self, enigo_keys: Vec<EnigoKey>) {
+    pub fn execute_keys(&mut self, enigo_keys: Vec<KeyEvent>) {
+        info!("Executing keys: {:#?}", enigo_keys);
         for key in enigo_keys {
-            let mut enigo_machine = Enigo::new(&Settings::default()).unwrap();
-            enigo_machine.key(key.key, key.direction);
+            self.key_queue.push_back(key);
         }
     }
 

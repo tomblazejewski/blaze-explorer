@@ -1,50 +1,40 @@
-use enigo::{Direction, Key};
+use std::{collections::HashMap, hash::Hash};
 
-#[derive(Debug, PartialEq)]
+use enigo::{Direction, Key};
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+#[derive(Debug, PartialEq, Clone)]
 pub struct EnigoKey {
     pub key: Key,
     pub direction: Direction,
 }
-pub fn lookup_composite_char(expression: &str) -> Vec<EnigoKey> {
+
+pub fn lookup_composite_char(expression: &str) -> Vec<KeyEvent> {
     let mut result = Vec::new();
     match expression.contains('-') {
         true => {
             let parts = expression.split('-').collect::<Vec<&str>>();
-            match parts[0] {
-                "C" => result.push(EnigoKey {
-                    key: Key::Control,
-                    direction: Direction::Press,
-                }),
-                _ => panic!("Unknown key {}", parts[0]),
-            }
-            let second_part = parts[1].chars().nth(0).unwrap();
-            result.push(EnigoKey {
-                key: Key::Unicode(second_part),
-                direction: Direction::Click,
-            });
-            match parts[0] {
-                "C" => result.push(EnigoKey {
-                    key: Key::Control,
-                    direction: Direction::Release,
-                }),
-                _ => panic!("Unknown key {}", parts[0]),
-            }
+            let new_key = KeyEvent::new(
+                KeyCode::Char(parts[1].chars().nth(0).unwrap()),
+                KeyModifiers::CONTROL,
+            );
+            result.push(new_key);
         }
         false => match expression {
-            "cr" => result.push(EnigoKey {
-                key: Key::Return,
-                direction: Direction::Click,
-            }),
+            "cr" => result.push(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             _ => panic!("Unknown key {}", expression),
         },
     }
     result
 }
 
-pub fn decode_expression(expression: String) -> Vec<EnigoKey> {
+pub fn decode_expression(expression: String) -> Vec<KeyEvent> {
     let mut key_chain = Vec::new();
     let mut temporary_chain = String::new();
     let mut in_brackets = false;
+
+    let key_translator =
+        HashMap::from([(':', KeyEvent::new(KeyCode::Char(':'), KeyModifiers::SHIFT))]);
 
     for c in expression.chars() {
         match c {
@@ -61,10 +51,12 @@ pub fn decode_expression(expression: String) -> Vec<EnigoKey> {
                 if in_brackets {
                     temporary_chain.push(c);
                 } else {
-                    key_chain.push(EnigoKey {
-                        key: Key::Unicode(c),
-                        direction: Direction::Click,
-                    })
+                    match key_translator.get(&c) {
+                        Some(key) => {
+                            key_chain.push(key.clone());
+                        }
+                        None => key_chain.push(KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)),
+                    }
                 }
             }
         }
@@ -73,28 +65,26 @@ pub fn decode_expression(expression: String) -> Vec<EnigoKey> {
 }
 
 mod tests {
+    use ratatui::crossterm::event::{self, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+
     use super::*;
 
+    #[test]
+    fn test_decode_with_translator() {
+        let expression = ":w";
+        let expected = vec![
+            KeyEvent::new(KeyCode::Char(':'), KeyModifiers::SHIFT),
+            KeyEvent::new(KeyCode::Char('w'), KeyModifiers::NONE),
+        ];
+        let result = decode_expression(expression.to_string());
+        assert_eq!(result, expected);
+    }
     #[test]
     fn test_decode_entire_expression() {
         let expression = "<C-a>w";
         let expected = vec![
-            EnigoKey {
-                key: Key::Control,
-                direction: Direction::Press,
-            },
-            EnigoKey {
-                key: Key::Unicode('a'),
-                direction: Direction::Click,
-            },
-            EnigoKey {
-                key: Key::Control,
-                direction: Direction::Release,
-            },
-            EnigoKey {
-                key: Key::Unicode('w'),
-                direction: Direction::Click,
-            },
+            KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL),
+            KeyEvent::new(KeyCode::Char('w'), KeyModifiers::NONE),
         ];
         let result = decode_expression(expression.to_string());
         assert_eq!(result, expected);
@@ -102,10 +92,7 @@ mod tests {
     #[test]
     fn test_decode_composite() {
         let expression = "cr";
-        let expected = vec![EnigoKey {
-            key: Key::Return,
-            direction: Direction::Click,
-        }];
+        let expected = vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)];
         let result = lookup_composite_char(expression);
         assert_eq!(result, expected);
     }
