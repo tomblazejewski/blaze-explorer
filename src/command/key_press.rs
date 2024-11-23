@@ -1,13 +1,6 @@
 use std::{collections::HashMap, hash::Hash};
 
-use enigo::{Direction, Key};
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct EnigoKey {
-    pub key: Key,
-    pub direction: Direction,
-}
 
 pub fn lookup_composite_char(expression: &str) -> Vec<KeyEvent> {
     let mut result = Vec::new();

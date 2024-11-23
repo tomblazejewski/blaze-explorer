@@ -4,7 +4,6 @@ use std::io::{stdout, Stdout};
 use std::path::{self, PathBuf};
 
 use color_eyre::Result;
-use enigo::{Enigo, Keyboard, Settings};
 use ratatui::crossterm::event::{Event, KeyEvent};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
@@ -17,7 +16,6 @@ use tracing::info;
 
 use crate::action::{get_command, AppAction, CommandAction, ExplorerAction, PopupAction};
 use crate::app_input_machine::AppInputMachine;
-use crate::command::key_press::EnigoKey;
 use crate::command::Command;
 use crate::components::command_line::CommandLine;
 use crate::components::explorer_manager::ExplorerManager;

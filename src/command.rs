@@ -375,8 +375,8 @@ impl ParseCommand {
 }
 impl Command for ParseCommand {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        let enigo_chain = decode_expression(self.command.clone());
-        app.execute_keys(enigo_chain);
+        let key_chain = decode_expression(self.command.clone());
+        app.execute_keys(key_chain);
         None
     }
 }
