@@ -195,7 +195,6 @@ impl ExplorerManager {
         //         let _ = table.draw(frame, *value);
         //     }
         // }
-        info!("Explore manager drawing Elapsed: {:?}", begin.elapsed());
     }
     pub fn get_drawable(
         &self,

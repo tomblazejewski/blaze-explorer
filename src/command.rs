@@ -2,6 +2,7 @@ pub mod key_press;
 use chrono::offset;
 use directories::ProjectDirs;
 use key_press::decode_expression;
+use tracing::info;
 
 use crate::action::{AppAction, ExplorerAction, PopupType};
 use crate::app::ExitResult;
@@ -929,8 +930,10 @@ impl Command for TerminalCommand {
         };
         let output_message = match output {
             Ok(output) => {
-                let output = output.stdout;
-                String::from_utf8(output).unwrap()
+                let stdout = String::from_utf8(output.stdout).unwrap();
+                let stderr = String::from_utf8(output.stderr).unwrap();
+                let output = format!("{}{}", stdout, stderr);
+                output
             }
             Err(err) => {
                 format!("Failed to execute command '{}': {}", self.command, err)
@@ -1331,5 +1334,21 @@ mod tests {
         let mut new_parse_command = ParseCommand::new(app.get_app_context(), "git".into());
         new_parse_command.execute(&mut app);
         assert_eq!(app.command_line.get_contents(), "git".to_string());
+    }
+
+    #[test]
+    fn test_execute_function() {
+        fn dummy_function(app: &mut App) -> Option<Action> {
+            app.command_line.set_contents("Dummy contents".to_string());
+            None
+        }
+        let mut app = App::new().unwrap();
+        let mut new_parse_command =
+            ExecuteFunction::new(app.get_app_context(), Box::new(dummy_function));
+        new_parse_command.execute(&mut app);
+        assert_eq!(
+            app.command_line.get_contents(),
+            "Dummy contents".to_string()
+        );
     }
 }

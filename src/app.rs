@@ -118,21 +118,9 @@ impl App {
             )));
         }
         let _ = self.handle_new_actions();
-        let mut beginning = Instant::now();
         loop {
             let _ = self.render();
             if let event::Event::Key(key) = self.draw_key_event()? {
-                info!(
-                    "Key Pressed: {:?} after {:?}",
-                    key.code,
-                    beginning.elapsed()
-                );
-                if key.code == KeyCode::Char('!') {
-                    beginning = Instant::now();
-                }
-                if key.code == KeyCode::Char(')') {
-                    info!("{:?} elapsed to write everything", beginning.elapsed());
-                }
                 if key.kind == KeyEventKind::Press {
                     match &mut self.popup {
                         PopUp::TelescopePopUp(popup) => {

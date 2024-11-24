@@ -151,16 +151,6 @@ pub fn default_key_map() -> KeyMapNode<Action> {
     );
     root.add_sequence(
         vec![
-            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
-            KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),
-            KeyEvent::new(KeyCode::Char('m'), KeyModifiers::NONE),
-        ],
-        Action::AppAct(AppAction::DisplayMessage(
-            "message \n message \n message".to_string(),
-        )),
-    );
-    root.add_sequence(
-        vec![
             KeyEvent::new(KeyCode::Char('w'), KeyModifiers::CONTROL),
             KeyEvent::new(KeyCode::Char('v'), KeyModifiers::NONE),
         ],
@@ -201,14 +191,6 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         vec![
             KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
-            KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE),
-        ],
-        Action::AppAct(AppAction::ParseKeyStrokes(":!git status<cr>".to_string())),
-    );
-    root.add_sequence(
-        vec![
-            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
-            KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE),
         ],
         Action::AppAct(AppAction::ParseCommand("!git status".to_string())),
@@ -216,7 +198,7 @@ pub fn default_key_map() -> KeyMapNode<Action> {
     root.add_sequence(
         vec![
             KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
-            KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('P'), KeyModifiers::NONE),
         ],
         Action::AppAct(AppAction::ExecuteFunction(Box::new(push_current_branch))),

@@ -34,6 +34,13 @@ Currently under development and unstable.
 | `m`           | Jump to item (similar to [flash](https://github.com/folke/flash.nvim))                          |
 | `M`           | Jump to item and open it (see above)                                                            |
 
+### Git integration
+
+| Mappings    | Action                        |
+| ----------- | ----------------------------- |
+| `<space>gs` | Show git status               |
+| `<space>gP` | Push current branch to remote |
+
 ## Telescope
 
 | Mappings  | Action             |
