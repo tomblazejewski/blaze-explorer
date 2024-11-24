@@ -10,6 +10,7 @@ use crate::{
     mode::Mode,
 };
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct TelescopeInputMachine {
     keymap_nodes: HashMap<Mode, KeyMapNode<Action>>,
 }

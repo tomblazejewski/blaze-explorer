@@ -6,7 +6,6 @@ use std::{
     fs,
     path::{self, Path},
 };
-use tracing::info;
 
 use color_eyre::eyre::Result;
 use ratatui::{
@@ -134,7 +133,7 @@ pub fn jump_highlight(
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum GlobalStyling {
     HighlightSearch(String), //highlight background of the text with the search query
     HighlightJump(String, HashMap<char, usize>), //highlight foreground text with search query
@@ -142,7 +141,7 @@ pub enum GlobalStyling {
     None, //no styling
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ExplorerTable {
     state: TableState,
     current_path: PathBuf,

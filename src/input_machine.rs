@@ -17,7 +17,7 @@ pub trait InputMachine {
     fn get_default_action(&self, mode: &Mode, last_key: KeyEvent) -> Option<Action>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct KeyMapNode<T> {
     pub action: Option<T>,
     children: HashMap<KeyEvent, KeyMapNode<T>>,

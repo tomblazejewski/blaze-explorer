@@ -20,8 +20,7 @@ use crate::app_input_machine::AppInputMachine;
 use crate::command::Command;
 use crate::components::command_line::CommandLine;
 use crate::components::explorer_manager::ExplorerManager;
-use crate::focus::Focus;
-use crate::history_stack::directory_history::{self, DirectoryDetails};
+use crate::history_stack::directory_history::DirectoryDetails;
 use crate::history_stack::{command_history::CommandHistory, HistoryStack};
 use crate::input_machine::{InputMachine, KeyProcessingResult};
 use crate::line_entry::LineEntry;
@@ -31,7 +30,7 @@ use crate::telescope::AppContext;
 use crate::tools::center_rect;
 use crate::{action::Action, components::Component, mode::Mode};
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum ExitResult {
     Quit,
     OpenTerminal(PathBuf),
@@ -60,6 +59,8 @@ fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
     areas.insert("popup".to_string(), popup_area);
     areas
 }
+
+#[derive(Debug)]
 pub struct App {
     pub terminal: Terminal<CrosstermBackend<Stdout>>,
     pub action_list: VecDeque<Action>,
@@ -67,7 +68,6 @@ pub struct App {
     pub mode: Mode,
     pub explorer_manager: ExplorerManager,
     pub command_line: CommandLine,
-    pub focus: Focus,
     pub current_sequence: Vec<KeyEvent>,
     pub input_machine: AppInputMachine<Action>,
     pub popup: PopUp,
@@ -86,7 +86,6 @@ impl App {
             mode: Mode::Normal,
             explorer_manager: ExplorerManager::new(),
             command_line: CommandLine::new(),
-            focus: Focus::ExplorerTable,
             current_sequence: Vec::new(),
             input_machine: AppInputMachine::new(),
             popup: PopUp::None,
@@ -412,6 +411,46 @@ impl App {
         }
     }
 }
+
+impl Clone for App {
+    fn clone(&self) -> Self {
+        App {
+            terminal: Terminal::new(CrosstermBackend::new(stdout())).unwrap(),
+            action_list: VecDeque::new(),
+            should_quit: self.should_quit,
+            mode: self.mode.clone(),
+            explorer_manager: self.explorer_manager.clone(),
+            command_line: self.command_line.clone(),
+            current_sequence: self.current_sequence.clone(),
+            input_machine: self.input_machine.clone(),
+            popup: self.popup.clone(),
+            command_history: self.command_history.clone(),
+            command_input: self.command_input.clone(),
+            exit_status: self.exit_status.clone(),
+            current_path: self.current_path.clone(),
+            key_queue: self.key_queue.clone(),
+        }
+    }
+}
+
+impl PartialEq for App {
+    fn eq(&self, other: &Self) -> bool {
+        self.action_list == other.action_list
+            && self.should_quit == other.should_quit
+            && self.mode == other.mode
+            && self.explorer_manager == other.explorer_manager
+            && self.command_line == other.command_line
+            && self.current_sequence == other.current_sequence
+            && self.input_machine == other.input_machine
+            && self.popup == other.popup
+            && self.command_history == other.command_history
+            && self.command_input == other.command_input
+            && self.exit_status == other.exit_status
+            && self.current_path == other.current_path
+            && self.key_queue == other.key_queue
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::env;

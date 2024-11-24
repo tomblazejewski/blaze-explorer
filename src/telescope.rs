@@ -1,5 +1,5 @@
 pub mod sfs_telescope;
-use std::{fmt::Display, path::PathBuf};
+use std::{fmt::Debug, fmt::Display, path::PathBuf};
 
 use color_eyre::eyre::Result;
 use ratatui::{
@@ -39,7 +39,8 @@ impl AppContext {
         }
     }
 }
-pub trait TelescopeSearch {
+
+pub trait TelescopeSearch: TelescopeSearchSuper {
     /// Perform necessary actions to return the search results
     fn search(&mut self, query: String);
 
@@ -54,6 +55,29 @@ pub trait TelescopeSearch {
 
     fn n_results(&self) -> usize;
 }
+pub trait TelescopeSearchSuper: Debug {
+    fn clone_box(&self) -> Box<dyn TelescopeSearch>;
+}
+impl<T> TelescopeSearchSuper for T
+where
+    T: 'static + TelescopeSearch + Clone + Debug + PartialEq,
+{
+    fn clone_box(&self) -> Box<dyn TelescopeSearch> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<dyn TelescopeSearch> {
+    fn clone(&self) -> Self {
+        self.clone_box()
+    }
+}
+
+impl PartialEq for Box<dyn TelescopeSearch> {
+    fn eq(&self, other: &Self) -> bool {
+        self.display() == other.display()
+    }
+}
 
 pub trait TelescopeResult {
     // What is displayed in the result list on the left
@@ -64,11 +88,20 @@ pub trait TelescopeResult {
     fn from<S: ToString + Display>(s: S) -> Self;
 }
 
+#[derive(Debug, Clone)]
 pub struct Telescope {
     pub query: TelescopeQuery,
     pub search: Box<dyn TelescopeSearch>,
     pub table_state: TableState,
     theme: CustomTheme,
+}
+
+impl PartialEq for Telescope {
+    fn eq(&self, other: &Self) -> bool {
+        self.query == other.query
+            && self.search.clone() == other.search.clone()
+            && self.table_state == other.table_state
+    }
 }
 
 impl Telescope {

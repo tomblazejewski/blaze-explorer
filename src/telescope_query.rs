@@ -3,7 +3,7 @@ use crate::{
     line_entry::LineEntry,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TelescopeQuery {
     pub contents: String,
     pub prefix: String,

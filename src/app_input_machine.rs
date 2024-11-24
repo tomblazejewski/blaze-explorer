@@ -6,10 +6,12 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::{
     action::{Action, AppAction, CommandAction, ExplorerAction, PopupType, TextAction},
+    function_helpers::push_current_branch,
     input_machine::{InputMachine, KeyMapNode, KeyProcessingResult},
     mode::Mode,
 };
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct AppInputMachine<T> {
     keymap_nodes: HashMap<Mode, KeyMapNode<T>>,
 }
@@ -217,9 +219,7 @@ pub fn default_key_map() -> KeyMapNode<Action> {
             KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('P'), KeyModifiers::NONE),
         ],
-        Action::AppAct(AppAction::ParseCommand(
-            "!git push origin $(git rev-parse --abbrev-ref HEAD)".to_string(),
-        )),
+        Action::AppAct(AppAction::ExecuteFunction(Box::new(push_current_branch))),
     );
 
     root

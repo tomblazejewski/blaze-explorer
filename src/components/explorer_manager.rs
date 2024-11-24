@@ -1,5 +1,4 @@
 use core::panic;
-use rayon::prelude::*;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -28,13 +27,13 @@ pub fn calculate_distance(x_0: f32, y_0: f32, x_1: f32, y_1: f32) -> f32 {
     ((x_0 - x_1).powi(2) + (y_0 - y_1).powi(2)).powf(0.5)
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ParentRelationship {
     SomeParent(usize, usize),
     NoParent,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Split {
     Horizontal(usize, usize),
     Vertical(usize, usize),
@@ -48,7 +47,7 @@ pub enum SplitDirection {
     Right,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ExplorerManager {
     pub explorers: HashMap<usize, ExplorerNode>,
     pub focused_id: usize,
@@ -399,7 +398,7 @@ impl ExplorerManager {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ExplorerNode {
     pub id: usize,
     pub focused: bool,

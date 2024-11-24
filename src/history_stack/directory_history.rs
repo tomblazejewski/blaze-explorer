@@ -1,5 +1,3 @@
-use tracing::info;
-
 use super::HistoryStack;
 use std::path::PathBuf;
 
@@ -9,7 +7,7 @@ pub struct DirectoryDetails {
     pub selected: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DirectoryHistory {
     current_directory: Option<DirectoryDetails>,
     past_directories: Vec<DirectoryDetails>,

@@ -6,7 +6,6 @@ use ratatui::{
     Frame,
 };
 use std::cmp::min;
-use tracing::info;
 
 use crate::{
     action::{Action, AppAction, ExplorerAction, TextAction},
@@ -16,6 +15,7 @@ use crate::{
 
 use super::Component;
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct CommandLine {
     contents: String,
     focused: bool,

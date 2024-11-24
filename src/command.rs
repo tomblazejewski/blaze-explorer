@@ -2,7 +2,6 @@ pub mod key_press;
 use chrono::offset;
 use directories::ProjectDirs;
 use key_press::decode_expression;
-use tracing::info;
 
 use crate::action::{AppAction, ExplorerAction, PopupType};
 use crate::app::ExitResult;
@@ -38,7 +37,7 @@ pub trait CommandClone: Debug {
 
 impl<T> CommandClone for T
 where
-    T: 'static + Command + Clone + Debug,
+    T: 'static + Command + Clone + Debug + PartialEq,
 {
     fn clone_box(&self) -> Box<dyn Command> {
         Box::new(self.clone())
@@ -51,7 +50,13 @@ impl Clone for Box<dyn Command> {
     }
 }
 
-#[derive(Clone, Debug)]
+impl PartialEq for Box<dyn Command> {
+    fn eq(&self, other: &Self) -> bool {
+        self == other
+    }
+}
+
+#[derive(Clone, PartialEq, Debug)]
 pub struct ChangeDirectory {
     new_path: PathBuf,
 }
@@ -69,7 +74,7 @@ impl Command for ChangeDirectory {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ParentDirectory {}
 
 impl ParentDirectory {
@@ -85,7 +90,7 @@ impl Command for ParentDirectory {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SelectUp {}
 
 impl SelectUp {
@@ -100,7 +105,7 @@ impl Command for SelectUp {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SelectDown {}
 
 impl SelectDown {
@@ -114,7 +119,7 @@ impl Command for SelectDown {
         None
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct JumpToId {
     id: usize,
 }
@@ -132,7 +137,7 @@ impl Command for JumpToId {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct JumpAndClose {
     id: usize,
 }
@@ -150,7 +155,7 @@ impl Command for JumpAndClose {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct JumpAndOpen {
     id: usize,
 }
@@ -168,7 +173,7 @@ impl Command for JumpAndOpen {
         Some(Action::ExplorerAct(ExplorerAction::SelectDirectory))
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ResetStyling {}
 
 impl ResetStyling {
@@ -184,7 +189,7 @@ impl Command for ResetStyling {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SelectDirectory {
     path: Option<PathBuf>,
 }
@@ -210,7 +215,7 @@ impl Command for SelectDirectory {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct UpdateSearchQuery {
     query: String,
 }
@@ -229,7 +234,7 @@ impl Command for UpdateSearchQuery {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ClearSearchQuery {}
 
 impl ClearSearchQuery {
@@ -245,7 +250,7 @@ impl Command for ClearSearchQuery {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct NextSearchResult {}
 
 impl NextSearchResult {
@@ -260,7 +265,7 @@ impl Command for NextSearchResult {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ShowInFolder {
     current_file_path: PathBuf,
     target_path: PathBuf,
@@ -289,7 +294,7 @@ impl Command for ShowInFolder {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Quit {}
 
 impl Quit {
@@ -304,7 +309,7 @@ impl Command for Quit {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SwitchMode {
     mode: Mode,
 }
@@ -325,7 +330,7 @@ impl Command for SwitchMode {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ConfirmSearchQuery {}
 
 impl ConfirmSearchQuery {
@@ -339,7 +344,7 @@ impl Command for ConfirmSearchQuery {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ConfirmCommand {
     command: String,
 }
@@ -363,7 +368,7 @@ impl Command for ConfirmCommand {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ParseCommand {
     command: String,
 }
@@ -379,7 +384,23 @@ impl Command for ParseCommand {
         None
     }
 }
-#[derive(Clone, Debug)]
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct ExecuteFunction {
+    function: Box<fn(&mut App) -> Option<Action>>,
+}
+
+impl ExecuteFunction {
+    pub fn new(ctx: AppContext, function: Box<fn(&mut App) -> Option<Action>>) -> Self {
+        Self { function }
+    }
+}
+impl Command for ExecuteFunction {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        (self.function)(app)
+    }
+}
+#[derive(Clone, PartialEq, Debug)]
 pub struct ParseKeyStrokes {
     command: String,
 }
@@ -397,7 +418,7 @@ impl Command for ParseKeyStrokes {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct DisplayMessage {
     message: String,
 }
@@ -414,7 +435,7 @@ impl Command for DisplayMessage {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct OpenPopup {
     popup: PopupType,
 }
@@ -443,7 +464,7 @@ impl Command for OpenPopup {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct UpdatePlugin {}
 
 impl UpdatePlugin {
@@ -459,7 +480,7 @@ impl Command for UpdatePlugin {
         None
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct InsertKey {
     ch: char,
     search: bool,
@@ -483,7 +504,7 @@ impl Command for InsertKey {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct EraseText {}
 
 impl EraseText {
@@ -500,7 +521,7 @@ impl Command for EraseText {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct DropKey {}
 
 impl DropKey {
@@ -514,7 +535,7 @@ impl Command for DropKey {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TelescopeConfirmResult {}
 
 impl TelescopeConfirmResult {
@@ -528,7 +549,7 @@ impl Command for TelescopeConfirmResult {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TelescopeNextResult {}
 
 impl TelescopeNextResult {
@@ -543,7 +564,7 @@ impl Command for TelescopeNextResult {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TelescopePreviousResult {}
 
 impl TelescopePreviousResult {
@@ -558,7 +579,7 @@ impl Command for TelescopePreviousResult {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TelescopeUpdateSearchQuery {
     query: String,
 }
@@ -575,7 +596,7 @@ impl Command for TelescopeUpdateSearchQuery {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TelescopePushSearchChar {
     ch: char,
 }
@@ -592,7 +613,7 @@ impl Command for TelescopePushSearchChar {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TelescopeDropSearchChar {}
 
 impl TelescopeDropSearchChar {
@@ -606,7 +627,7 @@ impl Command for TelescopeDropSearchChar {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TelescopeQuit {}
 
 impl TelescopeQuit {
@@ -621,7 +642,7 @@ impl Command for TelescopeQuit {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TelescopeEraseText {}
 
 impl TelescopeEraseText {
@@ -635,7 +656,7 @@ impl Command for TelescopeEraseText {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct UpdateStyling {
     styling: GlobalStyling,
 }
@@ -652,7 +673,7 @@ impl Command for UpdateStyling {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Noop {}
 
 impl Noop {
@@ -666,7 +687,7 @@ impl Command for Noop {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct DeleteSelection {
     affected_files: Option<Vec<PathBuf>>,
     backup_path: Option<HashMap<PathBuf, PathBuf>>,
@@ -787,7 +808,7 @@ fn backup_dir() -> PathBuf {
     proj_dir.cache_dir().join(backup_name)
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct RenameActive {
     pub first_path: PathBuf,
     pub second_path: Option<PathBuf>,
@@ -844,7 +865,7 @@ impl Command for RenameActive {
         self.reversible
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TerminalCommand {
     command: String,
 }
@@ -921,7 +942,7 @@ impl Command for TerminalCommand {
         )))
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct OpenNeovimHere {
     path: PathBuf,
 }
@@ -941,7 +962,7 @@ impl Command for OpenNeovimHere {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SplitVertically {}
 
 impl SplitVertically {
@@ -956,7 +977,7 @@ impl Command for SplitVertically {
         None
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SplitHorizontally {}
 
 impl SplitHorizontally {
@@ -972,7 +993,7 @@ impl Command for SplitHorizontally {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct DeleteSplit {}
 
 impl DeleteSplit {
@@ -988,7 +1009,7 @@ impl Command for DeleteSplit {
         None
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct FocusUp {}
 
 impl FocusUp {
@@ -1003,7 +1024,7 @@ impl Command for FocusUp {
         None
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct FocusDown {}
 
 impl FocusDown {
@@ -1018,7 +1039,7 @@ impl Command for FocusDown {
         None
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct FocusLeft {}
 
 impl FocusLeft {
@@ -1033,7 +1054,7 @@ impl Command for FocusLeft {
         None
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct FocusRight {}
 
 impl FocusRight {
@@ -1049,7 +1070,7 @@ impl Command for FocusRight {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct RedoDirectory {}
 
 impl RedoDirectory {
@@ -1065,7 +1086,7 @@ impl Command for RedoDirectory {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct UndoDirectory {}
 
 impl UndoDirectory {
