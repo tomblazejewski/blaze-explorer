@@ -210,7 +210,7 @@ pub fn default_key_map() -> KeyMapNode<Action> {
             KeyEvent::new(KeyCode::Char('P'), KeyModifiers::NONE),
         ],
         Action::AppAct(AppAction::ParseCommand(
-            ":!git push origin $(git rev-parse --abbrev-ref HEAD)<cr>".to_string(),
+            ":!git push origin $(git rev-parse --abbrev-ref HEAD)".to_string(),
         )),
     );
 

@@ -2,9 +2,10 @@ use std::collections::{HashMap, VecDeque};
 use std::env::set_current_dir;
 use std::io::{stdout, Stdout};
 use std::path::{self, PathBuf};
+use std::time::Instant;
 
 use color_eyre::Result;
-use ratatui::crossterm::event::{Event, KeyEvent};
+use ratatui::crossterm::event::{Event, KeyCode, KeyEvent};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
 use ratatui::{
@@ -119,10 +120,17 @@ impl App {
                 )));
         }
         let _ = self.handle_new_actions();
+        let mut beginning = Instant::now();
         loop {
             let _ = self.render();
             if let event::Event::Key(key) = self.draw_key_event()? {
-                info!("Key Pressed: {:#?}", key);
+                info!("Key Pressed: {:#?} after {:?}", key, beginning.elapsed());
+                if key.code == KeyCode::Char('!') {
+                    beginning = Instant::now();
+                }
+                if key.code == KeyCode::Char(')') {
+                    info!("{:?} elapsed to write everything", beginning.elapsed());
+                }
                 if key.kind == KeyEventKind::Press {
                     match &mut self.popup {
                         PopUp::TelescopePopUp(popup) => {
@@ -215,7 +223,6 @@ impl App {
     }
 
     pub fn execute_keys(&mut self, enigo_keys: Vec<KeyEvent>) {
-        info!("Executing keys: {:#?}", enigo_keys);
         for key in enigo_keys {
             self.key_queue.push_back(key);
         }
