@@ -37,6 +37,11 @@ impl LineEntry for TelescopeQuery {
     fn get_contents(&self) -> String {
         format!("{}{}{}", self.prefix, self.contents, self.suffix)
     }
+
+    fn set_contents(&mut self, contents: String) {
+        // Worry about this implementation later on
+        panic!("Should not be called")
+    }
 }
 
 impl TelescopeQuery {

@@ -375,6 +375,22 @@ impl ParseCommand {
 }
 impl Command for ParseCommand {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.parse_command(self.command.clone());
+        None
+    }
+}
+#[derive(Clone, Debug)]
+pub struct ParseKeyStrokes {
+    command: String,
+}
+
+impl ParseKeyStrokes {
+    pub fn new(ctx: AppContext, command: String) -> Self {
+        Self { command }
+    }
+}
+impl Command for ParseKeyStrokes {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
         let key_chain = decode_expression(self.command.clone());
         app.execute_keys(key_chain);
         None
@@ -1270,9 +1286,9 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_command() {
+    fn test_parse_key_strokes() {
         let mut app = App::new().unwrap();
-        let mut new_parse_command = ParseCommand::new(app.get_app_context(), "Abc123".into());
+        let mut new_parse_command = ParseKeyStrokes::new(app.get_app_context(), "Abc123".into());
         let _ = new_parse_command.execute(&mut app);
         let key_queue = app.key_queue;
         assert_eq!(
@@ -1286,5 +1302,13 @@ mod tests {
                 KeyEvent::new(KeyCode::Char('3'), KeyModifiers::NONE)
             ])
         );
+    }
+
+    #[test]
+    fn test_parse_command() {
+        let mut app = App::new().unwrap();
+        let mut new_parse_command = ParseCommand::new(app.get_app_context(), "git".into());
+        new_parse_command.execute(&mut app);
+        assert_eq!(app.command_line.get_contents(), "git".to_string());
     }
 }

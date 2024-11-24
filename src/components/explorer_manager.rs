@@ -1,4 +1,5 @@
 use core::panic;
+use rayon::prelude::*;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -175,15 +176,27 @@ impl ExplorerManager {
     }
 
     pub fn draw(&mut self, frame: &mut Frame, area: Rect) {
+        let begin = std::time::Instant::now();
         let mut draw_map: HashMap<usize, Rect> = HashMap::new();
         self.get_drawable(frame, area, 0, &mut draw_map);
         self.last_layout = draw_map.clone();
-        for (key, value) in draw_map.iter() {
-            let table = self.explorers.get_mut(key).unwrap();
-            if let Split::Single(table) = &mut table.split {
-                let _ = table.draw(frame, *value);
-            }
-        }
+        let begin = std::time::Instant::now();
+        let _: Vec<_> = draw_map
+            .iter()
+            .map(|(key, value)| {
+                let table = self.explorers.get_mut(key).unwrap();
+                if let Split::Single(table) = &mut table.split {
+                    let _ = table.draw(frame, *value);
+                }
+            })
+            .collect();
+        // for (key, value) in draw_map.iter() {
+        //     let table = self.explorers.get_mut(key).unwrap();
+        //     if let Split::Single(table) = &mut table.split {
+        //         let _ = table.draw(frame, *value);
+        //     }
+        // }
+        info!("Explore manager drawing Elapsed: {:?}", begin.elapsed());
     }
     pub fn get_drawable(
         &self,

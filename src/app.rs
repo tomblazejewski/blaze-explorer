@@ -114,17 +114,20 @@ impl App {
         if cold_start {
             let path = "./";
             let starting_path = path::absolute(path).unwrap();
-            self.action_list
-                .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
-                    starting_path,
-                )));
+            self.own_push_action(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
+                starting_path,
+            )));
         }
         let _ = self.handle_new_actions();
         let mut beginning = Instant::now();
         loop {
             let _ = self.render();
             if let event::Event::Key(key) = self.draw_key_event()? {
-                info!("Key Pressed: {:#?} after {:?}", key, beginning.elapsed());
+                info!(
+                    "Key Pressed: {:?} after {:?}",
+                    key.code,
+                    beginning.elapsed()
+                );
                 if key.code == KeyCode::Char('!') {
                     beginning = Instant::now();
                 }
@@ -135,7 +138,7 @@ impl App {
                     match &mut self.popup {
                         PopUp::TelescopePopUp(popup) => {
                             if let Some(action) = popup.handle_key_event(key) {
-                                self.action_list.push_back(action);
+                                self.own_push_action(action);
                             }
                         }
                         PopUp::None => {
@@ -143,15 +146,14 @@ impl App {
                         }
                         PopUp::InputPopUp(input) => {
                             if let Some(action) = input.handle_key_event(key) {
-                                self.action_list.push_back(action);
+                                self.own_push_action(action);
                             }
                         }
                         PopUp::FlashPopUp(flashpopup) => {
                             if let Some(action) = flashpopup.handle_key_event(key) {
-                                self.action_list.push_back(action);
+                                self.own_push_action(action);
                             }
-                            self.action_list
-                                .push_back(Action::PopupAct(PopupAction::UpdatePlugin));
+                            self.own_push_action(Action::PopupAct(PopupAction::UpdatePlugin));
                         }
                     }
                 };
@@ -180,6 +182,10 @@ impl App {
             .unwrap_or(Ok(ExitResult::Quit))
     }
 
+    pub fn own_push_action(&mut self, action: Action) {
+        self.action_list.push_back(action);
+    }
+
     /// Register the key event, obtain possible action and push it back if applicable.
     /// Command line message takes precedence over register actions by the input machine
     pub fn handle_key_event(&mut self, key_event: KeyEvent) {
@@ -189,21 +195,20 @@ impl App {
         if self.command_line.current_message.is_some() {
             self.command_line.get_message_batch();
             if self.command_line.current_message.is_none() {
-                self.action_list
-                    .push_back(Action::AppAct(AppAction::SwitchMode(Mode::Normal)));
+                self.own_push_action(Action::AppAct(AppAction::SwitchMode(Mode::Normal)));
             }
         } else {
             match keymap_result {
                 KeyProcessingResult::Complete(action) => {
                     info!("Complete Action: {:?}", action);
-                    self.action_list.push_back(action);
+                    self.own_push_action(action);
                 }
                 KeyProcessingResult::Invalid => {
                     if let Some(action) =
                         self.input_machine.get_default_action(&self.mode, key_event)
                     {
                         info!("Default Action: {:?}", action);
-                        self.action_list.push_back(action);
+                        self.own_push_action(action);
                     }
                 }
                 _ => {}
@@ -214,7 +219,7 @@ impl App {
     pub fn execute_command(&mut self, command: String) -> Option<Action> {
         match command.as_str() {
             "q" => Some(Action::ExplorerAct(ExplorerAction::DeleteSplit)),
-            "t" => Some(Action::AppAct(AppAction::ParseCommand(":".into()))),
+            "t" => Some(Action::AppAct(AppAction::ParseKeyStrokes(":".into()))),
             other_command => Some(Action::AppAct(AppAction::DisplayMessage(format!(
                 "Not a supported command: {}",
                 other_command
@@ -226,6 +231,12 @@ impl App {
         for key in enigo_keys {
             self.key_queue.push_back(key);
         }
+    }
+
+    pub fn parse_command(&mut self, command: String) {
+        self.enter_command_mode();
+        self.command_line.set_contents(command);
+        self.own_push_action(Action::AppAct(AppAction::ConfirmCommand));
     }
 
     pub fn open_default(&self, path: PathBuf) {

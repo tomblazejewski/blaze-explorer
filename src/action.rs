@@ -1,7 +1,8 @@
 use crate::command::{
     DeleteSplit, DisplayMessage, FocusDown, FocusLeft, FocusRight, FocusUp, JumpAndClose,
-    JumpAndOpen, JumpToId, OpenNeovimHere, ParseCommand, RedoDirectory, SplitHorizontally,
-    SplitVertically, TelescopeQuit, TerminalCommand, UndoDirectory, UpdatePlugin,
+    JumpAndOpen, JumpToId, OpenNeovimHere, ParseCommand, ParseKeyStrokes, RedoDirectory,
+    SplitHorizontally, SplitVertically, TelescopeQuit, TerminalCommand, UndoDirectory,
+    UpdatePlugin,
 };
 use std::path::PathBuf;
 
@@ -60,6 +61,7 @@ pub enum AppAction {
     TerminalCommand(String),
     UndoDirectory,
     RedoDirectory,
+    ParseKeyStrokes(String),
     ParseCommand(String),
 }
 
@@ -143,6 +145,9 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::AppAct(AppAction::RedoDirectory) => Box::new(RedoDirectory::new(ctx)),
         Action::AppAct(AppAction::ParseCommand(command)) => {
             Box::new(ParseCommand::new(ctx, command))
+        }
+        Action::AppAct(AppAction::ParseKeyStrokes(command)) => {
+            Box::new(ParseKeyStrokes::new(ctx, command))
         }
         Action::TextAct(TextAction::InsertKey(ch)) => Box::new(InsertKey::new(ctx, ch)),
         Action::TextAct(TextAction::EraseText) => Box::new(EraseText::new()),

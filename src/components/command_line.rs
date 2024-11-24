@@ -54,6 +54,10 @@ impl LineEntry for CommandLine {
     fn get_contents(&self) -> String {
         self.contents.clone()
     }
+
+    fn set_contents(&mut self, contents: String) {
+        self.contents = contents;
+    }
 }
 
 /// Struct used to process and display keys in command/search mode

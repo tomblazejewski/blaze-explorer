@@ -201,7 +201,15 @@ pub fn default_key_map() -> KeyMapNode<Action> {
             KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE),
         ],
-        Action::AppAct(AppAction::ParseCommand(":!git status<cr>".to_string())),
+        Action::AppAct(AppAction::ParseKeyStrokes(":!git status<cr>".to_string())),
+    );
+    root.add_sequence(
+        vec![
+            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE),
+        ],
+        Action::AppAct(AppAction::ParseCommand("!git status".to_string())),
     );
     root.add_sequence(
         vec![
@@ -210,7 +218,7 @@ pub fn default_key_map() -> KeyMapNode<Action> {
             KeyEvent::new(KeyCode::Char('P'), KeyModifiers::NONE),
         ],
         Action::AppAct(AppAction::ParseCommand(
-            ":!git push origin $(git rev-parse --abbrev-ref HEAD)".to_string(),
+            "!git push origin $(git rev-parse --abbrev-ref HEAD)".to_string(),
         )),
     );
 
