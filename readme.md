@@ -34,6 +34,14 @@ Currently under development and unstable.
 | `m`           | Jump to item (similar to [flash](https://github.com/folke/flash.nvim))                          |
 | `M`           | Jump to item and open it (see above)                                                            |
 
+### Git integration
+
+| Mappings    | Action                                          |
+| ----------- | ----------------------------------------------- |
+| `<space>hc` | Git add and commit (waits to enter the message) |
+| `<space>hs` | Show git status                                 |
+| `<space>hP` | Push current branch to remote                   |
+
 ## Telescope
 
 | Mappings  | Action             |
@@ -71,7 +79,8 @@ One can use the terminal commands, such as `git status`, similar to neovim, by p
 - [ ] Keymap system
   - [ ] Enable motions/multipliers for commands (e.g. 3dd)
   - [ ] Allow managing/adding keymaps through an accessible interface (lua script/toml file)
-  - [ ] Allow assigning keymaps to terminal commands
+  - [x] Allow assigning keymaps to terminal commands
+  - [ ] Allow searching for keymaps through Telescope
 - [ ] Terminal commands
   - [ ] Allow autocompletion of commands
   - [ ] Show history of commands

@@ -6,10 +6,12 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::{
     action::{Action, AppAction, CommandAction, ExplorerAction, PopupType, TextAction},
+    function_helpers::push_current_branch,
     input_machine::{InputMachine, KeyMapNode, KeyProcessingResult},
     mode::Mode,
 };
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct AppInputMachine<T> {
     keymap_nodes: HashMap<Mode, KeyMapNode<T>>,
 }
@@ -149,16 +151,6 @@ pub fn default_key_map() -> KeyMapNode<Action> {
     );
     root.add_sequence(
         vec![
-            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
-            KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),
-            KeyEvent::new(KeyCode::Char('m'), KeyModifiers::NONE),
-        ],
-        Action::AppAct(AppAction::DisplayMessage(
-            "message \n message \n message".to_string(),
-        )),
-    );
-    root.add_sequence(
-        vec![
             KeyEvent::new(KeyCode::Char('w'), KeyModifiers::CONTROL),
             KeyEvent::new(KeyCode::Char('v'), KeyModifiers::NONE),
         ],
@@ -194,6 +186,32 @@ pub fn default_key_map() -> KeyMapNode<Action> {
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Char('i'), KeyModifiers::CONTROL)],
         Action::AppAct(AppAction::RedoDirectory),
+    );
+    root.add_sequence(
+        vec![
+            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE),
+        ],
+        Action::AppAct(AppAction::ParseKeyStrokes(
+            r#":!git commit -am ""#.to_string(),
+        )),
+    );
+    root.add_sequence(
+        vec![
+            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE),
+        ],
+        Action::AppAct(AppAction::ParseCommand("!git status".to_string())),
+    );
+    root.add_sequence(
+        vec![
+            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('P'), KeyModifiers::NONE),
+        ],
+        Action::AppAct(AppAction::ExecuteFunction(Box::new(push_current_branch))),
     );
 
     root

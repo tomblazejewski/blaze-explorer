@@ -6,7 +6,6 @@ use ratatui::{
     Frame,
 };
 use std::cmp::min;
-use tracing::info;
 
 use crate::{
     action::{Action, AppAction, ExplorerAction, TextAction},
@@ -16,6 +15,7 @@ use crate::{
 
 use super::Component;
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct CommandLine {
     contents: String,
     focused: bool,
@@ -53,6 +53,10 @@ impl LineEntry for CommandLine {
     }
     fn get_contents(&self) -> String {
         self.contents.clone()
+    }
+
+    fn set_contents(&mut self, contents: String) {
+        self.contents = contents;
     }
 }
 

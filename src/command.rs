@@ -1,14 +1,16 @@
+pub mod key_press;
 use chrono::offset;
 use directories::ProjectDirs;
-use tracing::info;
+use key_press::decode_expression;
 
-use crate::action::{AppAction, ExplorerAction, PopupType};
+use crate::action::{ExplorerAction, PopupType};
 use crate::app::ExitResult;
 use crate::components::explorer_manager::SplitDirection;
 use crate::components::explorer_table::GlobalStyling;
 use crate::popup::{ActionInput, FlashJump};
 use crate::{action::Action, line_entry::LineEntry};
 use std::fmt::Debug;
+use std::path::Path;
 use std::process::Command as ProcessCommand;
 use std::{collections::HashMap, fs, path::PathBuf};
 use std::{fmt, io};
@@ -36,7 +38,7 @@ pub trait CommandClone: Debug {
 
 impl<T> CommandClone for T
 where
-    T: 'static + Command + Clone + Debug,
+    T: 'static + Command + Clone + Debug + PartialEq,
 {
     fn clone_box(&self) -> Box<dyn Command> {
         Box::new(self.clone())
@@ -49,7 +51,13 @@ impl Clone for Box<dyn Command> {
     }
 }
 
-#[derive(Clone, Debug)]
+impl PartialEq for Box<dyn Command> {
+    fn eq(&self, other: &Self) -> bool {
+        self == other
+    }
+}
+
+#[derive(Clone, PartialEq, Debug)]
 pub struct ChangeDirectory {
     new_path: PathBuf,
 }
@@ -67,7 +75,7 @@ impl Command for ChangeDirectory {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ParentDirectory {}
 
 impl ParentDirectory {
@@ -83,7 +91,7 @@ impl Command for ParentDirectory {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SelectUp {}
 
 impl SelectUp {
@@ -98,7 +106,7 @@ impl Command for SelectUp {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SelectDown {}
 
 impl SelectDown {
@@ -112,13 +120,13 @@ impl Command for SelectDown {
         None
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct JumpToId {
     id: usize,
 }
 
 impl JumpToId {
-    pub fn new(mut ctx: AppContext, id: usize) -> Self {
+    pub fn new(mut _ctx: AppContext, id: usize) -> Self {
         Self { id }
     }
 }
@@ -130,7 +138,7 @@ impl Command for JumpToId {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct JumpAndClose {
     id: usize,
 }
@@ -148,7 +156,7 @@ impl Command for JumpAndClose {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct JumpAndOpen {
     id: usize,
 }
@@ -166,7 +174,7 @@ impl Command for JumpAndOpen {
         Some(Action::ExplorerAct(ExplorerAction::SelectDirectory))
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ResetStyling {}
 
 impl ResetStyling {
@@ -182,7 +190,7 @@ impl Command for ResetStyling {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SelectDirectory {
     path: Option<PathBuf>,
 }
@@ -197,18 +205,17 @@ impl SelectDirectory {
 
 impl Command for SelectDirectory {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &self.path {
-            Some(path) => match path.is_dir() {
+        if let Some(path) = &self.path {
+            match path.is_dir() {
                 true => app.move_directory(path.clone(), None),
                 false => app.open_default(path.clone()),
-            },
-            None => {}
+            }
         }
         None
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct UpdateSearchQuery {
     query: String,
 }
@@ -227,7 +234,7 @@ impl Command for UpdateSearchQuery {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ClearSearchQuery {}
 
 impl ClearSearchQuery {
@@ -243,7 +250,7 @@ impl Command for ClearSearchQuery {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct NextSearchResult {}
 
 impl NextSearchResult {
@@ -258,7 +265,7 @@ impl Command for NextSearchResult {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ShowInFolder {
     current_file_path: PathBuf,
     target_path: PathBuf,
@@ -287,7 +294,7 @@ impl Command for ShowInFolder {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Quit {}
 
 impl Quit {
@@ -302,7 +309,7 @@ impl Command for Quit {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SwitchMode {
     mode: Mode,
 }
@@ -323,7 +330,7 @@ impl Command for SwitchMode {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ConfirmSearchQuery {}
 
 impl ConfirmSearchQuery {
@@ -337,7 +344,7 @@ impl Command for ConfirmSearchQuery {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ConfirmCommand {
     command: String,
 }
@@ -361,7 +368,57 @@ impl Command for ConfirmCommand {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
+pub struct ParseCommand {
+    command: String,
+}
+
+impl ParseCommand {
+    pub fn new(_ctx: AppContext, command: String) -> Self {
+        Self { command }
+    }
+}
+impl Command for ParseCommand {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.parse_command(self.command.clone());
+        None
+    }
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct ExecuteFunction {
+    function: Box<fn(&mut App) -> Option<Action>>,
+}
+
+impl ExecuteFunction {
+    pub fn new(_ctx: AppContext, function: Box<fn(&mut App) -> Option<Action>>) -> Self {
+        Self { function }
+    }
+}
+impl Command for ExecuteFunction {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        (self.function)(app)
+    }
+}
+#[derive(Clone, PartialEq, Debug)]
+pub struct ParseKeyStrokes {
+    command: String,
+}
+
+impl ParseKeyStrokes {
+    pub fn new(_ctx: AppContext, command: String) -> Self {
+        Self { command }
+    }
+}
+impl Command for ParseKeyStrokes {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        let key_chain = decode_expression(self.command.clone());
+        app.execute_keys(key_chain);
+        None
+    }
+}
+
+#[derive(Clone, PartialEq, Debug)]
 pub struct DisplayMessage {
     message: String,
 }
@@ -378,7 +435,7 @@ impl Command for DisplayMessage {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct OpenPopup {
     popup: PopupType,
 }
@@ -407,7 +464,7 @@ impl Command for OpenPopup {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct UpdatePlugin {}
 
 impl UpdatePlugin {
@@ -423,26 +480,31 @@ impl Command for UpdatePlugin {
         None
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct InsertKey {
     ch: char,
+    search: bool,
 }
 
 impl InsertKey {
-    pub fn new(ch: char) -> Self {
-        Self { ch }
+    pub fn new(ctx: AppContext, ch: char) -> Self {
+        let search = matches!(ctx.mode, Mode::Search);
+        Self { ch, search }
     }
 }
 impl Command for InsertKey {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         app.command_line.append_char(self.ch);
-        Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
-            app.command_line.get_contents(),
-        )))
+        match &self.search {
+            true => Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
+                app.command_line.get_contents(),
+            ))),
+            false => None,
+        }
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct EraseText {}
 
 impl EraseText {
@@ -459,7 +521,7 @@ impl Command for EraseText {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct DropKey {}
 
 impl DropKey {
@@ -473,7 +535,7 @@ impl Command for DropKey {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TelescopeConfirmResult {}
 
 impl TelescopeConfirmResult {
@@ -487,7 +549,7 @@ impl Command for TelescopeConfirmResult {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TelescopeNextResult {}
 
 impl TelescopeNextResult {
@@ -502,7 +564,7 @@ impl Command for TelescopeNextResult {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TelescopePreviousResult {}
 
 impl TelescopePreviousResult {
@@ -517,7 +579,7 @@ impl Command for TelescopePreviousResult {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TelescopeUpdateSearchQuery {
     query: String,
 }
@@ -534,7 +596,7 @@ impl Command for TelescopeUpdateSearchQuery {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TelescopePushSearchChar {
     ch: char,
 }
@@ -551,7 +613,7 @@ impl Command for TelescopePushSearchChar {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TelescopeDropSearchChar {}
 
 impl TelescopeDropSearchChar {
@@ -565,7 +627,7 @@ impl Command for TelescopeDropSearchChar {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TelescopeQuit {}
 
 impl TelescopeQuit {
@@ -580,7 +642,7 @@ impl Command for TelescopeQuit {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TelescopeEraseText {}
 
 impl TelescopeEraseText {
@@ -594,7 +656,7 @@ impl Command for TelescopeEraseText {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct UpdateStyling {
     styling: GlobalStyling,
 }
@@ -611,7 +673,7 @@ impl Command for UpdateStyling {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Noop {}
 
 impl Noop {
@@ -625,7 +687,7 @@ impl Command for Noop {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct DeleteSelection {
     affected_files: Option<Vec<PathBuf>>,
     backup_path: Option<HashMap<PathBuf, PathBuf>>,
@@ -643,41 +705,35 @@ impl DeleteSelection {
 }
 impl Command for DeleteSelection {
     fn execute(&mut self, _app: &mut App) -> Option<Action> {
-        match &self.affected_files {
-            Some(contents) => {
-                match &self.backup_path {
-                    None => {
-                        let contents_map = contents
-                            .iter()
-                            .map(|f| (f.to_owned(), backup_dir()))
-                            .collect::<HashMap<PathBuf, PathBuf>>();
-                        self.backup_path = Some(contents_map);
-                    }
-                    Some(_contents) => {}
+        if let Some(contents) = &self.affected_files {
+            match &self.backup_path {
+                None => {
+                    let contents_map = contents
+                        .iter()
+                        .map(|f| (f.to_owned(), backup_dir()))
+                        .collect::<HashMap<PathBuf, PathBuf>>();
+                    self.backup_path = Some(contents_map);
                 }
-                let _ = contents
-                    .iter()
-                    .map(|f| {
-                        let backup_path = self.backup_path.as_ref().unwrap().get(f).unwrap();
-                        remove_path(f, backup_path)
-                    })
-                    .collect::<Vec<()>>();
+                Some(_contents) => {}
             }
-            None => {}
+            let _ = contents
+                .iter()
+                .map(|f| {
+                    let backup_path = self.backup_path.as_ref().unwrap().get(f).unwrap();
+                    remove_path(f, backup_path)
+                })
+                .collect::<Vec<()>>();
         };
         None
     }
 
     fn undo(&mut self, _app: &mut App) -> Option<Action> {
-        match &self.backup_path {
-            Some(contents) => {
-                let _ = contents
-                    .iter()
-                    .map(|(original_path, backup_path)| move_path(backup_path, original_path))
-                    .collect::<Result<Vec<()>, std::io::Error>>();
-                return None;
-            }
-            None => {}
+        if let Some(contents) = &self.backup_path {
+            let _ = contents
+                .iter()
+                .map(|(original_path, backup_path)| move_path(backup_path, original_path))
+                .collect::<Result<Vec<()>, std::io::Error>>();
+            return None;
         };
         None
     }
@@ -695,7 +751,7 @@ impl Debug for DeleteSelection {
     }
 }
 
-fn move_recursively(from: &PathBuf, to: &PathBuf) -> io::Result<()> {
+fn move_recursively(from: &PathBuf, to: &Path) -> io::Result<()> {
     // Create the destination directory
     fs::create_dir_all(to)?;
 
@@ -728,9 +784,10 @@ fn move_path(from: &PathBuf, to: &PathBuf) -> Result<(), std::io::Error> {
     fs::rename(from, to)?;
     Ok(())
 }
-fn remove_path(path: &PathBuf, backup_path: &PathBuf) {
+fn remove_path(path: &PathBuf, backup_path: &Path) {
     //write contents to a file so this can be recovered later on
-    move_recursively(path, &PathBuf::from(backup_path.clone())).unwrap();
+    let path_buf = { backup_path };
+    move_recursively(path, path_buf).unwrap();
     if path.is_dir() {
         fs::remove_dir_all(path).unwrap();
     }
@@ -746,7 +803,7 @@ fn backup_dir() -> PathBuf {
     proj_dir.cache_dir().join(backup_name)
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct RenameActive {
     pub first_path: PathBuf,
     pub second_path: Option<PathBuf>,
@@ -803,7 +860,7 @@ impl Command for RenameActive {
         self.reversible
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TerminalCommand {
     command: String,
 }
@@ -867,8 +924,10 @@ impl Command for TerminalCommand {
         };
         let output_message = match output {
             Ok(output) => {
-                let output = output.stdout;
-                String::from_utf8(output).unwrap()
+                let stdout = String::from_utf8(output.stdout).unwrap();
+                let stderr = String::from_utf8(output.stderr).unwrap();
+                let output = format!("{}{}", stdout, stderr);
+                output
             }
             Err(err) => {
                 format!("Failed to execute command '{}': {}", self.command, err)
@@ -880,7 +939,7 @@ impl Command for TerminalCommand {
         )))
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct OpenNeovimHere {
     path: PathBuf,
 }
@@ -900,7 +959,7 @@ impl Command for OpenNeovimHere {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SplitVertically {}
 
 impl SplitVertically {
@@ -915,7 +974,7 @@ impl Command for SplitVertically {
         None
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SplitHorizontally {}
 
 impl SplitHorizontally {
@@ -931,7 +990,7 @@ impl Command for SplitHorizontally {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct DeleteSplit {}
 
 impl DeleteSplit {
@@ -944,10 +1003,10 @@ impl Command for DeleteSplit {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         let should_quit = app.explorer_manager.delete_split();
         app.should_quit = should_quit;
-        Some(Action::AppAct(AppAction::SwitchMode(Mode::Normal)))
+        None
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct FocusUp {}
 
 impl FocusUp {
@@ -962,7 +1021,7 @@ impl Command for FocusUp {
         None
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct FocusDown {}
 
 impl FocusDown {
@@ -977,7 +1036,7 @@ impl Command for FocusDown {
         None
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct FocusLeft {}
 
 impl FocusLeft {
@@ -992,7 +1051,7 @@ impl Command for FocusLeft {
         None
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct FocusRight {}
 
 impl FocusRight {
@@ -1008,7 +1067,7 @@ impl Command for FocusRight {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct RedoDirectory {}
 
 impl RedoDirectory {
@@ -1024,7 +1083,7 @@ impl Command for RedoDirectory {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct UndoDirectory {}
 
 impl UndoDirectory {
@@ -1042,7 +1101,9 @@ impl Command for UndoDirectory {
 
 #[cfg(test)]
 mod tests {
-    use std::{env, path, thread, time::Duration};
+    use std::{collections::VecDeque, env, path, thread, time::Duration};
+
+    use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
     use crate::action::ExplorerAction;
 
@@ -1240,5 +1301,48 @@ mod tests {
         let _ = app.handle_new_actions();
         assert_eq!(app.explorer_manager.get_current_path(), expected_path);
         app.move_directory(starting_path, None);
+    }
+
+    #[test]
+    fn test_parse_key_strokes() {
+        let mut app = App::new().unwrap();
+        let mut new_parse_command = ParseKeyStrokes::new(app.get_app_context(), "Abc123".into());
+        let _ = new_parse_command.execute(&mut app);
+        let key_queue = app.key_queue;
+        assert_eq!(
+            key_queue,
+            VecDeque::from(vec![
+                KeyEvent::new(KeyCode::Char('A'), KeyModifiers::NONE),
+                KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE),
+                KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE),
+                KeyEvent::new(KeyCode::Char('1'), KeyModifiers::NONE),
+                KeyEvent::new(KeyCode::Char('2'), KeyModifiers::NONE),
+                KeyEvent::new(KeyCode::Char('3'), KeyModifiers::NONE)
+            ])
+        );
+    }
+
+    #[test]
+    fn test_parse_command() {
+        let mut app = App::new().unwrap();
+        let mut new_parse_command = ParseCommand::new(app.get_app_context(), "git".into());
+        new_parse_command.execute(&mut app);
+        assert_eq!(app.command_line.get_contents(), "git".to_string());
+    }
+
+    #[test]
+    fn test_execute_function() {
+        fn dummy_function(app: &mut App) -> Option<Action> {
+            app.command_line.set_contents("Dummy contents".to_string());
+            None
+        }
+        let mut app = App::new().unwrap();
+        let mut new_parse_command =
+            ExecuteFunction::new(app.get_app_context(), Box::new(dummy_function));
+        new_parse_command.execute(&mut app);
+        assert_eq!(
+            app.command_line.get_contents(),
+            "Dummy contents".to_string()
+        );
     }
 }

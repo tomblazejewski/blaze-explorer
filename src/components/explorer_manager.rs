@@ -4,7 +4,6 @@ use std::path::PathBuf;
 
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
-use tracing::info;
 
 use super::explorer_table::{ExplorerTable, FileData, GlobalStyling};
 use crate::components::Component;
@@ -27,13 +26,13 @@ pub fn calculate_distance(x_0: f32, y_0: f32, x_1: f32, y_1: f32) -> f32 {
     ((x_0 - x_1).powi(2) + (y_0 - y_1).powi(2)).powf(0.5)
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ParentRelationship {
     SomeParent(usize, usize),
     NoParent,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Split {
     Horizontal(usize, usize),
     Vertical(usize, usize),
@@ -47,7 +46,7 @@ pub enum SplitDirection {
     Right,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ExplorerManager {
     pub explorers: HashMap<usize, ExplorerNode>,
     pub focused_id: usize,
@@ -158,6 +157,8 @@ impl ExplorerManager {
             match current_node.split {
                 Split::Single(_) => {
                     self.focused_id = current_node.id;
+                    // focus that ExplorerTable
+                    self.focus();
                     break;
                 }
 
@@ -176,16 +177,25 @@ impl ExplorerManager {
         let mut draw_map: HashMap<usize, Rect> = HashMap::new();
         self.get_drawable(frame, area, 0, &mut draw_map);
         self.last_layout = draw_map.clone();
-        for (key, value) in draw_map.iter() {
-            let table = self.explorers.get_mut(key).unwrap();
-            if let Split::Single(table) = &mut table.split {
-                let _ = table.draw(frame, *value);
-            }
-        }
+        let _: Vec<_> = draw_map
+            .iter()
+            .map(|(key, value)| {
+                let table = self.explorers.get_mut(key).unwrap();
+                if let Split::Single(table) = &mut table.split {
+                    let _ = table.draw(frame, *value);
+                }
+            })
+            .collect();
+        // for (key, value) in draw_map.iter() {
+        //     let table = self.explorers.get_mut(key).unwrap();
+        //     if let Split::Single(table) = &mut table.split {
+        //         let _ = table.draw(frame, *value);
+        //     }
+        // }
     }
     pub fn get_drawable(
         &self,
-        frame: &mut Frame,
+        _frame: &mut Frame,
         area: Rect,
         id: usize,
         draw_map: &mut HashMap<usize, Rect>,
@@ -198,16 +208,16 @@ impl ExplorerManager {
                     .direction(Direction::Vertical)
                     .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
                     .split(area);
-                self.get_drawable(frame, component_areas[0], *id_0, draw_map);
-                self.get_drawable(frame, component_areas[1], *id_1, draw_map);
+                self.get_drawable(_frame, component_areas[0], *id_0, draw_map);
+                self.get_drawable(_frame, component_areas[1], *id_1, draw_map);
             }
             Split::Vertical(id_0, id_1) => {
                 let component_areas = Layout::default()
                     .direction(Direction::Horizontal)
                     .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
                     .split(area);
-                self.get_drawable(frame, component_areas[0], *id_0, draw_map);
-                self.get_drawable(frame, component_areas[1], *id_1, draw_map);
+                self.get_drawable(_frame, component_areas[0], *id_0, draw_map);
+                self.get_drawable(_frame, component_areas[1], *id_1, draw_map);
             }
             Split::Single(_) => {
                 draw_map.insert(id, area);
@@ -384,7 +394,7 @@ impl ExplorerManager {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ExplorerNode {
     pub id: usize,
     pub focused: bool,

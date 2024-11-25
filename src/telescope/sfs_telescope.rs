@@ -18,6 +18,7 @@ use crate::action::{Action, AppAction};
 
 use super::{AppContext, TelescopeResult, TelescopeSearch};
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct SearchFileshereSearch {
     absolute_directory: String,
     results: Vec<SearchFilesHereResult>,
@@ -86,6 +87,7 @@ impl TelescopeSearch for SearchFileshereSearch {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
 struct SearchFilesHereResult {
     path: String,
 }
