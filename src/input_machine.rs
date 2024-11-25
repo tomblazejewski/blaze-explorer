@@ -128,9 +128,7 @@ mod tests {
         );
         let mut current_sequence: Vec<KeyEvent> = Vec::new();
         let j_event = KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE);
-        let q_event = KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE);
         let k_event = KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE);
-        let b_event = KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE);
 
         let result = process_keys(&root, &mut current_sequence, j_event);
         assert_eq!(result, KeyProcessingResult::Incomplete);
@@ -143,12 +141,5 @@ mod tests {
             KeyProcessingResult::Complete(Action::ExplorerAct(ExplorerAction::SelectDirectory))
         );
         assert_eq!(current_sequence.len(), 0);
-        let result = process_keys(&root, &mut current_sequence, b_event);
-        let result = process_keys(&root, &mut current_sequence, j_event);
-        let result = process_keys(&root, &mut current_sequence, j_event);
-        // assert_eq!(
-        //     result,
-        //     KeyProcessingResult::Complete(Action::AppAct(AppAction::CancelKeybind))
-        // );
     }
 }

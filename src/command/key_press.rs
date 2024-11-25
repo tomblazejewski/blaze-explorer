@@ -1,4 +1,4 @@
-use std::{collections::HashMap, hash::Hash};
+use std::collections::HashMap;
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
@@ -58,9 +58,12 @@ pub fn decode_expression(expression: String) -> Vec<KeyEvent> {
 }
 
 mod tests {
-    use ratatui::crossterm::event::{self, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
-    use super::*;
+    use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+    use crate::command::key_press::lookup_composite_char;
+
+    use super::decode_expression;
 
     #[test]
     fn test_decode_with_translator() {

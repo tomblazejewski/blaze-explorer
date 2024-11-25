@@ -4,7 +4,6 @@ use std::path::PathBuf;
 
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
-use tracing::info;
 
 use super::explorer_table::{ExplorerTable, FileData, GlobalStyling};
 use crate::components::Component;
@@ -175,11 +174,9 @@ impl ExplorerManager {
     }
 
     pub fn draw(&mut self, frame: &mut Frame, area: Rect) {
-        let begin = std::time::Instant::now();
         let mut draw_map: HashMap<usize, Rect> = HashMap::new();
         self.get_drawable(frame, area, 0, &mut draw_map);
         self.last_layout = draw_map.clone();
-        let begin = std::time::Instant::now();
         let _: Vec<_> = draw_map
             .iter()
             .map(|(key, value)| {
@@ -198,7 +195,7 @@ impl ExplorerManager {
     }
     pub fn get_drawable(
         &self,
-        frame: &mut Frame,
+        _frame: &mut Frame,
         area: Rect,
         id: usize,
         draw_map: &mut HashMap<usize, Rect>,
@@ -211,16 +208,16 @@ impl ExplorerManager {
                     .direction(Direction::Vertical)
                     .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
                     .split(area);
-                self.get_drawable(frame, component_areas[0], *id_0, draw_map);
-                self.get_drawable(frame, component_areas[1], *id_1, draw_map);
+                self.get_drawable(_frame, component_areas[0], *id_0, draw_map);
+                self.get_drawable(_frame, component_areas[1], *id_1, draw_map);
             }
             Split::Vertical(id_0, id_1) => {
                 let component_areas = Layout::default()
                     .direction(Direction::Horizontal)
                     .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
                     .split(area);
-                self.get_drawable(frame, component_areas[0], *id_0, draw_map);
-                self.get_drawable(frame, component_areas[1], *id_1, draw_map);
+                self.get_drawable(_frame, component_areas[0], *id_0, draw_map);
+                self.get_drawable(_frame, component_areas[1], *id_1, draw_map);
             }
             Split::Single(_) => {
                 draw_map.insert(id, area);

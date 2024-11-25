@@ -2,15 +2,15 @@ pub mod key_press;
 use chrono::offset;
 use directories::ProjectDirs;
 use key_press::decode_expression;
-use tracing::info;
 
-use crate::action::{AppAction, ExplorerAction, PopupType};
+use crate::action::{ExplorerAction, PopupType};
 use crate::app::ExitResult;
 use crate::components::explorer_manager::SplitDirection;
 use crate::components::explorer_table::GlobalStyling;
 use crate::popup::{ActionInput, FlashJump};
 use crate::{action::Action, line_entry::LineEntry};
 use std::fmt::Debug;
+use std::path::Path;
 use std::process::Command as ProcessCommand;
 use std::{collections::HashMap, fs, path::PathBuf};
 use std::{fmt, io};
@@ -126,7 +126,7 @@ pub struct JumpToId {
 }
 
 impl JumpToId {
-    pub fn new(mut ctx: AppContext, id: usize) -> Self {
+    pub fn new(mut _ctx: AppContext, id: usize) -> Self {
         Self { id }
     }
 }
@@ -205,12 +205,11 @@ impl SelectDirectory {
 
 impl Command for SelectDirectory {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &self.path {
-            Some(path) => match path.is_dir() {
+        if let Some(path) = &self.path {
+            match path.is_dir() {
                 true => app.move_directory(path.clone(), None),
                 false => app.open_default(path.clone()),
-            },
-            None => {}
+            }
         }
         None
     }
@@ -375,7 +374,7 @@ pub struct ParseCommand {
 }
 
 impl ParseCommand {
-    pub fn new(ctx: AppContext, command: String) -> Self {
+    pub fn new(_ctx: AppContext, command: String) -> Self {
         Self { command }
     }
 }
@@ -392,7 +391,7 @@ pub struct ExecuteFunction {
 }
 
 impl ExecuteFunction {
-    pub fn new(ctx: AppContext, function: Box<fn(&mut App) -> Option<Action>>) -> Self {
+    pub fn new(_ctx: AppContext, function: Box<fn(&mut App) -> Option<Action>>) -> Self {
         Self { function }
     }
 }
@@ -407,7 +406,7 @@ pub struct ParseKeyStrokes {
 }
 
 impl ParseKeyStrokes {
-    pub fn new(ctx: AppContext, command: String) -> Self {
+    pub fn new(_ctx: AppContext, command: String) -> Self {
         Self { command }
     }
 }
@@ -706,41 +705,35 @@ impl DeleteSelection {
 }
 impl Command for DeleteSelection {
     fn execute(&mut self, _app: &mut App) -> Option<Action> {
-        match &self.affected_files {
-            Some(contents) => {
-                match &self.backup_path {
-                    None => {
-                        let contents_map = contents
-                            .iter()
-                            .map(|f| (f.to_owned(), backup_dir()))
-                            .collect::<HashMap<PathBuf, PathBuf>>();
-                        self.backup_path = Some(contents_map);
-                    }
-                    Some(_contents) => {}
+        if let Some(contents) = &self.affected_files {
+            match &self.backup_path {
+                None => {
+                    let contents_map = contents
+                        .iter()
+                        .map(|f| (f.to_owned(), backup_dir()))
+                        .collect::<HashMap<PathBuf, PathBuf>>();
+                    self.backup_path = Some(contents_map);
                 }
-                let _ = contents
-                    .iter()
-                    .map(|f| {
-                        let backup_path = self.backup_path.as_ref().unwrap().get(f).unwrap();
-                        remove_path(f, backup_path)
-                    })
-                    .collect::<Vec<()>>();
+                Some(_contents) => {}
             }
-            None => {}
+            let _ = contents
+                .iter()
+                .map(|f| {
+                    let backup_path = self.backup_path.as_ref().unwrap().get(f).unwrap();
+                    remove_path(f, backup_path)
+                })
+                .collect::<Vec<()>>();
         };
         None
     }
 
     fn undo(&mut self, _app: &mut App) -> Option<Action> {
-        match &self.backup_path {
-            Some(contents) => {
-                let _ = contents
-                    .iter()
-                    .map(|(original_path, backup_path)| move_path(backup_path, original_path))
-                    .collect::<Result<Vec<()>, std::io::Error>>();
-                return None;
-            }
-            None => {}
+        if let Some(contents) = &self.backup_path {
+            let _ = contents
+                .iter()
+                .map(|(original_path, backup_path)| move_path(backup_path, original_path))
+                .collect::<Result<Vec<()>, std::io::Error>>();
+            return None;
         };
         None
     }
@@ -758,7 +751,7 @@ impl Debug for DeleteSelection {
     }
 }
 
-fn move_recursively(from: &PathBuf, to: &PathBuf) -> io::Result<()> {
+fn move_recursively(from: &PathBuf, to: &Path) -> io::Result<()> {
     // Create the destination directory
     fs::create_dir_all(to)?;
 
@@ -791,9 +784,10 @@ fn move_path(from: &PathBuf, to: &PathBuf) -> Result<(), std::io::Error> {
     fs::rename(from, to)?;
     Ok(())
 }
-fn remove_path(path: &PathBuf, backup_path: &PathBuf) {
+fn remove_path(path: &PathBuf, backup_path: &Path) {
     //write contents to a file so this can be recovered later on
-    move_recursively(path, &PathBuf::from(backup_path.clone())).unwrap();
+    let path_buf = { backup_path };
+    move_recursively(path, path_buf).unwrap();
     if path.is_dir() {
         fs::remove_dir_all(path).unwrap();
     }

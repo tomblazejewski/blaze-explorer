@@ -126,7 +126,7 @@ impl PopUp {
                 )))
             }
             PopUp::InputPopUp(_action_input) => None,
-            PopUp::FlashPopUp(flash_popup) => None,
+            PopUp::FlashPopUp(_flash_popup) => None,
         }
     }
 
@@ -520,7 +520,7 @@ impl PopupEngine for FlashJump {
         None
     }
 
-    fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
+    fn draw(&mut self, _frame: &mut Frame, _area: Rect) -> Result<()> {
         Ok(())
     }
 

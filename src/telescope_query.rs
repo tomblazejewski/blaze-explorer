@@ -38,7 +38,7 @@ impl LineEntry for TelescopeQuery {
         format!("{}{}{}", self.prefix, self.contents, self.suffix)
     }
 
-    fn set_contents(&mut self, contents: String) {
+    fn set_contents(&mut self, _contents: String) {
         // Worry about this implementation later on
         panic!("Should not be called")
     }

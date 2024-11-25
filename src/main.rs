@@ -15,7 +15,6 @@ mod app_input_machine;
 mod command;
 mod components;
 mod flash_input_machine;
-mod focus;
 mod function_helpers;
 mod history_stack;
 mod input_machine;

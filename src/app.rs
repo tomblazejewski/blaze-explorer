@@ -2,10 +2,9 @@ use std::collections::{HashMap, VecDeque};
 use std::env::set_current_dir;
 use std::io::{stdout, Stdout};
 use std::path::{self, PathBuf};
-use std::time::Instant;
 
 use color_eyre::Result;
-use ratatui::crossterm::event::{Event, KeyCode, KeyEvent};
+use ratatui::crossterm::event::{Event, KeyEvent};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
 use ratatui::{

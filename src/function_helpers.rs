@@ -7,7 +7,7 @@ use crate::{
     app::App,
 };
 
-pub fn push_current_branch(app: &mut App) -> Option<Action> {
+pub fn push_current_branch(_app: &mut App) -> Option<Action> {
     let branch_name = Command::new("git")
         .arg("rev-parse")
         .arg("--abbrev-ref")
