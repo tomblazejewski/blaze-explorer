@@ -502,15 +502,9 @@ impl PopupEngine for FlashJump {
                 .process_keys(&Mode::Normal, &mut self.current_sequence, key_event);
         match keymap_result {
             KeyProcessingResult::Complete(action) => {
-                info!("Action: {:?}", action);
                 return Some(action);
             }
             KeyProcessingResult::Invalid => {
-                info!(
-                    "Invalid: {:?}",
-                    self.input_machine
-                        .get_default_action(&Mode::Normal, key_event)
-                );
                 return self
                     .input_machine
                     .get_default_action(&Mode::Normal, key_event);

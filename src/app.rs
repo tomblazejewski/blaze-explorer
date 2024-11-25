@@ -186,14 +186,12 @@ impl App {
         } else {
             match keymap_result {
                 KeyProcessingResult::Complete(action) => {
-                    info!("Complete Action: {:?}", action);
                     self.own_push_action(action);
                 }
                 KeyProcessingResult::Invalid => {
                     if let Some(action) =
                         self.input_machine.get_default_action(&self.mode, key_event)
                     {
-                        info!("Default Action: {:?}", action);
                         self.own_push_action(action);
                     }
                 }
