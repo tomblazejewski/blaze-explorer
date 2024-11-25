@@ -190,7 +190,17 @@ pub fn default_key_map() -> KeyMapNode<Action> {
     root.add_sequence(
         vec![
             KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
-            KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE),
+        ],
+        Action::AppAct(AppAction::ParseKeyStrokes(
+            r#":!git commit -am ""#.to_string(),
+        )),
+    );
+    root.add_sequence(
+        vec![
+            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE),
         ],
         Action::AppAct(AppAction::ParseCommand("!git status".to_string())),
@@ -198,7 +208,7 @@ pub fn default_key_map() -> KeyMapNode<Action> {
     root.add_sequence(
         vec![
             KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
-            KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('P'), KeyModifiers::NONE),
         ],
         Action::AppAct(AppAction::ExecuteFunction(Box::new(push_current_branch))),
