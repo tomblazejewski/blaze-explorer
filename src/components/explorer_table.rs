@@ -1,12 +1,13 @@
 use chrono::{offset::Utc, DateTime};
+use git2::Repository;
 use layout::Alignment;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::{
+    fmt::Debug,
     fs,
     path::{self, Path},
 };
-use tracing::info;
 
 use color_eyre::eyre::Result;
 use ratatui::{
@@ -16,6 +17,7 @@ use ratatui::{
     Frame,
 };
 
+use crate::git_helpers::get_repo;
 use crate::history_stack::directory_history::DirectoryHistory;
 use crate::{mode::Mode, themes::CustomTheme};
 
@@ -24,9 +26,9 @@ use super::Component;
 #[derive(Debug, Clone, PartialEq)]
 pub struct FileData {
     pub id: usize,
-    filename: String,
-    size: u64,
-    modified: Option<DateTime<Utc>>,
+    pub filename: String,
+    pub size: u64,
+    pub modified: Option<DateTime<Utc>>,
 }
 
 impl FileData {
@@ -98,42 +100,6 @@ fn get_line_numbers(n_lines: usize, current_line: usize) -> Vec<String> {
     current_lines
 }
 
-fn highlight_search_result(line_text: String, query: &str, highlighted_style: Style) -> Line {
-    if line_text.contains(query) {
-        let splits = line_text.split(&query);
-        let chunks = splits.into_iter().map(|c| Span::from(c.to_owned()));
-        let pattern = Span::styled(query, highlighted_style);
-        itertools::intersperse(chunks, pattern)
-            .collect::<Vec<Span>>()
-            .into()
-    } else {
-        Line::from(line_text)
-    }
-}
-
-pub fn jump_highlight(
-    line_text: String,
-    query: &str,
-    char: char,
-    query_style: Style,
-    char_style: Style,
-) -> Line {
-    if line_text.contains(&query) {
-        let mut splits = line_text.split(&query);
-        let beginning = Span::from(splits.next().unwrap().to_string());
-        let query_span = Span::styled(query, query_style);
-        let mut remainder = splits.remainder().unwrap_or("").to_string();
-        if !remainder.is_empty() {
-            remainder.remove(0);
-        }
-        let char_span = Span::styled(char.to_string(), char_style);
-        let remainder_span = Span::from(remainder);
-        Line::from(vec![beginning, query_span, char_span, remainder_span])
-    } else {
-        Line::from(line_text)
-    }
-}
-
 #[derive(Clone, Debug)]
 pub enum GlobalStyling {
     HighlightSearch(String), //highlight background of the text with the search query
@@ -142,7 +108,6 @@ pub enum GlobalStyling {
     None, //no styling
 }
 
-#[derive(Clone, Debug)]
 pub struct ExplorerTable {
     state: TableState,
     current_path: PathBuf,
@@ -154,10 +119,51 @@ pub struct ExplorerTable {
     styling: GlobalStyling,
     plugin_display: Option<String>,
     directory_history: DirectoryHistory,
+    repo: Option<Repository>,
 }
 impl Default for ExplorerTable {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Clone for ExplorerTable {
+    fn clone(&self) -> Self {
+        Self {
+            state: self.state.clone(),
+            current_path: self.current_path.clone(),
+            elements_list: self.elements_list.clone(),
+            mode: self.mode.clone(),
+            selected_ids: self.selected_ids.clone(),
+            theme: self.theme.clone(),
+            focused: self.focused,
+            styling: self.styling.clone(),
+            plugin_display: self.plugin_display.clone(),
+            directory_history: self.directory_history.clone(),
+            repo: get_repo(self.current_path.clone()),
+        }
+    }
+}
+
+impl Debug for ExplorerTable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let repo_display = match &self.repo {
+            Some(_) => "Some repo",
+            None => "None",
+        };
+        f.debug_struct("ExplorerTable")
+            .field("state", &self.state)
+            .field("current_path", &self.current_path)
+            .field("elements_list", &self.elements_list)
+            .field("mode", &self.mode)
+            .field("selected_ids", &self.selected_ids)
+            .field("theme", &self.theme)
+            .field("focused", &self.focused)
+            .field("styling", &self.styling)
+            .field("plugin_display", &self.plugin_display)
+            .field("directory_history", &self.directory_history)
+            .field("repo", &repo_display)
+            .finish()
     }
 }
 
@@ -166,7 +172,7 @@ impl ExplorerTable {
         let starting_path = path::absolute("./").unwrap();
         Self {
             state: TableState::default().with_selected(0),
-            current_path: starting_path,
+            current_path: starting_path.clone(),
             elements_list: Vec::new(),
             mode: Mode::Normal,
             selected_ids: None,
@@ -175,6 +181,7 @@ impl ExplorerTable {
             styling: GlobalStyling::None,
             plugin_display: None,
             directory_history: DirectoryHistory::default(),
+            repo: get_repo(starting_path),
         }
     }
 
@@ -205,6 +212,7 @@ impl ExplorerTable {
         } else {
             self.state = TableState::default().with_selected(0);
         }
+        self.repo = get_repo(self.current_path.clone());
     }
 
     fn refresh_contents(&mut self) {
