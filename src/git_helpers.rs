@@ -15,6 +15,7 @@ pub fn get_repo(path: PathBuf) -> Option<Repository> {
 pub fn assign_git_styling(style: Style, status: Status) -> Style {
     match status {
         Status::WT_MODIFIED => style.fg(Color::Rgb(255, 165, 0)),
+        Status::IGNORED => style.fg(Color::Rgb(128, 128, 128)),
         _ => style.fg(Color::Rgb(255, 192, 203)),
     }
 }

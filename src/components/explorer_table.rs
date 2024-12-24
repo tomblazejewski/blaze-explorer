@@ -1,5 +1,5 @@
 use chrono::{offset::Utc, DateTime};
-use git2::Repository;
+use git2::{Repository, Status, StatusOptions};
 use layout::Alignment;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -122,6 +122,7 @@ pub struct ExplorerTable {
     plugin_display: Option<String>,
     directory_history: DirectoryHistory,
     repo: Option<Repository>,
+    git_map: Option<HashMap<String, Status>>,
 }
 impl Default for ExplorerTable {
     fn default() -> Self {
@@ -143,6 +144,7 @@ impl Clone for ExplorerTable {
             plugin_display: self.plugin_display.clone(),
             directory_history: self.directory_history.clone(),
             repo: get_repo(self.current_path.clone()),
+            git_map: self.git_map.clone(),
         }
     }
 }
@@ -172,7 +174,7 @@ impl Debug for ExplorerTable {
 impl ExplorerTable {
     pub fn new() -> Self {
         let starting_path = path::absolute("./").unwrap();
-        Self {
+        let mut new_self = Self {
             state: TableState::default().with_selected(0),
             current_path: starting_path.clone(),
             elements_list: Vec::new(),
@@ -184,7 +186,10 @@ impl ExplorerTable {
             plugin_display: None,
             directory_history: DirectoryHistory::default(),
             repo: get_repo(starting_path),
-        }
+            git_map: None,
+        };
+        new_self.git_map = new_self.get_git_map();
+        new_self
     }
 
     pub fn get_line_labels(&mut self) -> Vec<String> {
@@ -215,7 +220,31 @@ impl ExplorerTable {
             self.state = TableState::default().with_selected(0);
         }
         self.repo = get_repo(self.current_path.clone());
-        info!("Repo: {}", self.repo.is_some());
+        self.git_map = self.get_git_map();
+    }
+
+    pub fn get_git_map(&self) -> Option<HashMap<String, Status>> {
+        let mut map = HashMap::new();
+        if let Some(repo) = &self.repo {
+            let statuses = repo
+                .statuses(Some(StatusOptions::new().include_ignored(true)))
+                .unwrap();
+            let root_path = repo.path().parent().unwrap();
+            for status_entry in statuses.iter() {
+                // create an absolute path made of the git root path and the status_entry path
+                let abs_path = root_path.join(status_entry.path().unwrap());
+                let parent_path = abs_path.parent().unwrap();
+                if parent_path != self.current_path {
+                    continue;
+                }
+                //insert if the parent of the status entry is the same as explorer table path
+                //extract the name of the file by taking the last split after the last slash
+                let filename = abs_path.file_name().unwrap().to_str().unwrap().to_string();
+                map.insert(filename, status_entry.status());
+            }
+            return Some(map);
+        }
+        None
     }
 
     fn refresh_contents(&mut self) {
@@ -455,12 +484,22 @@ impl ExplorerTable {
         );
         let file_size_cell = Cell::from(Text::from(format_file_size(element.size)));
         let last_modified_cell = Cell::from(Text::from(format_last_time(&element.modified)));
-        let row = Row::new(vec![
+        let mut row = Row::new(vec![
             row_number_cell,
             file_name_cell,
             file_size_cell,
             last_modified_cell,
         ]);
+
+        row = row
+            .style(Style::new().bg(match &self.selected_ids {
+                Some(selected_ids) => match selected_ids.contains(&element.id) {
+                    true => tailwind::BLACK,
+                    false => tailwind::BLACK,
+                },
+                None => tailwind::BLACK,
+            }))
+            .fg(tailwind::WHITE);
         row
     }
 }
@@ -502,14 +541,6 @@ impl Component for ExplorerTable {
                             query.as_str(),
                             inverted_map.clone(),
                         )
-                        .style(Style::new().bg(match &self.selected_ids {
-                            Some(selected_ids) => match selected_ids.contains(&element.id) {
-                                true => tailwind::BLACK,
-                                false => tailwind::BLACK,
-                            },
-                            None => tailwind::BLACK,
-                        }))
-                        .fg(tailwind::WHITE)
                     })
                     .collect::<Vec<Row>>()
             }
