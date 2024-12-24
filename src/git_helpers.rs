@@ -16,6 +16,7 @@ pub fn assign_git_styling(style: Style, status: Status) -> Style {
     match status {
         Status::WT_MODIFIED => style.fg(Color::Rgb(255, 165, 0)),
         Status::IGNORED => style.fg(Color::Rgb(128, 128, 128)),
+        Status::WT_NEW => style.fg(Color::Rgb(0, 128, 0)),
         _ => style.fg(Color::Rgb(255, 192, 203)),
     }
 }

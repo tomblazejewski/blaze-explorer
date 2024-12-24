@@ -19,7 +19,7 @@ use ratatui::{
 };
 
 use crate::explorer_helpers::{highlight_search_result, jump_highlight};
-use crate::git_helpers::get_repo;
+use crate::git_helpers::{assign_git_styling, get_repo};
 use crate::history_stack::directory_history::DirectoryHistory;
 use crate::{mode::Mode, themes::CustomTheme};
 
@@ -227,7 +227,11 @@ impl ExplorerTable {
         let mut map = HashMap::new();
         if let Some(repo) = &self.repo {
             let statuses = repo
-                .statuses(Some(StatusOptions::new().include_ignored(true)))
+                .statuses(Some(
+                    StatusOptions::new()
+                        .include_ignored(true)
+                        .include_untracked(true),
+                ))
                 .unwrap();
             let root_path = repo.path().parent().unwrap();
             for status_entry in statuses.iter() {
@@ -242,6 +246,7 @@ impl ExplorerTable {
                 let filename = abs_path.file_name().unwrap().to_str().unwrap().to_string();
                 map.insert(filename, status_entry.status());
             }
+            info!("git map: {:#?}", map);
             return Some(map);
         }
         None
@@ -491,16 +496,21 @@ impl ExplorerTable {
             last_modified_cell,
         ]);
 
-        row = row
-            .style(Style::new().bg(match &self.selected_ids {
+        let mut style = Style::new()
+            .bg(match &self.selected_ids {
                 Some(selected_ids) => match selected_ids.contains(&element.id) {
                     true => tailwind::BLACK,
                     false => tailwind::BLACK,
                 },
                 None => tailwind::BLACK,
-            }))
+            })
             .fg(tailwind::WHITE);
-        row
+        if let Some(map) = &self.git_map {
+            if let Some(status) = map.get(&element.filename) {
+                style = assign_git_styling(style, *status);
+            }
+        }
+        row.style(style)
     }
 }
 
