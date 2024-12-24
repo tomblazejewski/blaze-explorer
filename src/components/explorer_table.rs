@@ -8,6 +8,7 @@ use std::{
     fs,
     path::{self, Path},
 };
+use tracing::info;
 
 use color_eyre::eyre::Result;
 use ratatui::{
@@ -214,6 +215,7 @@ impl ExplorerTable {
             self.state = TableState::default().with_selected(0);
         }
         self.repo = get_repo(self.current_path.clone());
+        info!("Repo: {}", self.repo.is_some());
     }
 
     fn refresh_contents(&mut self) {

@@ -1,10 +1,15 @@
 use std::path::{Path, PathBuf};
 
-use git2::{Repository, Status};
+use git2::{Repository, RepositoryOpenFlags, Status};
 use ratatui::style::{Color, Style};
 
 pub fn get_repo(path: PathBuf) -> Option<Repository> {
-    Repository::open(path).ok()
+    Repository::open_ext(
+        path,
+        RepositoryOpenFlags::empty(),
+        &[] as &[&std::ffi::OsStr],
+    )
+    .ok()
 }
 
 pub fn assign_git_styling(style: Style, status: Status) -> Style {
