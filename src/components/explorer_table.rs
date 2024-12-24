@@ -17,6 +17,7 @@ use ratatui::{
     Frame,
 };
 
+use crate::explorer_helpers::{highlight_search_result, jump_highlight};
 use crate::git_helpers::get_repo;
 use crate::history_stack::directory_history::DirectoryHistory;
 use crate::{mode::Mode, themes::CustomTheme};
@@ -408,6 +409,58 @@ impl ExplorerTable {
     pub fn get_directory_history(&mut self) -> &mut DirectoryHistory {
         &mut self.directory_history
     }
+
+    fn convert_filename_to_cell<'a>(
+        &self,
+        filename: String,
+        query: &'a str,
+        inverted_map: HashMap<usize, char>,
+        element_id: usize,
+    ) -> Cell<'a> {
+        let file_name_cell = Cell::from(match self.styling {
+            GlobalStyling::None => Line::from(filename.clone()),
+            GlobalStyling::HighlightSearch(_) => {
+                highlight_search_result(filename.clone(), &query, self.theme.search_result)
+            }
+            GlobalStyling::HighlightJump(_, _) => jump_highlight(
+                filename.clone(),
+                &query,
+                inverted_map.get(&element_id).unwrap_or(&' ').to_owned(),
+                self.theme.highlight_query.clone(),
+                self.theme.highlight_jump_char.clone(),
+            ),
+        });
+        file_name_cell
+    }
+    pub fn convert_filedata_to_row<'a>(
+        &self,
+        element: FileData,
+        row_number: String,
+        query: &'a str,
+        inverted_map: HashMap<usize, char>,
+    ) -> Row<'a> {
+        // There is more than one source of formatting
+        // Formatting is done in particular order, so that later stages can overwrite already set
+        // properties
+        // 1. Git status
+        //
+        let row_number_cell = Cell::from(Text::from(row_number).alignment(Alignment::Right));
+        let file_name_cell = self.convert_filename_to_cell(
+            element.filename.clone(),
+            query,
+            inverted_map,
+            element.id,
+        );
+        let file_size_cell = Cell::from(Text::from(format_file_size(element.size)));
+        let last_modified_cell = Cell::from(Text::from(format_last_time(&element.modified)));
+        let row = Row::new(vec![
+            row_number_cell,
+            file_name_cell,
+            file_size_cell,
+            last_modified_cell,
+        ]);
+        row
+    }
 }
 
 impl Component for ExplorerTable {
@@ -441,29 +494,12 @@ impl Component for ExplorerTable {
                     .iter()
                     .zip(line_numbers)
                     .map(|(element, row_number)| {
-                        Row::new([
-                            Cell::from(Text::from(row_number).alignment(Alignment::Right)),
-                            {
-                                match self.styling {
-                                    GlobalStyling::None => Line::from(element.filename.clone()),
-                                    GlobalStyling::HighlightSearch(_) => highlight_search_result(
-                                        element.filename.clone(),
-                                        &query,
-                                        self.theme.search_result,
-                                    ),
-                                    GlobalStyling::HighlightJump(_, _) => jump_highlight(
-                                        element.filename.clone(),
-                                        &query,
-                                        inverted_map.get(&element.id).unwrap_or(&' ').to_owned(),
-                                        self.theme.highlight_query.clone(),
-                                        self.theme.highlight_jump_char.clone(),
-                                    ),
-                                }
-                            }
-                            .into(),
-                            format_file_size(element.size).into(),
-                            format_last_time(&element.modified).into(),
-                        ])
+                        self.convert_filedata_to_row(
+                            element.to_owned(),
+                            row_number,
+                            query.as_str(),
+                            inverted_map.clone(),
+                        )
                         .style(Style::new().bg(match &self.selected_ids {
                             Some(selected_ids) => match selected_ids.contains(&element.id) {
                                 true => tailwind::BLACK,
