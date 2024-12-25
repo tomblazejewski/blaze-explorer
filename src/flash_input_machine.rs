@@ -3,14 +3,14 @@
 use std::collections::HashMap;
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use tracing::info;
 
 use crate::{
-    action::{Action, ExplorerAction, PopupAction},
+    action::{Action, PopupAction},
     input_machine::{InputMachine, KeyMapNode, KeyProcessingResult},
     mode::Mode,
 };
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct FlashInputMachine {
     keymap_nodes: HashMap<Mode, KeyMapNode<Action>>,
     open_immediately: bool,

@@ -8,7 +8,6 @@ use std::{
     fs,
     path::{self, Path},
 };
-use tracing::info;
 
 use color_eyre::eyre::Result;
 use ratatui::{
@@ -102,7 +101,7 @@ fn get_line_numbers(n_lines: usize, current_line: usize) -> Vec<String> {
     current_lines
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum GlobalStyling {
     HighlightSearch(String), //highlight background of the text with the search query
     HighlightJump(String, HashMap<char, usize>), //highlight foreground text with search query
@@ -168,6 +167,22 @@ impl Debug for ExplorerTable {
             .field("directory_history", &self.directory_history)
             .field("repo", &repo_display)
             .finish()
+    }
+}
+
+impl PartialEq for ExplorerTable {
+    fn eq(&self, other: &Self) -> bool {
+        self.state == other.state
+            && self.current_path == other.current_path
+            && self.elements_list == other.elements_list
+            && self.mode == other.mode
+            && self.selected_ids == other.selected_ids
+            && self.theme == other.theme
+            && self.focused == other.focused
+            && self.styling == other.styling
+            && self.plugin_display == other.plugin_display
+            && self.directory_history == other.directory_history
+            && self.git_map == other.git_map
     }
 }
 

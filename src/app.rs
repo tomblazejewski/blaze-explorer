@@ -4,7 +4,7 @@ use std::io::{stdout, Stdout};
 use std::path::{self, PathBuf};
 
 use color_eyre::Result;
-use ratatui::crossterm::event::KeyEvent;
+use ratatui::crossterm::event::{Event, KeyEvent};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
 use ratatui::{
@@ -19,8 +19,7 @@ use crate::app_input_machine::AppInputMachine;
 use crate::command::Command;
 use crate::components::command_line::CommandLine;
 use crate::components::explorer_manager::ExplorerManager;
-use crate::focus::Focus;
-use crate::history_stack::directory_history::{self, DirectoryDetails};
+use crate::history_stack::directory_history::DirectoryDetails;
 use crate::history_stack::{command_history::CommandHistory, HistoryStack};
 use crate::input_machine::{InputMachine, KeyProcessingResult};
 use crate::line_entry::LineEntry;
@@ -30,7 +29,7 @@ use crate::telescope::AppContext;
 use crate::tools::center_rect;
 use crate::{action::Action, components::Component, mode::Mode};
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum ExitResult {
     Quit,
     OpenTerminal(PathBuf),
@@ -59,6 +58,8 @@ fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
     areas.insert("popup".to_string(), popup_area);
     areas
 }
+
+#[derive(Debug)]
 pub struct App {
     pub terminal: Terminal<CrosstermBackend<Stdout>>,
     pub action_list: VecDeque<Action>,
@@ -66,7 +67,6 @@ pub struct App {
     pub mode: Mode,
     pub explorer_manager: ExplorerManager,
     pub command_line: CommandLine,
-    pub focus: Focus,
     pub current_sequence: Vec<KeyEvent>,
     pub input_machine: AppInputMachine<Action>,
     pub popup: PopUp,
@@ -74,6 +74,7 @@ pub struct App {
     pub command_input: Option<String>,
     pub exit_status: Option<ExitResult>,
     pub current_path: PathBuf,
+    pub key_queue: VecDeque<KeyEvent>,
 }
 impl App {
     pub fn new() -> Result<Self> {
@@ -84,7 +85,6 @@ impl App {
             mode: Mode::Normal,
             explorer_manager: ExplorerManager::new(),
             command_line: CommandLine::new(),
-            focus: Focus::ExplorerTable,
             current_sequence: Vec::new(),
             input_machine: AppInputMachine::new(),
             popup: PopUp::None,
@@ -92,6 +92,7 @@ impl App {
             command_input: None,
             exit_status: None,
             current_path: PathBuf::new(),
+            key_queue: VecDeque::new(),
         })
     }
 
@@ -99,25 +100,31 @@ impl App {
     pub fn queue_key_event(&mut self, action: Action) {
         self.action_list.push_back(action);
     }
+
+    pub fn draw_key_event(&mut self) -> std::io::Result<Event> {
+        match self.key_queue.pop_front() {
+            Some(key) => Ok(event::Event::Key(key)),
+            None => event::read(),
+        }
+    }
     pub fn run(&mut self, cold_start: bool) -> Result<ExitResult> {
         self.terminal.clear()?;
         if cold_start {
             let path = "./";
             let starting_path = path::absolute(path).unwrap();
-            self.action_list
-                .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
-                    starting_path,
-                )));
+            self.own_push_action(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
+                starting_path,
+            )));
         }
         let _ = self.handle_new_actions();
         loop {
             let _ = self.render();
-            if let event::Event::Key(key) = event::read()? {
+            if let event::Event::Key(key) = self.draw_key_event()? {
                 if key.kind == KeyEventKind::Press {
                     match &mut self.popup {
                         PopUp::TelescopePopUp(popup) => {
                             if let Some(action) = popup.handle_key_event(key) {
-                                self.action_list.push_back(action);
+                                self.own_push_action(action);
                             }
                         }
                         PopUp::None => {
@@ -125,15 +132,14 @@ impl App {
                         }
                         PopUp::InputPopUp(input) => {
                             if let Some(action) = input.handle_key_event(key) {
-                                self.action_list.push_back(action);
+                                self.own_push_action(action);
                             }
                         }
                         PopUp::FlashPopUp(flashpopup) => {
                             if let Some(action) = flashpopup.handle_key_event(key) {
-                                self.action_list.push_back(action);
+                                self.own_push_action(action);
                             }
-                            self.action_list
-                                .push_back(Action::PopupAct(PopupAction::UpdatePlugin));
+                            self.own_push_action(Action::PopupAct(PopupAction::UpdatePlugin));
                         }
                     }
                 };
@@ -162,6 +168,10 @@ impl App {
             .unwrap_or(Ok(ExitResult::Quit))
     }
 
+    pub fn own_push_action(&mut self, action: Action) {
+        self.action_list.push_back(action);
+    }
+
     /// Register the key event, obtain possible action and push it back if applicable.
     /// Command line message takes precedence over register actions by the input machine
     pub fn handle_key_event(&mut self, key_event: KeyEvent) {
@@ -171,21 +181,18 @@ impl App {
         if self.command_line.current_message.is_some() {
             self.command_line.get_message_batch();
             if self.command_line.current_message.is_none() {
-                self.action_list
-                    .push_back(Action::AppAct(AppAction::SwitchMode(Mode::Normal)));
+                self.own_push_action(Action::AppAct(AppAction::SwitchMode(Mode::Normal)));
             }
         } else {
             match keymap_result {
                 KeyProcessingResult::Complete(action) => {
-                    info!("Complete Action: {:?}", action);
-                    self.action_list.push_back(action);
+                    self.own_push_action(action);
                 }
                 KeyProcessingResult::Invalid => {
                     if let Some(action) =
                         self.input_machine.get_default_action(&self.mode, key_event)
                     {
-                        info!("Default Action: {:?}", action);
-                        self.action_list.push_back(action);
+                        self.own_push_action(action);
                     }
                 }
                 _ => {}
@@ -196,11 +203,24 @@ impl App {
     pub fn execute_command(&mut self, command: String) -> Option<Action> {
         match command.as_str() {
             "q" => Some(Action::ExplorerAct(ExplorerAction::DeleteSplit)),
+            "t" => Some(Action::AppAct(AppAction::ParseKeyStrokes(":".into()))),
             other_command => Some(Action::AppAct(AppAction::DisplayMessage(format!(
                 "Not a supported command: {}",
                 other_command
             )))),
         }
+    }
+
+    pub fn execute_keys(&mut self, enigo_keys: Vec<KeyEvent>) {
+        for key in enigo_keys {
+            self.key_queue.push_back(key);
+        }
+    }
+
+    pub fn parse_command(&mut self, command: String) {
+        self.enter_command_mode();
+        self.command_line.set_contents(command);
+        self.own_push_action(Action::AppAct(AppAction::ConfirmCommand));
     }
 
     pub fn open_default(&self, path: PathBuf) {
@@ -289,7 +309,6 @@ impl App {
 
     pub fn handle_post_actions(&mut self) -> Result<()> {
         if let PopUp::FlashPopUp(flashpopup) = &self.popup {
-            info!("Flash popup: {}", flashpopup.display_details());
             self.explorer_manager
                 .set_plugin_display(Some(flashpopup.display_details()));
         } else {
@@ -341,6 +360,7 @@ impl App {
             self.explorer_manager.get_current_path().clone(),
             self.explorer_manager.clone(),
             self.command_line_contents().clone(),
+            self.mode.clone(),
         )
     }
 
@@ -376,6 +396,46 @@ impl App {
         }
     }
 }
+
+impl Clone for App {
+    fn clone(&self) -> Self {
+        App {
+            terminal: Terminal::new(CrosstermBackend::new(stdout())).unwrap(),
+            action_list: VecDeque::new(),
+            should_quit: self.should_quit,
+            mode: self.mode.clone(),
+            explorer_manager: self.explorer_manager.clone(),
+            command_line: self.command_line.clone(),
+            current_sequence: self.current_sequence.clone(),
+            input_machine: self.input_machine.clone(),
+            popup: self.popup.clone(),
+            command_history: self.command_history.clone(),
+            command_input: self.command_input.clone(),
+            exit_status: self.exit_status.clone(),
+            current_path: self.current_path.clone(),
+            key_queue: self.key_queue.clone(),
+        }
+    }
+}
+
+impl PartialEq for App {
+    fn eq(&self, other: &Self) -> bool {
+        self.action_list == other.action_list
+            && self.should_quit == other.should_quit
+            && self.mode == other.mode
+            && self.explorer_manager == other.explorer_manager
+            && self.command_line == other.command_line
+            && self.current_sequence == other.current_sequence
+            && self.input_machine == other.input_machine
+            && self.popup == other.popup
+            && self.command_history == other.command_history
+            && self.command_input == other.command_input
+            && self.exit_status == other.exit_status
+            && self.current_path == other.current_path
+            && self.key_queue == other.key_queue
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::env;

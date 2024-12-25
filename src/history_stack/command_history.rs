@@ -1,7 +1,7 @@
 use super::HistoryStack;
 use crate::command::Command;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CommandHistory {
     past_commands: Vec<Box<dyn Command>>,
     future_commands: Vec<Box<dyn Command>>,

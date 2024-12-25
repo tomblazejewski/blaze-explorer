@@ -62,6 +62,7 @@ pub fn pop_char(key_list: &mut Vec<char>, ch: Option<char>) -> char {
     }
 }
 
+#[derive(Clone, PartialEq)]
 pub enum PopUp {
     None,
     TelescopePopUp(TelescopeWindow),
@@ -125,7 +126,7 @@ impl PopUp {
                 )))
             }
             PopUp::InputPopUp(_action_input) => None,
-            PopUp::FlashPopUp(flash_popup) => None,
+            PopUp::FlashPopUp(_flash_popup) => None,
         }
     }
 
@@ -230,6 +231,7 @@ pub trait PopupEngine {
         None
     }
 }
+#[derive(Debug, Clone, PartialEq)]
 pub struct TelescopeWindow {
     input_machine: SimpleInputMachine,
     telescope_backend: Telescope,
@@ -309,6 +311,7 @@ impl PopupEngine for TelescopeWindow {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct ActionInput<T> {
     resulting_action: T,
     input_machine: TelescopeInputMachine,
@@ -421,6 +424,7 @@ impl PopupEngine for ActionInput<RenameActive> {
 //Struct representing the plugin used to jump to a chosen filename
 //Aims to send and request data from the explorer table in order to send an action requesting to
 //jump to a specific file
+#[derive(PartialEq, Clone, Debug)]
 pub struct FlashJump {
     query: String,
     input_machine: FlashInputMachine,
@@ -498,15 +502,9 @@ impl PopupEngine for FlashJump {
                 .process_keys(&Mode::Normal, &mut self.current_sequence, key_event);
         match keymap_result {
             KeyProcessingResult::Complete(action) => {
-                info!("Action: {:?}", action);
                 return Some(action);
             }
             KeyProcessingResult::Invalid => {
-                info!(
-                    "Invalid: {:?}",
-                    self.input_machine
-                        .get_default_action(&Mode::Normal, key_event)
-                );
                 return self
                     .input_machine
                     .get_default_action(&Mode::Normal, key_event);
@@ -516,7 +514,7 @@ impl PopupEngine for FlashJump {
         None
     }
 
-    fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
+    fn draw(&mut self, _frame: &mut Frame, _area: Rect) -> Result<()> {
         Ok(())
     }
 

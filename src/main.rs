@@ -1,3 +1,4 @@
+#![feature(reentrant_lock)]
 #![feature(str_split_remainder)]
 use logging::initialize_logging;
 use ratatui::crossterm::{
@@ -15,7 +16,7 @@ mod command;
 mod components;
 mod explorer_helpers;
 mod flash_input_machine;
-mod focus;
+mod function_helpers;
 mod git_helpers;
 mod history_stack;
 mod input_machine;

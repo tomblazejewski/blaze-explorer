@@ -1,7 +1,8 @@
 use crate::command::{
-    DeleteSplit, DisplayMessage, FocusDown, FocusLeft, FocusRight, FocusUp, JumpAndClose,
-    JumpAndOpen, JumpToId, OpenNeovimHere, RedoDirectory, SplitHorizontally, SplitVertically,
-    TelescopeQuit, TerminalCommand, UndoDirectory, UpdatePlugin,
+    DeleteSplit, DisplayMessage, ExecuteFunction, FocusDown, FocusLeft, FocusRight, FocusUp,
+    JumpAndClose, JumpAndOpen, JumpToId, OpenNeovimHere, ParseCommand, ParseKeyStrokes,
+    RedoDirectory, SplitHorizontally, SplitVertically, TelescopeQuit, TerminalCommand,
+    UndoDirectory, UpdatePlugin,
 };
 use std::path::PathBuf;
 
@@ -60,6 +61,9 @@ pub enum AppAction {
     TerminalCommand(String),
     UndoDirectory,
     RedoDirectory,
+    ParseKeyStrokes(String),
+    ParseCommand(String),
+    ExecuteFunction(Box<fn(&mut App) -> Option<Action>>),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -140,7 +144,16 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::AppAct(AppAction::TerminalCommand(cmd)) => Box::new(TerminalCommand::new(ctx, cmd)),
         Action::AppAct(AppAction::UndoDirectory) => Box::new(UndoDirectory::new(ctx)),
         Action::AppAct(AppAction::RedoDirectory) => Box::new(RedoDirectory::new(ctx)),
-        Action::TextAct(TextAction::InsertKey(ch)) => Box::new(InsertKey::new(ch)),
+        Action::AppAct(AppAction::ParseCommand(command)) => {
+            Box::new(ParseCommand::new(ctx, command))
+        }
+        Action::AppAct(AppAction::ExecuteFunction(function)) => {
+            Box::new(ExecuteFunction::new(ctx, function))
+        }
+        Action::AppAct(AppAction::ParseKeyStrokes(command)) => {
+            Box::new(ParseKeyStrokes::new(ctx, command))
+        }
+        Action::TextAct(TextAction::InsertKey(ch)) => Box::new(InsertKey::new(ctx, ch)),
         Action::TextAct(TextAction::EraseText) => Box::new(EraseText::new()),
         Action::TextAct(TextAction::DropKey) => Box::new(DropKey::new()),
         Action::PopupAct(PopupAction::ConfirmResult) => Box::new(TelescopeConfirmResult::new()),
