@@ -246,7 +246,8 @@ impl ExplorerTable {
                 let filename = abs_path.file_name().unwrap().to_str().unwrap().to_string();
                 map.insert(filename, status_entry.status());
             }
-            info!("git map: {:#?}", map);
+            //ensure .git is always untracked
+            map.insert(".git".to_string(), Status::IGNORED);
             return Some(map);
         }
         None
