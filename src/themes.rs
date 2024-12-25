@@ -16,9 +16,7 @@ impl Default for CustomTheme {
     fn default() -> Self {
         Self {
             search_result: Style::default().bg(Color::Rgb(114, 135, 253)), //catpuccin lavender
-            selected_row: Style::default()
-                .bg(Color::Rgb(49, 50, 68))
-                .fg(Color::Rgb(255, 255, 255)),
+            selected_row: Style::default().bg(Color::Rgb(49, 50, 68)),
             selected_row_telescope: Style::default()
                 .bg(Color::Rgb(49, 50, 68))
                 .fg(Color::Rgb(255, 255, 255)),
