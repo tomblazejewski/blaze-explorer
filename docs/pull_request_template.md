@@ -14,10 +14,10 @@ This merge introduces...
 
 # Quality checks
 
-- [] Removed all unnecessary imports (as much as reasonably possible)
-- [] Added units tests for the new code
-- [] All unit tests pass
-- [] Added all new shortcuts to `README.md`
-- [] Updated the `README.md` roadmap
-- [] Removed unnecessary debug outputs
-- [] Updated version number
+- [ ] Removed all unnecessary imports (as much as reasonably possible)
+- [ ] Added units tests for the new code
+- [ ] All unit tests pass
+- [ ] Added all new shortcuts to `README.md`
+- [ ] Updated the `README.md` roadmap
+- [ ] Removed unnecessary debug outputs
+- [ ] Updated version number
