@@ -257,7 +257,7 @@ impl ExplorerTable {
                     continue;
                 }
                 //insert if the parent of the status entry is the same as explorer table path
-                //extract the name of the file by taking the last split after the last slash
+                //extract the name of the file
                 let filename = abs_path.file_name().unwrap().to_str().unwrap().to_string();
                 map.insert(filename, status_entry.status());
             }
@@ -390,7 +390,7 @@ impl ExplorerTable {
         self.elements_list
             .iter()
             .filter(|x| x.filename.contains(query))
-            .map(|x| x.clone())
+            .cloned()
             .collect()
     }
 
@@ -472,14 +472,14 @@ impl ExplorerTable {
         let file_name_cell = Cell::from(match self.styling {
             GlobalStyling::None => Line::from(filename.clone()),
             GlobalStyling::HighlightSearch(_) => {
-                highlight_search_result(filename.clone(), &query, self.theme.search_result)
+                highlight_search_result(filename.clone(), query, self.theme.search_result)
             }
             GlobalStyling::HighlightJump(_, _) => jump_highlight(
                 filename.clone(),
-                &query,
+                query,
                 inverted_map.get(&element_id).unwrap_or(&' ').to_owned(),
-                self.theme.highlight_query.clone(),
-                self.theme.highlight_jump_char.clone(),
+                self.theme.highlight_query,
+                self.theme.highlight_jump_char,
             ),
         });
         file_name_cell
@@ -491,11 +491,6 @@ impl ExplorerTable {
         query: &'a str,
         inverted_map: HashMap<usize, char>,
     ) -> Row<'a> {
-        // There is more than one source of formatting
-        // Formatting is done in particular order, so that later stages can overwrite already set
-        // properties
-        // 1. Git status
-        //
         let row_number_cell = Cell::from(Text::from(row_number).alignment(Alignment::Right));
         let file_name_cell = self.convert_filename_to_cell(
             element.filename.clone(),
@@ -505,7 +500,7 @@ impl ExplorerTable {
         );
         let file_size_cell = Cell::from(Text::from(format_file_size(element.size)));
         let last_modified_cell = Cell::from(Text::from(format_last_time(&element.modified)));
-        let mut row = Row::new(vec![
+        let row = Row::new(vec![
             row_number_cell,
             file_name_cell,
             file_size_cell,
