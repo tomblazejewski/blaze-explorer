@@ -65,7 +65,7 @@ pub fn process_keys<T: Clone>(
     current_sequence: &mut Vec<KeyEvent>,
     input_key: KeyEvent,
 ) -> KeyProcessingResult<T> {
-    current_sequence.push(input_key.clone());
+    current_sequence.push(input_key);
     match keymap.get_node(current_sequence) {
         Some(node) => match &node.action {
             None => KeyProcessingResult::Incomplete, // More keys can follow

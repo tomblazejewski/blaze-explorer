@@ -12,7 +12,6 @@ use ratatui::{
     prelude::CrosstermBackend,
     Terminal,
 };
-use tracing::info;
 
 use crate::action::{get_command, AppAction, CommandAction, ExplorerAction, PopupAction};
 use crate::app_input_machine::AppInputMachine;

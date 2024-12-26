@@ -39,7 +39,7 @@ Currently under development and unstable.
 | Mappings    | Action                                          |
 | ----------- | ----------------------------------------------- |
 | `<space>hc` | Git add and commit (waits to enter the message) |
-| `<space>hs` | Show git status                                 |
+| `<space>ht` | Show git status                                 |
 | `<space>hP` | Push current branch to remote                   |
 
 ## Telescope
@@ -71,8 +71,9 @@ One can use the terminal commands, such as `git status`, similar to neovim, by p
 - [ ] Tooling
   - [ ] Show diffs between files in the same directory
 - [ ] Git integration
-  - [ ] Show tracked/untracked/staged/unstaged/modified files
-  - [ ] Implement shortcuts for commiting/pushing/checking out files
+  - [x] Show tracked/untracked/staged/unstaged/modified files
+  - [ ] Implement shortcuts for commiting/pushing/checking out individual/ groups of files
+  - [ ] Preview file changes with a shortcut
 - [ ] Plugin management
   - [ ] Manage the non-core features through the Plugin trait
   - [ ] Allow attaching certain plugins upon launching the app

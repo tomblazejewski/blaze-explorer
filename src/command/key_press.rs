@@ -8,7 +8,7 @@ pub fn lookup_composite_char(expression: &str) -> Vec<KeyEvent> {
         true => {
             let parts = expression.split('-').collect::<Vec<&str>>();
             let new_key = KeyEvent::new(
-                KeyCode::Char(parts[1].chars().nth(0).unwrap()),
+                KeyCode::Char(parts[1].chars().next().unwrap()),
                 KeyModifiers::CONTROL,
             );
             result.push(new_key);
@@ -46,7 +46,7 @@ pub fn decode_expression(expression: String) -> Vec<KeyEvent> {
                 } else {
                     match key_translator.get(&c) {
                         Some(key) => {
-                            key_chain.push(key.clone());
+                            key_chain.push(*key);
                         }
                         None => key_chain.push(KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)),
                     }
@@ -57,6 +57,7 @@ pub fn decode_expression(expression: String) -> Vec<KeyEvent> {
     key_chain
 }
 
+#[allow(unused)]
 mod tests {
 
     use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};

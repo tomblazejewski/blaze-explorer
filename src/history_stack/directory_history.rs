@@ -58,6 +58,7 @@ impl HistoryStack<DirectoryDetails> for DirectoryHistory {
     }
 }
 
+#[allow(unused)]
 mod tests {
     use std::{env, path};
 

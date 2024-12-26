@@ -140,12 +140,11 @@ impl Component for CommandLine {
                 let text = Paragraph::new(self.contents.clone()).block(Block::new());
                 frame.render_widget(Clear, actual_area);
                 frame.render_widget(text, actual_area);
-                match self.focused {
-                    true => frame.set_cursor(
+                if self.focused {
+                    frame.set_cursor(
                         actual_area.x + self.contents.len() as u16,
                         actual_area.y + 1,
-                    ),
-                    false => {}
+                    )
                 }
             }
             Some(contents) => {
@@ -157,8 +156,8 @@ impl Component for CommandLine {
                     ])
                     .split(area)[1];
                 let lines = contents
-                    .to_owned()
-                    .into_iter()
+                    .iter()
+                    .cloned()
                     .map(Line::from)
                     .collect::<Vec<Line>>();
                 let paragraph = Paragraph::new(Text::from(lines)).block(Block::new());
