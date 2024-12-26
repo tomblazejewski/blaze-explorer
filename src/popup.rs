@@ -5,7 +5,6 @@ use color_eyre::eyre::Result;
 use ratatui::layout::Constraint;
 use ratatui::widgets::{Block, Borders, Paragraph};
 use ratatui::{crossterm::event::KeyEvent, layout::Rect, widgets::Clear, Frame};
-use tracing::info;
 
 use crate::action::PopupAction;
 use crate::command::{Command, RenameActive, ResetStyling};

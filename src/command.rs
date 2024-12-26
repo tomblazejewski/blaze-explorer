@@ -52,6 +52,7 @@ impl Clone for Box<dyn Command> {
 }
 
 impl PartialEq for Box<dyn Command> {
+    // FIXME: this is recursive but not called at any point. Required for trait bounds.
     fn eq(&self, other: &Self) -> bool {
         self == other
     }
