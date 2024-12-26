@@ -6,7 +6,7 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::{
     action::{Action, AppAction, CommandAction, ExplorerAction, PopupType, TextAction},
-    function_helpers::push_current_branch,
+    function_helpers::{pull_current_branch, push_current_branch},
     input_machine::{InputMachine, KeyMapNode, KeyProcessingResult},
     mode::Mode,
 };
@@ -212,6 +212,14 @@ pub fn default_key_map() -> KeyMapNode<Action> {
             KeyEvent::new(KeyCode::Char('P'), KeyModifiers::NONE),
         ],
         Action::AppAct(AppAction::ExecuteFunction(Box::new(push_current_branch))),
+    );
+    root.add_sequence(
+        vec![
+            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('O'), KeyModifiers::NONE),
+        ],
+        Action::AppAct(AppAction::ExecuteFunction(Box::new(pull_current_branch))),
     );
 
     root
