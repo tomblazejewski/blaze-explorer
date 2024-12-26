@@ -20,7 +20,6 @@ mod function_helpers;
 mod git_helpers;
 mod history_stack;
 mod input_machine;
-mod key_handler;
 mod line_entry;
 mod logging;
 mod mode;
