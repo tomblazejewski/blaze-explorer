@@ -41,6 +41,7 @@ Currently under development and unstable.
 | `<space>hc` | Git add and commit (waits to enter the message) |
 | `<space>ht` | Show git status                                 |
 | `<space>hP` | Push current branch to remote                   |
+| `<space>hO` | Pull current branch from remote                 |
 
 ## Telescope
 
