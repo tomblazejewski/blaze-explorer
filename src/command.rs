@@ -3,11 +3,11 @@ use chrono::offset;
 use directories::ProjectDirs;
 use key_press::decode_expression;
 
-use crate::action::{ExplorerAction, PopupType};
+use crate::action::ExplorerAction;
 use crate::app::ExitResult;
 use crate::components::explorer_manager::SplitDirection;
 use crate::components::explorer_table::GlobalStyling;
-use crate::popup::{ActionInput, FlashJump};
+use crate::plugin::plugin_popup::PluginPopUp;
 use crate::{action::Action, line_entry::LineEntry};
 use std::fmt::Debug;
 use std::path::Path;
@@ -15,12 +15,7 @@ use std::process::Command as ProcessCommand;
 use std::{collections::HashMap, fs, path::PathBuf};
 use std::{fmt, io};
 
-use crate::{
-    app::App,
-    mode::Mode,
-    popup::{PopUp, TelescopeWindow},
-    telescope::AppContext,
-};
+use crate::{app::App, mode::Mode, popup::PopUp, telescope::AppContext};
 
 pub trait Command: CommandClone {
     fn execute(&mut self, app: &mut App) -> Option<Action>;
@@ -152,7 +147,10 @@ impl JumpAndClose {
 
 impl Command for JumpAndClose {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.quit();
+        match &mut app.popup {
+            None => {}
+            Some(ref mut popup) => popup.quit(),
+        }
         Some(Action::ExplorerAct(ExplorerAction::JumpToId(self.id)))
     }
 }
@@ -170,7 +168,10 @@ impl JumpAndOpen {
 
 impl Command for JumpAndOpen {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.quit();
+        match &mut app.popup {
+            None => {}
+            Some(ref mut popup) => popup.quit(),
+        }
         app.explorer_manager.jump_to_id(self.id);
         Some(Action::ExplorerAct(ExplorerAction::SelectDirectory))
     }
@@ -283,7 +284,7 @@ impl ShowInFolder {
 
 impl Command for ShowInFolder {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup = PopUp::None;
+        app.popup = None;
         //split target_path into path and file to select
         let folder = self.target_path.parent().unwrap();
         let filename = self.target_path.file_name().unwrap();
@@ -438,29 +439,17 @@ impl Command for DisplayMessage {
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct OpenPopup {
-    popup: PopupType,
+    popup: Box<dyn PluginPopUp>,
 }
 
 impl OpenPopup {
-    pub fn new(popup: PopupType) -> Self {
+    pub fn new(popup: Box<dyn PluginPopUp>) -> Self {
         Self { popup }
     }
 }
 impl Command for OpenPopup {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &self.popup {
-            PopupType::None => app.popup = PopUp::None,
-            PopupType::Telescope => {
-                app.popup = PopUp::TelescopePopUp(TelescopeWindow::new(app.get_app_context()))
-            }
-            PopupType::Rename => {
-                app.popup =
-                    PopUp::InputPopUp(ActionInput::<RenameActive>::new(app.get_app_context()))
-            }
-            PopupType::Flash(open) => {
-                app.popup = PopUp::FlashPopUp(FlashJump::new(app.get_app_context(), *open))
-            }
-        }
+        app.popup = Some(self.popup.clone());
         None
     }
 }
@@ -546,7 +535,10 @@ impl TelescopeConfirmResult {
 }
 impl Command for TelescopeConfirmResult {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.confirm_result()
+        match &mut app.popup {
+            None => None,
+            Some(ref mut popup) => popup.confirm_result(),
+        }
     }
 }
 
@@ -560,8 +552,10 @@ impl TelescopeNextResult {
 }
 impl Command for TelescopeNextResult {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.next_result();
-        None
+        match &mut app.popup {
+            None => None,
+            Some(ref mut popup) => popup.next_result(),
+        }
     }
 }
 
@@ -575,8 +569,10 @@ impl TelescopePreviousResult {
 }
 impl Command for TelescopePreviousResult {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.previous_result();
-        None
+        match &mut app.popup {
+            None => None,
+            Some(ref mut popup) => popup.previous_result(),
+        }
     }
 }
 
@@ -592,8 +588,10 @@ impl TelescopeUpdateSearchQuery {
 }
 impl Command for TelescopeUpdateSearchQuery {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.update_search_query(self.query.clone());
-        None
+        match &mut app.popup {
+            None => None,
+            Some(ref mut popup) => popup.update_search_query(self.query.clone()),
+        }
     }
 }
 
@@ -610,7 +608,10 @@ impl TelescopePushSearchChar {
 
 impl Command for TelescopePushSearchChar {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.push_search_char(self.ch)
+        match &mut app.popup {
+            None => None,
+            Some(ref mut popup) => popup.push_search_char(self.ch),
+        }
     }
 }
 
@@ -624,7 +625,10 @@ impl TelescopeDropSearchChar {
 }
 impl Command for TelescopeDropSearchChar {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.drop_search_char()
+        match &mut app.popup {
+            None => None,
+            Some(ref mut popup) => popup.drop_search_char(),
+        }
     }
 }
 
@@ -638,7 +642,10 @@ impl TelescopeQuit {
 }
 impl Command for TelescopeQuit {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.quit();
+        match &mut app.popup {
+            None => {}
+            Some(ref mut popup) => popup.quit(),
+        };
         None
     }
 }
@@ -653,7 +660,10 @@ impl TelescopeEraseText {
 }
 impl Command for TelescopeEraseText {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.erase_text()
+        match &mut app.popup {
+            None => None,
+            Some(ref mut popup) => popup.erase_text(),
+        }
     }
 }
 

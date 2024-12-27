@@ -1,8 +1,11 @@
-use crate::command::{
-    DeleteSplit, DisplayMessage, ExecuteFunction, FocusDown, FocusLeft, FocusRight, FocusUp,
-    JumpAndClose, JumpAndOpen, JumpToId, OpenNeovimHere, ParseCommand, ParseKeyStrokes,
-    RedoDirectory, SplitHorizontally, SplitVertically, TelescopeQuit, TerminalCommand,
-    UndoDirectory, UpdatePlugin,
+use crate::{
+    command::{
+        DeleteSplit, DisplayMessage, ExecuteFunction, FocusDown, FocusLeft, FocusRight, FocusUp,
+        JumpAndClose, JumpAndOpen, JumpToId, OpenNeovimHere, ParseCommand, ParseKeyStrokes,
+        RedoDirectory, SplitHorizontally, SplitVertically, TelescopeQuit, TerminalCommand,
+        UndoDirectory, UpdatePlugin,
+    },
+    plugin::plugin_popup::PluginPopUp,
 };
 use std::path::PathBuf;
 
@@ -53,7 +56,7 @@ pub enum AppAction {
     SwitchMode(Mode),
     ConfirmSearchQuery,
     ConfirmCommand,
-    OpenPopup(PopupType),
+    OpenPopup(Box<dyn PluginPopUp>),
     ShowInFolder(PathBuf),
     Delete,
     OpenNeovimHere,

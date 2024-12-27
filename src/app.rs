@@ -23,8 +23,6 @@ use crate::history_stack::{command_history::CommandHistory, HistoryStack};
 use crate::input_machine::{InputMachine, KeyProcessingResult};
 use crate::line_entry::LineEntry;
 use crate::plugin::plugin_popup::PluginPopUp;
-use crate::plugin::Plugin;
-use crate::popup::{PopUp, PopupEngine};
 use crate::telescope::AppContext;
 use crate::tools::center_rect;
 use crate::{action::Action, components::Component, mode::Mode};

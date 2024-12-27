@@ -10,6 +10,14 @@ pub trait PluginPopUp: PluginPopUpClone {
     fn display_details(&self) -> String;
     fn draw(&mut self, frame: &mut ratatui::Frame, area: Rect);
     fn context(&self) -> String;
+    fn erase_text(&mut self) -> Option<Action>;
+    fn quit(&mut self);
+    fn drop_search_char(&mut self) -> Option<Action>;
+    fn push_search_char(&mut self, ch: char) -> Option<Action>;
+    fn update_search_query(&mut self, query: String) -> Option<Action>;
+    fn next_result(&self) -> Option<Action>;
+    fn previous_result(&self) -> Option<Action>;
+    fn confirm_result(&self) -> Option<Action>;
 }
 
 pub trait PluginPopUpClone: Debug {
@@ -18,7 +26,7 @@ pub trait PluginPopUpClone: Debug {
 
 impl<T> PluginPopUpClone for T
 where
-    T: 'static + PluginPopUp + Clone + Debug + PartialEq,
+    T: 'static + PluginPopUp + Clone + Debug + PartialEq + Copy,
 {
     fn clone_box(&self) -> Box<dyn PluginPopUp> {
         Box::new(self.clone())
@@ -37,3 +45,5 @@ impl PartialEq for Box<dyn PluginPopUp> {
         self.context() == other.context()
     }
 }
+
+impl Copy for Box<dyn PluginPopUp> {}

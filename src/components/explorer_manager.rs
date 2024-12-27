@@ -7,7 +7,6 @@ use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
 
 use super::explorer_table::{ExplorerTable, FileData, GlobalStyling};
-use crate::components::Component;
 use crate::explorer_helpers::convert_sequence_to_string;
 use crate::history_stack::directory_history::DirectoryHistory;
 use crate::mode::Mode;
