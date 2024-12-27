@@ -2,11 +2,13 @@ use core::panic;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use ratatui::crossterm::event::KeyEvent;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
 
 use super::explorer_table::{ExplorerTable, FileData, GlobalStyling};
 use crate::components::Component;
+use crate::explorer_helpers::convert_sequence_to_string;
 use crate::history_stack::directory_history::DirectoryHistory;
 use crate::mode::Mode;
 
@@ -173,7 +175,8 @@ impl ExplorerManager {
         false
     }
 
-    pub fn draw(&mut self, frame: &mut Frame, area: Rect) {
+    pub fn draw(&mut self, frame: &mut Frame, area: Rect, sequence: Vec<KeyEvent>) {
+        let string_seq = convert_sequence_to_string(sequence);
         let mut draw_map: HashMap<usize, Rect> = HashMap::new();
         self.get_drawable(frame, area, 0, &mut draw_map);
         self.last_layout = draw_map.clone();
@@ -182,7 +185,7 @@ impl ExplorerManager {
             .map(|(key, value)| {
                 let table = self.explorers.get_mut(key).unwrap();
                 if let Split::Single(table) = &mut table.split {
-                    let _ = table.draw(frame, *value);
+                    let _ = table.draw(frame, *value, string_seq.clone());
                 }
             })
             .collect();

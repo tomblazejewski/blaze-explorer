@@ -523,10 +523,8 @@ impl ExplorerTable {
         }
         row.style(style)
     }
-}
 
-impl Component for ExplorerTable {
-    fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
+    pub fn draw(&mut self, frame: &mut Frame, area: Rect, string_sequence: String) -> Result<()> {
         // get table block
         self.refresh_contents();
         let widths = [
@@ -600,9 +598,25 @@ impl Component for ExplorerTable {
             None => Span::from(String::from("")),
         };
 
+        let sequence_line = Line::from(string_sequence).alignment(Alignment::Right);
+
         let status_line = match self.focused {
             true => Line::from(vec![mode_span, plugin_span, path_span]),
             false => Line::from(vec![path_span]),
+        };
+
+        let status_bar = match self.focused {
+            true => Table::new(
+                vec![Row::new(vec![
+                    Cell::from(Text::from(status_line)),
+                    Cell::from(Text::from(sequence_line)),
+                ])],
+                vec![Constraint::Fill(1), Constraint::Length(10)],
+            ),
+            false => Table::new(
+                vec![Row::new(vec![Cell::from(Text::from(status_line))])],
+                vec![Constraint::Fill(1)],
+            ),
         };
 
         //divide the available area into one for the table and one for the paragraph
@@ -611,7 +625,7 @@ impl Component for ExplorerTable {
             .constraints([Constraint::Fill(1), Constraint::Length(1)])
             .split(area);
         frame.render_stateful_widget(t, explorer_area_blocks[0], &mut self.state);
-        frame.render_widget(status_line, explorer_area_blocks[1]);
+        frame.render_widget(status_bar, explorer_area_blocks[1]);
 
         Ok(())
     }
