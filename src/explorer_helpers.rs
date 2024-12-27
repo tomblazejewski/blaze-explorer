@@ -1,5 +1,5 @@
 use ratatui::{
-    crossterm::event::{KeyCode, KeyEvent},
+    crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
     style::Style,
     text::{Line, Span},
 };
@@ -7,10 +7,13 @@ use ratatui::{
 pub fn convert_sequence_to_string(sequence: Vec<KeyEvent>) -> String {
     sequence
         .iter()
-        .map(|event| match event.code {
-            KeyCode::Char(' ') => "<space>".to_string(),
-            KeyCode::Char(c) => c.to_string(),
-            _ => "".to_string(),
+        .map(|event| match (event.code, event.modifiers) {
+            (KeyCode::Char(' '), _) => "<space>".to_string(),
+            (KeyCode::Enter, _) => "<cr>".to_string(),
+            (KeyCode::Char(c), KeyModifiers::NONE) => c.to_string(),
+            (KeyCode::Char(c), KeyModifiers::SHIFT) => format!("<S-{}>", c),
+            (KeyCode::Char(c), KeyModifiers::CONTROL) => format!("<C-{}>", c),
+            (_, _) => "".to_string(),
         })
         .collect::<Vec<String>>()
         .join("")
@@ -83,5 +86,18 @@ mod tests {
         let ending = Span::from("d");
         let expected_line = Line::from(vec![beginning, query_span, ending]);
         assert_eq!(line, expected_line);
+    }
+
+    #[test]
+    fn test_convert_sequence_to_string() {
+        let sequence = vec![
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('b'), KeyModifiers::CONTROL),
+            KeyEvent::new(KeyCode::Char('c'), KeyModifiers::SHIFT),
+        ];
+        let expected_string = "<cr>a<C-b><S-c>".to_string();
+        let actual_string = convert_sequence_to_string(sequence);
+        assert_eq!(actual_string, expected_string);
     }
 }
