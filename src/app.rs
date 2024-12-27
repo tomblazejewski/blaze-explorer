@@ -344,8 +344,11 @@ impl App {
     pub fn render(&mut self) -> Result<()> {
         self.terminal.draw(|frame| {
             let areas = get_component_areas(frame);
-            self.explorer_manager
-                .draw(frame, *areas.get("explorer_table").unwrap());
+            self.explorer_manager.draw(
+                frame,
+                *areas.get("explorer_table").unwrap(),
+                self.current_sequence.clone(),
+            );
             let _ = self
                 .command_line
                 .draw(frame, *areas.get("command_line").unwrap());

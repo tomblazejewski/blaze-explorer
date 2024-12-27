@@ -1,7 +1,20 @@
 use ratatui::{
+    crossterm::event::{KeyCode, KeyEvent},
     style::Style,
     text::{Line, Span},
 };
+
+pub fn convert_sequence_to_string(sequence: Vec<KeyEvent>) -> String {
+    sequence
+        .iter()
+        .map(|event| match event.code {
+            KeyCode::Char(' ') => "<space>".to_string(),
+            KeyCode::Char(c) => c.to_string(),
+            _ => "".to_string(),
+        })
+        .collect::<Vec<String>>()
+        .join("")
+}
 
 pub fn highlight_search_result(line_text: String, query: &str, highlighted_style: Style) -> Line {
     if line_text.contains(query) {
