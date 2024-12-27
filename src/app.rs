@@ -22,6 +22,7 @@ use crate::history_stack::directory_history::DirectoryDetails;
 use crate::history_stack::{command_history::CommandHistory, HistoryStack};
 use crate::input_machine::{InputMachine, KeyProcessingResult};
 use crate::line_entry::LineEntry;
+use crate::plugin::plugin_popup::PluginPopUp;
 use crate::plugin::Plugin;
 use crate::popup::{PopUp, PopupEngine};
 use crate::telescope::AppContext;
@@ -68,7 +69,7 @@ pub struct App {
     pub command_line: CommandLine,
     pub current_sequence: Vec<KeyEvent>,
     pub input_machine: AppInputMachine<Action>,
-    pub popup: PopUp,
+    pub popup: Option<Box<dyn PluginPopUp>>,
     pub command_history: HashMap<PathBuf, CommandHistory>,
     pub command_input: Option<String>,
     pub exit_status: Option<ExitResult>,
@@ -86,7 +87,7 @@ impl App {
             command_line: CommandLine::new(),
             current_sequence: Vec::new(),
             input_machine: AppInputMachine::new(),
-            popup: PopUp::None,
+            popup: None,
             command_history: HashMap::new(),
             command_input: None,
             exit_status: None,
@@ -109,37 +110,27 @@ impl App {
     pub fn process_key_event(&mut self, key: KeyEvent) {
         if key.kind == KeyEventKind::Press {
             match &mut self.popup {
-                PopUp::TelescopePopUp(popup) => {
+                Some(popup) => {
                     if let Some(action) = popup.handle_key_event(key) {
                         self.own_push_action(action);
                     }
-                }
-                PopUp::None => {
-                    self.handle_key_event(key);
-                }
-                PopUp::InputPopUp(input) => {
-                    if let Some(action) = input.handle_key_event(key) {
-                        self.own_push_action(action);
-                    }
-                }
-                PopUp::FlashPopUp(flashpopup) => {
-                    if let Some(action) = flashpopup.handle_key_event(key) {
-                        self.own_push_action(action);
-                    }
                     self.own_push_action(Action::PopupAct(PopupAction::UpdatePlugin));
+                }
+                None => {
+                    self.handle_key_event(key);
                 }
             }
         };
     }
     fn check_popup(&mut self) {
         match &self.popup {
-            PopUp::None => {}
-            active_popup => {
+            None => {}
+            Some(active_popup) => {
                 if active_popup.should_quit() {
                     if let Some(command) = active_popup.destruct() {
                         self.run_command(command);
                     }
-                    self.popup = PopUp::None;
+                    self.popup = None;
                     self.explorer_manager.set_plugin_display(None);
                 }
             }
@@ -313,12 +304,12 @@ impl App {
     }
 
     pub fn handle_post_actions(&mut self) -> Result<()> {
-        if let PopUp::FlashPopUp(flashpopup) = &self.popup {
-            self.explorer_manager
-                .set_plugin_display(Some(flashpopup.display_details()));
-        } else {
-            self.explorer_manager.set_plugin_display(None);
-        }
+        match &self.popup {
+            None => self.explorer_manager.set_plugin_display(None),
+            Some(popup) => self
+                .explorer_manager
+                .set_plugin_display(Some(popup.display_details())),
+        };
         Ok(())
     }
 
@@ -358,7 +349,9 @@ impl App {
             let _ = self
                 .command_line
                 .draw(frame, *areas.get("command_line").unwrap());
-            let _ = self.popup.draw(frame, *areas.get("popup").unwrap());
+            if let Some(ref mut popup) = &mut self.popup {
+                popup.draw(frame, *areas.get("popup").unwrap());
+            }
         })?;
         Ok(())
     }
