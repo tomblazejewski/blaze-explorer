@@ -106,6 +106,45 @@ impl App {
             None => event::read(),
         }
     }
+    pub fn process_key_event(&mut self, key: KeyEvent) {
+        if key.kind == KeyEventKind::Press {
+            match &mut self.popup {
+                PopUp::TelescopePopUp(popup) => {
+                    if let Some(action) = popup.handle_key_event(key) {
+                        self.own_push_action(action);
+                    }
+                }
+                PopUp::None => {
+                    self.handle_key_event(key);
+                }
+                PopUp::InputPopUp(input) => {
+                    if let Some(action) = input.handle_key_event(key) {
+                        self.own_push_action(action);
+                    }
+                }
+                PopUp::FlashPopUp(flashpopup) => {
+                    if let Some(action) = flashpopup.handle_key_event(key) {
+                        self.own_push_action(action);
+                    }
+                    self.own_push_action(Action::PopupAct(PopupAction::UpdatePlugin));
+                }
+            }
+        };
+    }
+    fn check_popup(&mut self) {
+        match &self.popup {
+            PopUp::None => {}
+            active_popup => {
+                if active_popup.should_quit() {
+                    if let Some(command) = active_popup.destruct() {
+                        self.run_command(command);
+                    }
+                    self.popup = PopUp::None;
+                    self.explorer_manager.set_plugin_display(None);
+                }
+            }
+        }
+    }
     pub fn run(&mut self, cold_start: bool) -> Result<ExitResult> {
         self.terminal.clear()?;
         if cold_start {
@@ -119,41 +158,8 @@ impl App {
         loop {
             let _ = self.render();
             if let event::Event::Key(key) = self.draw_key_event()? {
-                if key.kind == KeyEventKind::Press {
-                    match &mut self.popup {
-                        PopUp::TelescopePopUp(popup) => {
-                            if let Some(action) = popup.handle_key_event(key) {
-                                self.own_push_action(action);
-                            }
-                        }
-                        PopUp::None => {
-                            self.handle_key_event(key);
-                        }
-                        PopUp::InputPopUp(input) => {
-                            if let Some(action) = input.handle_key_event(key) {
-                                self.own_push_action(action);
-                            }
-                        }
-                        PopUp::FlashPopUp(flashpopup) => {
-                            if let Some(action) = flashpopup.handle_key_event(key) {
-                                self.own_push_action(action);
-                            }
-                            self.own_push_action(Action::PopupAct(PopupAction::UpdatePlugin));
-                        }
-                    }
-                };
-                match &self.popup {
-                    PopUp::None => {}
-                    active_popup => {
-                        if active_popup.should_quit() {
-                            if let Some(command) = active_popup.destruct() {
-                                self.run_command(command);
-                            }
-                            self.popup = PopUp::None;
-                            self.explorer_manager.set_plugin_display(None);
-                        }
-                    }
-                }
+                self.process_key_event(key);
+                self.check_popup();
                 if self.should_quit {
                     break;
                 }
