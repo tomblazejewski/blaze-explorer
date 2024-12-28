@@ -1,23 +1,37 @@
 use std::fmt::Debug;
 
-use ratatui::{crossterm::event::KeyEvent, layout::Rect};
+use color_eyre::eyre::Result;
+use ratatui::{crossterm::event::KeyEvent, layout::Rect, Frame};
 
 use crate::{action::Action, command::Command};
 pub trait PluginPopUp: PluginPopUpClone {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action>;
-    fn should_quit(&self) -> bool;
-    fn destruct(&self) -> Option<Box<dyn Command>>;
-    fn display_details(&self) -> String;
-    fn draw(&mut self, frame: &mut ratatui::Frame, area: Rect);
-    fn context(&self) -> String;
-    fn erase_text(&mut self) -> Option<Action>;
+
+    fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
+
+    fn confirm_result(&mut self) -> Option<Action> {
+        None
+    }
+
+    fn next_result(&mut self) {}
+
+    fn previous_result(&mut self) {}
+
+    fn update_search_query(&mut self, _query: String) {}
+
+    fn push_search_char(&mut self, ch: char);
+
+    fn drop_search_char(&mut self);
+
     fn quit(&mut self);
-    fn drop_search_char(&mut self) -> Option<Action>;
-    fn push_search_char(&mut self, ch: char) -> Option<Action>;
-    fn update_search_query(&mut self, query: String) -> Option<Action>;
-    fn next_result(&self) -> Option<Action>;
-    fn previous_result(&self) -> Option<Action>;
-    fn confirm_result(&self) -> Option<Action>;
+
+    fn erase_text(&mut self);
+
+    fn get_search_query(&self) -> String;
+
+    fn destruct(&self) -> Option<Box<dyn Command>> {
+        None
+    }
 }
 
 pub trait PluginPopUpClone: Debug {
@@ -26,7 +40,7 @@ pub trait PluginPopUpClone: Debug {
 
 impl<T> PluginPopUpClone for T
 where
-    T: 'static + PluginPopUp + Clone + Debug + PartialEq + Copy,
+    T: 'static + PluginPopUp + Clone + Debug + PartialEq,
 {
     fn clone_box(&self) -> Box<dyn PluginPopUp> {
         Box::new(self.clone())
@@ -45,5 +59,3 @@ impl PartialEq for Box<dyn PluginPopUp> {
         self.context() == other.context()
     }
 }
-
-impl Copy for Box<dyn PluginPopUp> {}

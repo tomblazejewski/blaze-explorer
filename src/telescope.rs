@@ -89,14 +89,14 @@ pub trait TelescopeResult {
 }
 
 #[derive(Debug, Clone)]
-pub struct Telescope {
+pub struct TelescopeBackend {
     pub query: TelescopeQuery,
     pub search: Box<dyn TelescopeSearch>,
     pub table_state: TableState,
     theme: CustomTheme,
 }
 
-impl PartialEq for Telescope {
+impl PartialEq for TelescopeBackend {
     fn eq(&self, other: &Self) -> bool {
         self.query == other.query
             && self.search.clone() == other.search.clone()
@@ -104,7 +104,7 @@ impl PartialEq for Telescope {
     }
 }
 
-impl Telescope {
+impl TelescopeBackend {
     pub fn confirm_result(&mut self) -> Option<Action> {
         if let Some(id) = self.table_state.selected() {
             return self.search.confirm_result(id);
@@ -150,7 +150,7 @@ pub trait PopUpComponent {
     fn handle_action(&mut self, action: Action) -> Option<Action>;
     fn new(search_context: AppContext) -> Self;
 }
-impl PopUpComponent for Telescope {
+impl PopUpComponent for TelescopeBackend {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         //split the area vertically 60/40
         let chunks = Layout::default()

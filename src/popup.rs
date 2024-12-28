@@ -12,6 +12,7 @@ use crate::components::explorer_manager::ExplorerManager;
 use crate::components::explorer_table::GlobalStyling;
 use crate::flash_input_machine::FlashInputMachine;
 use crate::line_entry::LineEntry;
+use crate::plugin::plugin_popup::PluginPopUp;
 use crate::plugin::Plugin;
 use crate::simple_input_machine::SimpleInputMachine;
 use crate::telescope_input_machine::TelescopeInputMachine;
@@ -201,35 +202,6 @@ impl PopUp {
     }
 }
 
-pub trait PopupEngine {
-    fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action>;
-
-    fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
-
-    fn confirm_result(&mut self) -> Option<Action> {
-        None
-    }
-
-    fn next_result(&mut self) {}
-
-    fn previous_result(&mut self) {}
-
-    fn update_search_query(&mut self, _query: String) {}
-
-    fn push_search_char(&mut self, ch: char);
-
-    fn drop_search_char(&mut self);
-
-    fn quit(&mut self);
-
-    fn erase_text(&mut self);
-
-    fn get_search_query(&self) -> String;
-
-    fn destruct(&self) -> Option<Box<dyn Command>> {
-        None
-    }
-}
 #[derive(Debug, Clone, PartialEq)]
 pub struct TelescopeWindow {
     input_machine: SimpleInputMachine,
@@ -248,7 +220,7 @@ impl TelescopeWindow {
         }
     }
 }
-impl PopupEngine for TelescopeWindow {
+impl PluginPopUp for TelescopeWindow {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action> {
         let keymap_result =
             self.input_machine
@@ -344,7 +316,7 @@ impl ActionInput<RenameActive> {
         self.resulting_action.update_command_context(new_name);
     }
 }
-impl PopupEngine for ActionInput<RenameActive> {
+impl PluginPopUp for ActionInput<RenameActive> {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action> {
         let keymap_result =
             self.input_machine
@@ -494,7 +466,7 @@ impl FlashJump {
         ));
     }
 }
-impl PopupEngine for FlashJump {
+impl PluginPopUp for FlashJump {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action> {
         let keymap_result =
             self.input_machine

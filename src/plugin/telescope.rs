@@ -1,0 +1,110 @@
+use color_eyre::eyre::Result;
+use ratatui::{crossterm::event::KeyEvent, layout::Rect, widgets::Clear, Frame};
+
+use crate::{
+    action::Action,
+    app::App,
+    input_machine::{InputMachine, KeyProcessingResult},
+    mode::Mode,
+    simple_input_machine::SimpleInputMachine,
+    telescope::{AppContext, PopUpComponent, TelescopeBackend},
+};
+
+use super::{plugin_popup::PluginPopUp, Plugin};
+
+pub struct Telescope {}
+
+impl Plugin for Telescope {
+    fn display_details(&self) -> String {
+        "Telescope".to_string()
+    }
+}
+
+impl Telescope {
+    pub fn open_sfs(&self, app: &mut App) -> Option<Action> {
+        let ctx = app.get_app_context();
+        app.popup = Some(Box::new(TelescopeWindow::new(ctx)));
+
+        None
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct TelescopeWindow {
+    input_machine: SimpleInputMachine,
+    telescope_backend: TelescopeBackend,
+    current_sequence: Vec<KeyEvent>,
+    pub should_quit: bool,
+}
+
+impl TelescopeWindow {
+    pub fn new(ctx: AppContext) -> Self {
+        TelescopeWindow {
+            input_machine: SimpleInputMachine::new(),
+            telescope_backend: TelescopeBackend::new(ctx),
+            current_sequence: Vec::new(),
+            should_quit: false,
+        }
+    }
+}
+impl PluginPopUp for TelescopeWindow {
+    fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action> {
+        let keymap_result =
+            self.input_machine
+                .process_keys(&Mode::Normal, &mut self.current_sequence, key_event);
+        match keymap_result {
+            KeyProcessingResult::Complete(action) => {
+                return Some(action);
+            }
+            KeyProcessingResult::Invalid => {
+                return self
+                    .input_machine
+                    .get_default_action(&Mode::Normal, key_event)
+            }
+            _ => {}
+        }
+        None
+    }
+
+    fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
+        frame.render_widget(Clear, area);
+        self.telescope_backend.draw(frame, area)?;
+        Ok(())
+    }
+
+    fn confirm_result(&mut self) -> Option<Action> {
+        self.telescope_backend.confirm_result()
+    }
+
+    fn next_result(&mut self) {
+        self.telescope_backend.next_result();
+    }
+
+    fn previous_result(&mut self) {
+        self.telescope_backend.previous_result();
+    }
+
+    fn update_search_query(&mut self, query: String) {
+        self.telescope_backend.update_search_query(query);
+    }
+
+    fn push_search_char(&mut self, ch: char) {
+        self.telescope_backend.query.append_char(ch)
+    }
+
+    fn drop_search_char(&mut self) {
+        self.telescope_backend.query.drop_char()
+    }
+
+    fn quit(&mut self) {
+        self.should_quit = true;
+    }
+
+    fn erase_text(&mut self) {
+        self.telescope_backend.query.clear_contents();
+    }
+
+    fn get_search_query(&self) -> String {
+        self.telescope_backend.query.get_contents()
+    }
+}
