@@ -5,7 +5,7 @@ use crate::{
         RedoDirectory, SplitHorizontally, SplitVertically, TelescopeQuit, TerminalCommand,
         UndoDirectory, UpdatePlugin,
     },
-    plugin::plugin_popup::PluginPopUp,
+    plugin::{plugin_action::PluginAction, plugin_popup::PluginPopUp},
 };
 use std::path::PathBuf;
 
@@ -83,6 +83,7 @@ pub enum Action {
     Noop,
     PopupAct(PopupAction),
     CommandAct(CommandAction),
+    PluginAct(PluginAction),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -176,5 +177,6 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::PopupAct(PopupAction::JumpAndOpen(id)) => Box::new(JumpAndOpen::new(id)),
         Action::Noop => Box::new(Noop::new()),
         Action::CommandAct(_) => Box::new(Noop::new()),
+        Action::PluginAct(plugin_action) => plugin_action.get_command(),
     }
 }

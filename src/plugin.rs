@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::{action::Action, app::App};
 
+pub mod plugin_action;
 pub mod plugin_popup;
 pub mod sfs_telescope;
 pub mod telescope;
