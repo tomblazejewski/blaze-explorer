@@ -126,6 +126,10 @@ impl PluginPopUp for TelescopeWindow {
         self.should_quit = true;
     }
 
+    fn should_quit(&self) -> bool {
+        self.should_quit
+    }
+
     fn erase_text(&mut self) {
         self.telescope_backend.query.clear_contents();
         self.update_self_query();
@@ -133,5 +137,9 @@ impl PluginPopUp for TelescopeWindow {
 
     fn get_search_query(&self) -> String {
         self.telescope_backend.query.get_contents()
+    }
+
+    fn display_details(&self) -> String {
+        "Telescope".to_string()
     }
 }

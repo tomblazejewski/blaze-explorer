@@ -106,26 +106,26 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::ClearSearchQuery),
     );
-    root.add_sequence(
-        vec![
-            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
-            KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE),
-            KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
-        ],
-        Action::AppAct(AppAction::OpenPopup(PopupType::Telescope)),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)],
-        Action::AppAct(AppAction::OpenPopup(PopupType::Rename)),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Char('m'), KeyModifiers::NONE)],
-        Action::AppAct(AppAction::OpenPopup(PopupType::Flash(false))),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Char('M'), KeyModifiers::NONE)],
-        Action::AppAct(AppAction::OpenPopup(PopupType::Flash(true))),
-    );
+    // root.add_sequence(
+    //     vec![
+    //         KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
+    //         KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE),
+    //         KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
+    //     ],
+    //     Action::AppAct(AppAction::OpenPopup(PopupType::Telescope)),
+    // );
+    // root.add_sequence(
+    //     vec![KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)],
+    //     Action::AppAct(AppAction::OpenPopup(PopupType::Rename)),
+    // );
+    // root.add_sequence(
+    //     vec![KeyEvent::new(KeyCode::Char('m'), KeyModifiers::NONE)],
+    //     Action::AppAct(AppAction::OpenPopup(PopupType::Flash(false))),
+    // );
+    // root.add_sequence(
+    //     vec![KeyEvent::new(KeyCode::Char('M'), KeyModifiers::NONE)],
+    //     Action::AppAct(AppAction::OpenPopup(PopupType::Flash(true))),
+    // );
     root.add_sequence(
         vec![
             KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),

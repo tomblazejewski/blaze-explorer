@@ -25,6 +25,8 @@ pub trait PluginPopUp: PluginPopUpClone {
 
     fn quit(&mut self);
 
+    fn should_quit(&self) -> bool;
+
     fn erase_text(&mut self);
 
     fn get_search_query(&self) -> String;
@@ -36,6 +38,8 @@ pub trait PluginPopUp: PluginPopUpClone {
     fn context(&self) -> String {
         String::new()
     }
+
+    fn display_details(&self) -> String;
 }
 
 pub trait PluginPopUpClone: Debug {

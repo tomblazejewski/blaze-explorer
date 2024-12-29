@@ -16,7 +16,7 @@ use std::process::Command as ProcessCommand;
 use std::{collections::HashMap, fs, path::PathBuf};
 use std::{fmt, io};
 
-use crate::{app::App, mode::Mode, popup::PopUp, telescope::AppContext};
+use crate::{app::App, mode::Mode, telescope::AppContext};
 
 pub trait Command: CommandClone {
     fn execute(&mut self, app: &mut App) -> Option<Action>;
@@ -472,9 +472,10 @@ impl UpdatePlugin {
 }
 impl Command for UpdatePlugin {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        if let PopUp::FlashPopUp(ref mut flash) = &mut app.popup {
-            flash.update_interface(&mut app.explorer_manager);
-        }
+        //FIXME: update when adding Flash back
+        // if let PopUp::FlashPopUp(ref mut flash) = &mut app.popup {
+        //     flash.update_interface(&mut app.explorer_manager);
+        // }
         None
     }
 }
