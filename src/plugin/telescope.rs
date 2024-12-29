@@ -21,6 +21,8 @@ use super::{plugin_popup::PluginPopUp, Plugin};
 //Struct TelescopeWindow (implementing PluginPopUp) - this is spawned upon calling one of the
 //plugin's functionalities and takes control of incoming KeyEvents
 
+type CustomAction = fn(&mut App) -> Option<Action>;
+type BoxedAction = Box<CustomAction>;
 pub fn open_sfs(app: &mut App) -> Option<Action> {
     let ctx = app.get_app_context();
     let popup = Box::new(TelescopeWindow::new_sfs(ctx));
@@ -28,23 +30,40 @@ pub fn open_sfs(app: &mut App) -> Option<Action> {
 
     None
 }
-pub struct Telescope {}
+pub struct Telescope {
+    bindings_map: HashMap<Vec<KeyEvent>, TelescopeBindings>,
+    functionality_map: HashMap<TelescopeBindings, BoxedAction>,
+}
+
+#[derive(Hash, PartialEq, Eq)]
+pub enum TelescopeBindings {
+    OpenSFS,
+}
 
 impl Plugin for Telescope {
     fn display_details(&self) -> String {
         "Telescope".to_string()
     }
 
-    fn attach_functionality(
-        &self,
-        _app: &mut App,
-    ) -> HashMap<String, Box<fn(&mut App) -> Option<Action>>> {
+    fn attach_functionality(&self, _app: &mut App) -> HashMap<String, BoxedAction> {
         let mut map = HashMap::new();
-        map.insert(
-            "OpenSFS".to_string(),
-            Box::new(open_sfs as fn(&mut App) -> Option<Action>),
-        );
+        map.insert("OpenSFS".to_string(), Box::new(open_sfs as CustomAction));
         map
+    }
+}
+
+impl Telescope {
+    pub fn new(bindings_map: HashMap<Vec<KeyEvent>, TelescopeBindings>) -> Self {
+        let mut functionality_map = HashMap::new();
+        functionality_map.insert(
+            TelescopeBindings::OpenSFS,
+            Box::new(open_sfs as CustomAction),
+        );
+
+        Self {
+            bindings_map,
+            functionality_map,
+        }
     }
 }
 
