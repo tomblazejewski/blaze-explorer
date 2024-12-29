@@ -1,6 +1,6 @@
-use blaze_explorer::app::{App, ExitResult};
-use blaze_explorer::logging::initialize_logging;
-use blaze_explorer::plugin_manifest::fetch_plugins;
+use blaze_explorer_core::app::{App, ExitResult};
+use blaze_explorer_core::logging::initialize_logging;
+use blaze_explorer_core::plugin_manifest::fetch_plugins;
 use ratatui::crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,

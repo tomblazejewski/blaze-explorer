@@ -4,7 +4,9 @@ name = "blaze_explorer"
 version = "0.5.0"
 edition = "2021"
 
-
+[lib]
+name = "blaze_explorer_core"
+crate-type = ["rlib","dylib"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
