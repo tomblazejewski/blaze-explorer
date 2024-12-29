@@ -1,6 +1,7 @@
 #![feature(reentrant_lock)]
 #![feature(str_split_remainder)]
 use logging::initialize_logging;
+use plugin_manifest::fetch_plugins;
 use ratatui::crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
@@ -25,6 +26,7 @@ mod logging;
 mod mode;
 mod plugin;
 //mod popup;
+mod plugin_manifest;
 mod simple_input_machine;
 mod telescope;
 mod telescope_query;
@@ -43,6 +45,8 @@ fn open_neovim(path: &PathBuf) -> Result<(), Box<dyn Error>> {
 fn main() -> Result<(), Box<dyn Error>> {
     initialize_logging()?;
     let mut app = App::new().unwrap();
+    let plugins = fetch_plugins(&mut app);
+    app.attach_plugins(plugins);
     let mut cold_start = true;
     loop {
         stdout().execute(EnterAlternateScreen)?;

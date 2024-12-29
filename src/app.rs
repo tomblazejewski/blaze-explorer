@@ -99,6 +99,7 @@ impl App {
 
     pub fn attach_plugins(&mut self, plugins: Vec<Box<dyn Plugin>>) {
         self.plugins = plugins;
+        self.attach_functionality();
     }
 
     fn attach_functionality(&mut self) {

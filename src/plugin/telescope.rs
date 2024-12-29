@@ -39,7 +39,7 @@ pub struct Telescope {
 }
 
 impl Telescope {
-    fn new(bindings_map: HashMap<(Mode, Vec<KeyEvent>), String>) -> Self {
+    pub fn new(bindings_map: HashMap<(Mode, Vec<KeyEvent>), String>) -> Self {
         let mut functionality_map = HashMap::new();
         functionality_map.insert("OpenSFS".to_string(), custom_action!(open_sfs));
 
