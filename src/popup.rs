@@ -14,8 +14,7 @@ use crate::flash_input_machine::FlashInputMachine;
 use crate::line_entry::LineEntry;
 use crate::plugin::plugin_popup::PluginPopUp;
 use crate::plugin::Plugin;
-use crate::simple_input_machine::SimpleInputMachine;
-use crate::telescope_input_machine::TelescopeInputMachine;
+use crate::simple_input_machine::TelescopeInputMachine;
 use crate::telescope_query::TelescopeQuery;
 use crate::tools::center_rect;
 use crate::{

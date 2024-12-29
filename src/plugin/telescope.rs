@@ -9,7 +9,7 @@ use crate::{
     input_machine::{InputMachine, KeyProcessingResult},
     line_entry::LineEntry,
     mode::Mode,
-    simple_input_machine::SimpleInputMachine,
+    simple_input_machine::TelescopeInputMachine,
     telescope::{AppContext, PopUpComponent, TelescopeBackend},
 };
 
@@ -50,7 +50,7 @@ impl Plugin for Telescope {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TelescopeWindow {
-    input_machine: SimpleInputMachine,
+    input_machine: TelescopeInputMachine,
     telescope_backend: TelescopeBackend,
     current_sequence: Vec<KeyEvent>,
     pub should_quit: bool,
@@ -59,7 +59,7 @@ pub struct TelescopeWindow {
 impl TelescopeWindow {
     pub fn new_sfs(ctx: AppContext) -> Self {
         TelescopeWindow {
-            input_machine: SimpleInputMachine::new(),
+            input_machine: TelescopeInputMachine::new(),
             telescope_backend: TelescopeBackend::new_sfs(ctx),
             current_sequence: Vec::new(),
             should_quit: false,

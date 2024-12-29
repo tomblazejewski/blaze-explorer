@@ -2,8 +2,8 @@ use crate::{
     command::{
         DeleteSplit, DisplayMessage, ExecuteFunction, FocusDown, FocusLeft, FocusRight, FocusUp,
         JumpAndClose, JumpAndOpen, JumpToId, OpenNeovimHere, ParseCommand, ParseKeyStrokes,
-        RedoDirectory, SplitHorizontally, SplitVertically, TelescopeQuit, TerminalCommand,
-        UndoDirectory, UpdatePlugin,
+        RedoDirectory, SplitHorizontally, SplitVertically, TerminalCommand, UndoDirectory,
+        UpdatePlugin,
     },
     plugin::{plugin_action::PluginAction, plugin_popup::PluginPopUp},
 };
@@ -15,8 +15,6 @@ use crate::{
         ChangeDirectory, ClearSearchQuery, Command, ConfirmCommand, ConfirmSearchQuery,
         DeleteSelection, DropKey, EraseText, InsertKey, NextSearchResult, Noop, OpenPopup,
         ParentDirectory, Quit, SelectDirectory, SelectDown, SelectUp, ShowInFolder, SwitchMode,
-        TelescopeConfirmResult, TelescopeDropSearchChar, TelescopeNextResult,
-        TelescopePreviousResult, TelescopePushSearchChar, TelescopeUpdateSearchQuery,
         UpdateSearchQuery,
     },
     mode::Mode,
@@ -160,23 +158,13 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::TextAct(TextAction::InsertKey(ch)) => Box::new(InsertKey::new(ctx, ch)),
         Action::TextAct(TextAction::EraseText) => Box::new(EraseText::new()),
         Action::TextAct(TextAction::DropKey) => Box::new(DropKey::new()),
-        Action::PopupAct(PopupAction::ConfirmResult) => Box::new(TelescopeConfirmResult::new()),
-        Action::PopupAct(PopupAction::PushSearchChar(ch)) => {
-            Box::new(TelescopePushSearchChar::new(ch))
-        }
-        Action::PopupAct(PopupAction::DropSearchChar) => Box::new(TelescopeDropSearchChar::new()),
-        Action::PopupAct(PopupAction::NextResult) => Box::new(TelescopeNextResult::new()),
-        Action::PopupAct(PopupAction::PreviousResult) => Box::new(TelescopePreviousResult::new()),
-        Action::PopupAct(PopupAction::Quit) => Box::new(TelescopeQuit::new()),
         Action::PopupAct(PopupAction::EraseText) => Box::new(EraseText::new()),
-        Action::PopupAct(PopupAction::UpdateSearchQuery(query)) => {
-            Box::new(TelescopeUpdateSearchQuery::new(query))
-        }
         Action::PopupAct(PopupAction::UpdatePlugin) => Box::new(UpdatePlugin::new()),
         Action::PopupAct(PopupAction::JumpAndClose(id)) => Box::new(JumpAndClose::new(id)),
         Action::PopupAct(PopupAction::JumpAndOpen(id)) => Box::new(JumpAndOpen::new(id)),
         Action::Noop => Box::new(Noop::new()),
         Action::CommandAct(_) => Box::new(Noop::new()),
         Action::PluginAct(plugin_action) => plugin_action.get_command(),
+        _ => todo!(),
     }
 }
