@@ -1,7 +1,6 @@
-#![feature(reentrant_lock)]
-#![feature(str_split_remainder)]
-use logging::initialize_logging;
-use plugin_manifest::fetch_plugins;
+use blaze_explorer::app::{App, ExitResult};
+use blaze_explorer::logging::initialize_logging;
+use blaze_explorer::plugin_manifest::fetch_plugins;
 use ratatui::crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
@@ -9,29 +8,6 @@ use ratatui::crossterm::{
 use std::process::Command;
 use std::{env::set_current_dir, io::stdout};
 use std::{error::Error, path::PathBuf};
-mod app;
-use app::{App, ExitResult};
-mod action;
-mod app_input_machine;
-mod command;
-mod components;
-mod explorer_helpers;
-mod flash_input_machine;
-mod function_helpers;
-mod git_helpers;
-mod history_stack;
-mod input_machine;
-mod line_entry;
-mod logging;
-mod mode;
-mod plugin;
-//mod popup;
-mod plugin_manifest;
-mod simple_input_machine;
-mod telescope;
-mod telescope_query;
-mod themes;
-mod tools;
 
 fn bring_app_back(app: &mut App) {
     app.exit_status = None;

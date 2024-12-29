@@ -9,8 +9,8 @@ use crate::{
 };
 use std::path::PathBuf;
 
+use crate::app::App;
 use crate::{
-    app::App,
     command::{
         ChangeDirectory, ClearSearchQuery, Command, ConfirmCommand, ConfirmSearchQuery,
         DeleteSelection, DropKey, EraseText, InsertKey, NextSearchResult, Noop, OpenPopup,
