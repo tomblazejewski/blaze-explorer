@@ -1,3 +1,4 @@
+use super::Action::AppAct;
 #[macro_export]
 macro_rules! match_popup_call {
     // Case where the function has no return value (unit type `()`) and no arguments
@@ -38,4 +39,13 @@ macro_rules! match_popup_call {
         }
     };
 }
+#[macro_export]
+macro_rules! custom_action {
+    ($func:ident) => {
+        Action::AppAct(AppAction::ExecuteFunction(Box::new($func)))
+    };
+}
+
+pub use custom_action;
+
 pub use match_popup_call;

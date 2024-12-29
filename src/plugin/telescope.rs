@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 
+use crate::action::AppAction;
 use color_eyre::eyre::Result;
 use ratatui::{crossterm::event::KeyEvent, layout::Rect, widgets::Clear, Frame};
 
 use crate::{
     action::Action,
     app::App,
+    custom_action,
     input_machine::{InputMachine, KeyProcessingResult},
     line_entry::LineEntry,
     mode::Mode,
@@ -30,14 +32,22 @@ pub fn open_sfs(app: &mut App) -> Option<Action> {
 
     None
 }
+#[derive(Debug, Clone)]
 pub struct Telescope {
-    bindings_map: HashMap<Vec<KeyEvent>, TelescopeBindings>,
-    functionality_map: HashMap<TelescopeBindings, BoxedAction>,
+    bindings_map: HashMap<(Mode, Vec<KeyEvent>), String>,
+    functionality_map: HashMap<String, Action>,
 }
 
-#[derive(Hash, PartialEq, Eq)]
-pub enum TelescopeBindings {
-    OpenSFS,
+impl Telescope {
+    fn new(bindings_map: HashMap<(Mode, Vec<KeyEvent>), String>) -> Self {
+        let mut functionality_map = HashMap::new();
+        functionality_map.insert("OpenSFS".to_string(), custom_action!(open_sfs));
+
+        Self {
+            bindings_map,
+            functionality_map,
+        }
+    }
 }
 
 impl Plugin for Telescope {
@@ -50,20 +60,18 @@ impl Plugin for Telescope {
         map.insert("OpenSFS".to_string(), Box::new(open_sfs as CustomAction));
         map
     }
-}
 
-impl Telescope {
-    pub fn new(bindings_map: HashMap<Vec<KeyEvent>, TelescopeBindings>) -> Self {
-        let mut functionality_map = HashMap::new();
-        functionality_map.insert(
-            TelescopeBindings::OpenSFS,
-            Box::new(open_sfs as CustomAction),
-        );
-
-        Self {
-            bindings_map,
-            functionality_map,
+    fn get_bindings(&self) -> HashMap<(Mode, Vec<KeyEvent>), Action> {
+        let mut output_map = HashMap::new();
+        for (key, value) in &self.bindings_map {
+            match self.functionality_map.get(value) {
+                Some(action) => {
+                    output_map.insert((*key).clone(), action.clone());
+                }
+                None => {}
+            }
         }
+        output_map
     }
 }
 

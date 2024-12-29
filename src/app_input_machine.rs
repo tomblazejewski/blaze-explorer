@@ -51,6 +51,13 @@ impl AppInputMachine<Action> {
 
         AppInputMachine { keymap_nodes }
     }
+
+    pub fn attach_binding(&mut self, mode: Mode, sequence: Vec<KeyEvent>, action: Action) {
+        self.keymap_nodes
+            .get_mut(&mode)
+            .unwrap()
+            .add_sequence(sequence, action);
+    }
 }
 pub fn process_app_keys(
     keymap: &KeyMapNode<Action>,

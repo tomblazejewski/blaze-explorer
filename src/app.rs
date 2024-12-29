@@ -23,6 +23,7 @@ use crate::history_stack::{command_history::CommandHistory, HistoryStack};
 use crate::input_machine::{InputMachine, KeyProcessingResult};
 use crate::line_entry::LineEntry;
 use crate::plugin::plugin_popup::PluginPopUp;
+use crate::plugin::Plugin;
 use crate::telescope::AppContext;
 use crate::tools::center_rect;
 use crate::{action::Action, components::Component, mode::Mode};
@@ -73,6 +74,7 @@ pub struct App {
     pub exit_status: Option<ExitResult>,
     pub current_path: PathBuf,
     pub key_queue: VecDeque<KeyEvent>,
+    pub plugins: Vec<Box<dyn Plugin>>,
 }
 impl App {
     pub fn new() -> Result<Self> {
@@ -91,7 +93,21 @@ impl App {
             exit_status: None,
             current_path: PathBuf::new(),
             key_queue: VecDeque::new(),
+            plugins: Vec::new(),
         })
+    }
+
+    pub fn attach_plugins(&mut self, plugins: Vec<Box<dyn Plugin>>) {
+        self.plugins = plugins;
+    }
+
+    fn attach_functionality(&mut self) {
+        for plugin in &self.plugins {
+            let bindings = plugin.get_bindings();
+            for ((mode, seq), action) in bindings {
+                self.input_machine.attach_binding(mode, seq, action);
+            }
+        }
     }
 
     /// Send a key event to the appropriate component based on the current mode
@@ -420,6 +436,7 @@ impl Clone for App {
             exit_status: self.exit_status.clone(),
             current_path: self.current_path.clone(),
             key_queue: self.key_queue.clone(),
+            plugins: self.plugins.clone(),
         }
     }
 }
