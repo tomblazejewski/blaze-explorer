@@ -1,3 +1,4 @@
+pub mod command_helpers;
 pub mod key_press;
 use chrono::offset;
 use directories::ProjectDirs;
@@ -437,7 +438,7 @@ impl Command for DisplayMessage {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, Debug)]
 pub struct OpenPopup {
     popup: Box<dyn PluginPopUp>,
 }
@@ -451,6 +452,13 @@ impl Command for OpenPopup {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         app.popup = Some(self.popup.clone());
         None
+    }
+}
+
+impl PartialEq for OpenPopup {
+    fn eq(&self, other: &Self) -> bool {
+        //FIXME: why does it need cloning (and PartialEq for App doesn't?)
+        self.popup == other.popup.clone()
     }
 }
 
@@ -522,148 +530,6 @@ impl DropKey {
 impl Command for DropKey {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         app.command_line.remove_char()
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct TelescopeConfirmResult {}
-
-impl TelescopeConfirmResult {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-impl Command for TelescopeConfirmResult {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &mut app.popup {
-            None => None,
-            Some(ref mut popup) => popup.confirm_result(),
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct TelescopeNextResult {}
-
-impl TelescopeNextResult {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-impl Command for TelescopeNextResult {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &mut app.popup {
-            None => None,
-            Some(ref mut popup) => popup.next_result(),
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct TelescopePreviousResult {}
-
-impl TelescopePreviousResult {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-impl Command for TelescopePreviousResult {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &mut app.popup {
-            None => None,
-            Some(ref mut popup) => popup.previous_result(),
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct TelescopeUpdateSearchQuery {
-    query: String,
-}
-
-impl TelescopeUpdateSearchQuery {
-    pub fn new(query: String) -> Self {
-        Self { query }
-    }
-}
-impl Command for TelescopeUpdateSearchQuery {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &mut app.popup {
-            None => None,
-            Some(ref mut popup) => popup.update_search_query(self.query.clone()),
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct TelescopePushSearchChar {
-    ch: char,
-}
-
-impl TelescopePushSearchChar {
-    pub fn new(ch: char) -> Self {
-        Self { ch }
-    }
-}
-
-impl Command for TelescopePushSearchChar {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &mut app.popup {
-            None => None,
-            Some(ref mut popup) => popup.push_search_char(self.ch),
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct TelescopeDropSearchChar {}
-
-impl TelescopeDropSearchChar {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-impl Command for TelescopeDropSearchChar {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &mut app.popup {
-            None => None,
-            Some(ref mut popup) => popup.drop_search_char(),
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct TelescopeQuit {}
-
-impl TelescopeQuit {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-impl Command for TelescopeQuit {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &mut app.popup {
-            None => {}
-            Some(ref mut popup) => popup.quit(),
-        };
-        None
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct TelescopeEraseText {}
-
-impl TelescopeEraseText {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-impl Command for TelescopeEraseText {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &mut app.popup {
-            None => None,
-            Some(ref mut popup) => popup.erase_text(),
-        }
     }
 }
 
