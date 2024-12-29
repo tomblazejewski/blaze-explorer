@@ -108,7 +108,9 @@ impl PluginPopUp for TelescopeWindow {
     }
 
     fn push_search_char(&mut self, ch: char) {
-        self.telescope_backend.query.append_char(ch)
+        self.telescope_backend.query.append_char(ch);
+        let query = self.get_search_query();
+        self.update_search_query(query);
     }
 
     fn drop_search_char(&mut self) {
