@@ -32,6 +32,10 @@ pub trait PluginPopUp: PluginPopUpClone {
     fn destruct(&self) -> Option<Box<dyn Command>> {
         None
     }
+
+    fn context(&self) -> String {
+        String::new()
+    }
 }
 
 pub trait PluginPopUpClone: Debug {
@@ -56,6 +60,6 @@ impl Clone for Box<dyn PluginPopUp> {
 impl PartialEq for Box<dyn PluginPopUp> {
     //FIXME: how to implement this better?
     fn eq(&self, other: &Self) -> bool {
-        self.context() == other.context()
+        *self.context() == *other.context()
     }
 }

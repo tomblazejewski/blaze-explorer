@@ -14,9 +14,10 @@ use ratatui::{
 };
 use rust_search::SearchBuilder;
 
-use crate::action::{Action, AppAction};
-
-use super::{AppContext, TelescopeResult, TelescopeSearch};
+use crate::{
+    action::{Action, AppAction},
+    telescope::{AppContext, TelescopeResult, TelescopeSearch},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SearchFileshereSearch {

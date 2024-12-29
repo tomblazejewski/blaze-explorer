@@ -1,4 +1,3 @@
-pub mod sfs_telescope;
 use std::{fmt::Debug, fmt::Display, path::PathBuf};
 
 use color_eyre::eyre::Result;
@@ -7,12 +6,12 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState},
     Frame,
 };
-use sfs_telescope::SearchFileshereSearch;
 
 use crate::{
     action::{Action, PopupAction},
     components::explorer_manager::ExplorerManager,
     mode::Mode,
+    plugin::sfs_telescope::SearchFileshereSearch,
     telescope_query::TelescopeQuery,
     themes::CustomTheme,
 };
@@ -148,7 +147,7 @@ impl TelescopeBackend {
 pub trait PopUpComponent {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
     fn handle_action(&mut self, action: Action) -> Option<Action>;
-    fn new(search_context: AppContext) -> Self;
+    fn new_sfs(search_context: AppContext) -> Self;
 }
 impl PopUpComponent for TelescopeBackend {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
@@ -219,7 +218,8 @@ impl PopUpComponent for TelescopeBackend {
         None
     }
 
-    fn new(search_context: AppContext) -> Self {
+    fn new_sfs(search_context: AppContext) -> Self {
+        //FIXME: Create a separate contructor for each type of search
         Self {
             query: TelescopeQuery::default(),
             search: Box::new(SearchFileshereSearch::new(search_context)),

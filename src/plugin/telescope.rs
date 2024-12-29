@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use color_eyre::eyre::Result;
 use ratatui::{crossterm::event::KeyEvent, layout::Rect, widgets::Clear, Frame};
 
@@ -5,6 +7,7 @@ use crate::{
     action::Action,
     app::App,
     input_machine::{InputMachine, KeyProcessingResult},
+    line_entry::LineEntry,
     mode::Mode,
     simple_input_machine::SimpleInputMachine,
     telescope::{AppContext, PopUpComponent, TelescopeBackend},
@@ -12,20 +15,36 @@ use crate::{
 
 use super::{plugin_popup::PluginPopUp, Plugin};
 
+//The plugin consists of the following parts
+//Struct Telescope - defines functionalities available at the app level. The app can bind any of
+//these actions to a keymap to use it. Telescope implements Plugin.
+//Struct TelescopeWindow (implementing PluginPopUp) - this is spawned upon calling one of the
+//plugin's functionalities and takes control of incoming KeyEvents
+
+pub fn open_sfs(app: &mut App) -> Option<Action> {
+    let ctx = app.get_app_context();
+    let popup = Box::new(TelescopeWindow::new_sfs(ctx));
+    app.attach_popup(popup);
+
+    None
+}
 pub struct Telescope {}
 
 impl Plugin for Telescope {
     fn display_details(&self) -> String {
         "Telescope".to_string()
     }
-}
 
-impl Telescope {
-    pub fn open_sfs(&self, app: &mut App) -> Option<Action> {
-        let ctx = app.get_app_context();
-        app.popup = Some(Box::new(TelescopeWindow::new(ctx)));
-
-        None
+    fn attach_functionality(
+        &self,
+        _app: &mut App,
+    ) -> HashMap<String, Box<fn(&mut App) -> Option<Action>>> {
+        let mut map = HashMap::new();
+        map.insert(
+            "OpenSFS".to_string(),
+            Box::new(open_sfs as fn(&mut App) -> Option<Action>),
+        );
+        map
     }
 }
 
@@ -38,10 +57,10 @@ pub struct TelescopeWindow {
 }
 
 impl TelescopeWindow {
-    pub fn new(ctx: AppContext) -> Self {
+    pub fn new_sfs(ctx: AppContext) -> Self {
         TelescopeWindow {
             input_machine: SimpleInputMachine::new(),
-            telescope_backend: TelescopeBackend::new(ctx),
+            telescope_backend: TelescopeBackend::new_sfs(ctx),
             current_sequence: Vec::new(),
             should_quit: false,
         }

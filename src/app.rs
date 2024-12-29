@@ -105,6 +105,13 @@ impl App {
             None => event::read(),
         }
     }
+    pub fn attach_popup(&mut self, popup: Box<dyn PluginPopUp>) {
+        self.popup = Some(popup);
+    }
+
+    pub fn drop_popup(&mut self) {
+        self.popup = None;
+    }
     pub fn process_key_event(&mut self, key: KeyEvent) {
         if key.kind == KeyEventKind::Press {
             match &mut self.popup {
