@@ -9,9 +9,6 @@ use crate::{action::Action, app::App};
 pub mod plugin_action;
 pub mod plugin_helpers;
 pub mod plugin_popup;
-pub mod sfs_telescope;
-pub mod telescope;
-pub mod telescope_commands;
 pub trait Plugin: PluginSuper {
     fn display_details(&self) -> String {
         String::from("Not implemented")

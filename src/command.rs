@@ -16,7 +16,7 @@ use std::process::Command as ProcessCommand;
 use std::{collections::HashMap, fs, path::PathBuf};
 use std::{fmt, io};
 
-use crate::{app::App, mode::Mode, telescope::AppContext};
+use crate::{app::App, app_context::AppContext, mode::Mode};
 
 pub trait Command: CommandClone {
     fn execute(&mut self, app: &mut App) -> Option<Action>;
