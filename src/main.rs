@@ -51,5 +51,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             _ => {}
         }
     }
+    std::mem::drop(app);
     Ok(())
 }
