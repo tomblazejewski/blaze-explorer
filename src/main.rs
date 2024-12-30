@@ -1,6 +1,8 @@
 use blaze_explorer_core::app::{App, ExitResult};
 use blaze_explorer_core::logging::initialize_logging;
-use blaze_explorer_core::plugin_manifest::fetch_plugins;
+mod plugin_manifest;
+use libloading::Library;
+use plugin_manifest::fetch_plugins;
 use ratatui::crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
@@ -21,7 +23,13 @@ fn open_neovim(path: &PathBuf) -> Result<(), Box<dyn Error>> {
 fn main() -> Result<(), Box<dyn Error>> {
     initialize_logging()?;
     let mut app = App::new().unwrap();
-    let plugins = fetch_plugins(&mut app);
+    let lib = unsafe {
+        Library::new(
+            "C:/Users/tomas/OneDrive/Projects/blaze_telescope/target/debug/blaze_telescope.dll",
+        )
+        .unwrap()
+    };
+    let plugins = fetch_plugins(&mut app, &lib);
     app.attach_plugins(plugins);
     let mut cold_start = true;
     loop {

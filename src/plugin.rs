@@ -20,6 +20,7 @@ pub trait Plugin: PluginSuper {
         &self,
         app: &mut App,
     ) -> HashMap<String, Box<fn(&mut App) -> Option<Action>>>;
+    fn assign_keys(&mut self, bindings_map: HashMap<(Mode, Vec<KeyEvent>), String>);
     fn get_bindings(&self) -> HashMap<(Mode, Vec<KeyEvent>), Action>;
 }
 

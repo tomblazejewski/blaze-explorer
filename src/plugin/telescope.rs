@@ -60,6 +60,9 @@ impl Plugin for Telescope {
         map.insert("OpenSFS".to_string(), Box::new(open_sfs as CustomAction));
         map
     }
+    fn assign_keys(&mut self, bindings_map: HashMap<(Mode, Vec<KeyEvent>), String>) {
+        self.bindings_map = bindings_map;
+    }
 
     fn get_bindings(&self) -> HashMap<(Mode, Vec<KeyEvent>), Action> {
         let mut output_map = HashMap::new();
