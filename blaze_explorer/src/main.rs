@@ -1,14 +1,14 @@
-use blaze_explorer_core::app::{App, ExitResult};
-use blaze_explorer_core::logging::initialize_logging;
+use blaze_explorer_lib::app::{App, ExitResult};
+use blaze_explorer_lib::logging::initialize_logging;
 mod plugin_manifest;
-use directories::ProjectDirs;
-use libloading::os::windows::Library;
 use libloading::Library;
 use plugin_manifest::fetch_plugins;
 use ratatui::crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
+use std::collections::HashMap;
+use std::fs;
 use std::process::Command;
 use std::{env::set_current_dir, io::stdout};
 use std::{error::Error, path::PathBuf};
@@ -24,44 +24,40 @@ fn open_neovim(path: &PathBuf) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn collect_libs(lib_names: Vec<String>) -> Vec<Library> {
-    let plugin_dir = ProjectDirs::from("", "", "blaze_explorer_plugins");
-    match plugin_dir {
-        None => {
-            info!("No plugin folder found. Running without plugins");
-            vec![]
-        }
-        Some(plugin_dir) => {
-            let mut libs = vec![];
-            for lib_name in lib_names {
-                libs = Vec::new();
-                let lib_path = plugin_dir.data_dir();
-                let path_ending = format!("{}/target/debug/{}.dll", lib_name, lib_name);
-                let dll_path = lib_path.join(path_ending);
-                match dll_path.exists() {
-                    true => {
-                        let lib = unsafe { Library::new(dll_path.to_str().unwrap()).unwrap() };
-                        libs.push(lib)
-                    }
-                    false => {
-                        info!("Plugin {} not found/not compiled", lib_name);
-                    }
-                }
+fn collect_libs() -> HashMap<String, Library> {
+    let mut lib_map = HashMap::new();
+    let plugins_folder_location = "../blaze_plugins";
+    let paths = fs::read_dir(plugins_folder_location).unwrap();
+    for path in paths {
+        let lib_name = path
+            .unwrap()
+            .path()
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+        let dll_path = PathBuf::from(format!(
+            "../blaze_plugins/{}/target/debug/{}.dll",
+            lib_name, lib_name
+        ));
+        match dll_path.exists() {
+            true => {
+                let lib = unsafe { Library::new(dll_path.to_str().unwrap()).unwrap() };
+                lib_map.insert(lib_name, lib);
             }
-            libs
+            false => {
+                info!("Plugin {} not found/not compiled", lib_name);
+            }
         }
     }
+    lib_map
 }
 fn main() -> Result<(), Box<dyn Error>> {
     initialize_logging()?;
     let mut app = App::new().unwrap();
-    let lib = unsafe {
-        Library::new(
-            "C:/Users/tomas/OneDrive/Projects/blaze_telescope/target/debug/blaze_telescope.dll",
-        )
-        .unwrap()
-    };
-    let plugins = fetch_plugins(&mut app, &lib);
+    let lib_map = collect_libs();
+    let plugins = fetch_plugins(&mut app, &lib_map);
     app.attach_plugins(plugins);
     let mut cold_start = true;
     loop {
