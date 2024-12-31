@@ -1,5 +1,6 @@
 // Defines the skeleton of an input machine that can be used by an appropriate app - be it the main
 // app or the telescope backend
+pub mod input_machine_helpers;
 use std::collections::HashMap;
 
 use ratatui::crossterm::event::KeyEvent;
