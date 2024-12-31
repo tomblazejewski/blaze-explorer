@@ -11,9 +11,21 @@ use crate::{
     mode::Mode,
 };
 
+fn get_default_search_command_action(last_key: KeyEvent) -> Option<Action> {
+    match last_key.code {
+        KeyCode::Char(ch) => Some(Action::TextAct(TextAction::InsertKey(ch))),
+        _ => None,
+    }
+}
+
+pub fn get_none_action(last_key: KeyEvent) -> Option<Action> {
+    None
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct AppInputMachine<T> {
     keymap_nodes: HashMap<Mode, KeyMapNode<T>>,
+    default_actions: HashMap<Mode, Box<fn(KeyEvent) -> Option<Action>>>,
 }
 
 impl InputMachine for AppInputMachine<Action> {
@@ -28,17 +40,7 @@ impl InputMachine for AppInputMachine<Action> {
     }
 
     fn get_default_action(&self, mode: &Mode, last_key: KeyEvent) -> Option<Action> {
-        match mode {
-            Mode::Normal => None,
-            Mode::Search => match last_key.code {
-                KeyCode::Char(ch) => Some(Action::TextAct(TextAction::InsertKey(ch))),
-                _ => None,
-            },
-            Mode::Command => match last_key.code {
-                KeyCode::Char(ch) => Some(Action::TextAct(TextAction::InsertKey(ch))),
-                _ => None,
-            },
-        }
+        self.default_actions.get(mode).unwrap()(last_key)
     }
 }
 
@@ -49,7 +51,27 @@ impl AppInputMachine<Action> {
         keymap_nodes.insert(Mode::Search, search_key_map());
         keymap_nodes.insert(Mode::Command, command_key_map());
 
-        AppInputMachine { keymap_nodes }
+        let mut default_actions = HashMap::new();
+        default_actions.insert(
+            Mode::Normal,
+            Box::new(get_none_action as fn(KeyEvent) -> Option<Action>),
+        );
+        default_actions.insert(Mode::PopUp, Box::new(get_none_action));
+        default_actions.insert(Mode::Search, Box::new(get_default_search_command_action));
+        default_actions.insert(Mode::Command, Box::new(get_default_search_command_action));
+
+        AppInputMachine {
+            keymap_nodes,
+            default_actions,
+        }
+    }
+
+    pub fn attach_popup_binding(
+        &mut self,
+        popup_type: PopupType,
+        sequence: Vec<KeyEvent>,
+        action: Action,
+    ) {
     }
 
     pub fn attach_binding(&mut self, mode: Mode, sequence: Vec<KeyEvent>, action: Action) {

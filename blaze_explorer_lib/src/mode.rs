@@ -5,6 +5,7 @@ pub enum Mode {
     Normal,
     Search,
     Command,
+    PopUp,
 }
 
 impl Display for Mode {
@@ -13,6 +14,7 @@ impl Display for Mode {
             Mode::Normal => write!(f, "Normal"),
             Mode::Search => write!(f, "Search"),
             Mode::Command => write!(f, "Command"),
+            Mode::PopUp => write!(f, "PopUp"),
         }
     }
 }

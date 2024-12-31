@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use color_eyre::eyre::Result;
 use ratatui::{crossterm::event::KeyEvent, layout::Rect, Frame};
 
-use crate::{action::Action, command::Command};
+use crate::{action::Action, app_input_machine::get_none_action, command::Command};
 pub trait PluginPopUp: PluginPopUpClone {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action>;
 
@@ -40,6 +40,10 @@ pub trait PluginPopUp: PluginPopUpClone {
     }
 
     fn display_details(&self) -> String;
+
+    fn get_default_action(&self) -> Box<fn(KeyEvent) -> Option<Action>> {
+        Box::new(get_none_action)
+    }
 }
 
 pub trait PluginPopUpClone: Debug {
