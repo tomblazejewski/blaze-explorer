@@ -11,9 +11,9 @@ pub fn fetch_plugins(_app: &mut App, lib_map: &HashMap<String, Library>) -> Vec<
     //telescope
     let telescope_lib = lib_map.get("blaze_telescope").unwrap();
     let mut telescope_bindings = HashMap::new();
-    let plugin_getter: libloading::Symbol<
+    let get_plugin: libloading::Symbol<
         extern "Rust" fn(HashMap<(Mode, Vec<KeyEvent>), String>) -> Box<dyn Plugin>,
-    > = unsafe { telescope_lib.get(b"get_telescope_plugin").unwrap() };
+    > = unsafe { telescope_lib.get(b"get_plugin").unwrap() };
     telescope_bindings.insert(
         (
             Mode::Normal,
@@ -25,7 +25,7 @@ pub fn fetch_plugins(_app: &mut App, lib_map: &HashMap<String, Library>) -> Vec<
         ),
         "OpenSFS".to_string(),
     );
-    let telescope_plugin = plugin_getter(telescope_bindings);
+    let telescope_plugin = get_plugin(telescope_bindings);
     plugins.push(telescope_plugin);
     plugins
 }
