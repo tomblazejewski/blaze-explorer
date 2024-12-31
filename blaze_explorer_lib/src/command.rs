@@ -1,13 +1,14 @@
+pub mod command_helpers;
 pub mod key_press;
 use chrono::offset;
 use directories::ProjectDirs;
 use key_press::decode_expression;
 
-use crate::action::{ExplorerAction, PopupType};
+use crate::action::ExplorerAction;
 use crate::app::ExitResult;
 use crate::components::explorer_manager::SplitDirection;
 use crate::components::explorer_table::GlobalStyling;
-use crate::popup::{ActionInput, FlashJump};
+use crate::plugin::plugin_popup::PluginPopUp;
 use crate::{action::Action, line_entry::LineEntry};
 use std::fmt::Debug;
 use std::path::Path;
@@ -15,12 +16,7 @@ use std::process::Command as ProcessCommand;
 use std::{collections::HashMap, fs, path::PathBuf};
 use std::{fmt, io};
 
-use crate::{
-    app::App,
-    mode::Mode,
-    popup::{PopUp, TelescopeWindow},
-    telescope::AppContext,
-};
+use crate::{app::App, app_context::AppContext, mode::Mode};
 
 pub trait Command: CommandClone {
     fn execute(&mut self, app: &mut App) -> Option<Action>;
@@ -152,7 +148,10 @@ impl JumpAndClose {
 
 impl Command for JumpAndClose {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.quit();
+        match &mut app.popup {
+            None => {}
+            Some(ref mut popup) => popup.quit(),
+        }
         Some(Action::ExplorerAct(ExplorerAction::JumpToId(self.id)))
     }
 }
@@ -170,7 +169,10 @@ impl JumpAndOpen {
 
 impl Command for JumpAndOpen {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.quit();
+        match &mut app.popup {
+            None => {}
+            Some(ref mut popup) => popup.quit(),
+        }
         app.explorer_manager.jump_to_id(self.id);
         Some(Action::ExplorerAct(ExplorerAction::SelectDirectory))
     }
@@ -283,7 +285,8 @@ impl ShowInFolder {
 
 impl Command for ShowInFolder {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup = PopUp::None;
+        //close popup
+        app.drop_popup();
         //split target_path into path and file to select
         let folder = self.target_path.parent().unwrap();
         let filename = self.target_path.file_name().unwrap();
@@ -326,6 +329,7 @@ impl Command for SwitchMode {
             Mode::Normal => app.enter_normal_mode(),
             Mode::Command => app.enter_command_mode(),
             Mode::Search => app.enter_search_mode(),
+            Mode::PopUp => app.enter_popup_mode(),
         }
         None
     }
@@ -436,32 +440,27 @@ impl Command for DisplayMessage {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, Debug)]
 pub struct OpenPopup {
-    popup: PopupType,
+    popup: Box<dyn PluginPopUp>,
 }
 
 impl OpenPopup {
-    pub fn new(popup: PopupType) -> Self {
+    pub fn new(popup: Box<dyn PluginPopUp>) -> Self {
         Self { popup }
     }
 }
 impl Command for OpenPopup {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &self.popup {
-            PopupType::None => app.popup = PopUp::None,
-            PopupType::Telescope => {
-                app.popup = PopUp::TelescopePopUp(TelescopeWindow::new(app.get_app_context()))
-            }
-            PopupType::Rename => {
-                app.popup =
-                    PopUp::InputPopUp(ActionInput::<RenameActive>::new(app.get_app_context()))
-            }
-            PopupType::Flash(open) => {
-                app.popup = PopUp::FlashPopUp(FlashJump::new(app.get_app_context(), *open))
-            }
-        }
+        app.popup = Some(self.popup.clone());
         None
+    }
+}
+
+impl PartialEq for OpenPopup {
+    fn eq(&self, other: &Self) -> bool {
+        //FIXME: why does it need cloning (and PartialEq for App doesn't?)
+        self.popup == other.popup.clone()
     }
 }
 
@@ -475,9 +474,10 @@ impl UpdatePlugin {
 }
 impl Command for UpdatePlugin {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        if let PopUp::FlashPopUp(ref mut flash) = &mut app.popup {
-            flash.update_interface(&mut app.explorer_manager);
-        }
+        //FIXME: update when adding Flash back
+        // if let PopUp::FlashPopUp(ref mut flash) = &mut app.popup {
+        //     flash.update_interface(&mut app.explorer_manager);
+        // }
         None
     }
 }
@@ -533,127 +533,6 @@ impl DropKey {
 impl Command for DropKey {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         app.command_line.remove_char()
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct TelescopeConfirmResult {}
-
-impl TelescopeConfirmResult {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-impl Command for TelescopeConfirmResult {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.confirm_result()
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct TelescopeNextResult {}
-
-impl TelescopeNextResult {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-impl Command for TelescopeNextResult {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.next_result();
-        None
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct TelescopePreviousResult {}
-
-impl TelescopePreviousResult {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-impl Command for TelescopePreviousResult {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.previous_result();
-        None
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct TelescopeUpdateSearchQuery {
-    query: String,
-}
-
-impl TelescopeUpdateSearchQuery {
-    pub fn new(query: String) -> Self {
-        Self { query }
-    }
-}
-impl Command for TelescopeUpdateSearchQuery {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.update_search_query(self.query.clone());
-        None
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct TelescopePushSearchChar {
-    ch: char,
-}
-
-impl TelescopePushSearchChar {
-    pub fn new(ch: char) -> Self {
-        Self { ch }
-    }
-}
-
-impl Command for TelescopePushSearchChar {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.push_search_char(self.ch)
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct TelescopeDropSearchChar {}
-
-impl TelescopeDropSearchChar {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-impl Command for TelescopeDropSearchChar {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.drop_search_char()
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct TelescopeQuit {}
-
-impl TelescopeQuit {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-impl Command for TelescopeQuit {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.quit();
-        None
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct TelescopeEraseText {}
-
-impl TelescopeEraseText {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-impl Command for TelescopeEraseText {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup.erase_text()
     }
 }
 

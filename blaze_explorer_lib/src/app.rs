@@ -14,6 +14,7 @@ use ratatui::{
 };
 
 use crate::action::{get_command, AppAction, CommandAction, ExplorerAction, PopupAction};
+use crate::app_context::AppContext;
 use crate::app_input_machine::AppInputMachine;
 use crate::command::Command;
 use crate::components::command_line::CommandLine;
@@ -22,9 +23,8 @@ use crate::history_stack::directory_history::DirectoryDetails;
 use crate::history_stack::{command_history::CommandHistory, HistoryStack};
 use crate::input_machine::{InputMachine, KeyProcessingResult};
 use crate::line_entry::LineEntry;
+use crate::plugin::plugin_popup::PluginPopUp;
 use crate::plugin::Plugin;
-use crate::popup::{PopUp, PopupEngine};
-use crate::telescope::AppContext;
 use crate::tools::center_rect;
 use crate::{action::Action, components::Component, mode::Mode};
 
@@ -68,12 +68,13 @@ pub struct App {
     pub command_line: CommandLine,
     pub current_sequence: Vec<KeyEvent>,
     pub input_machine: AppInputMachine<Action>,
-    pub popup: PopUp,
+    pub popup: Option<Box<dyn PluginPopUp>>,
     pub command_history: HashMap<PathBuf, CommandHistory>,
     pub command_input: Option<String>,
     pub exit_status: Option<ExitResult>,
     pub current_path: PathBuf,
     pub key_queue: VecDeque<KeyEvent>,
+    pub plugins: HashMap<String, Box<dyn Plugin>>,
 }
 impl App {
     pub fn new() -> Result<Self> {
@@ -86,13 +87,28 @@ impl App {
             command_line: CommandLine::new(),
             current_sequence: Vec::new(),
             input_machine: AppInputMachine::new(),
-            popup: PopUp::None,
+            popup: None,
             command_history: HashMap::new(),
             command_input: None,
             exit_status: None,
             current_path: PathBuf::new(),
             key_queue: VecDeque::new(),
+            plugins: HashMap::new(),
         })
+    }
+
+    pub fn attach_plugins(&mut self, plugins: HashMap<String, Box<dyn Plugin>>) {
+        self.plugins = plugins;
+        self.attach_functionality();
+    }
+
+    fn attach_functionality(&mut self) {
+        for plugin in self.plugins.values() {
+            let plugin_keymap = plugin.get_plugin_keymap();
+            for ((mode, seq), action) in plugin_keymap {
+                self.input_machine.attach_binding(mode, seq, action);
+            }
+        }
     }
 
     /// Send a key event to the appropriate component based on the current mode
@@ -104,6 +120,37 @@ impl App {
         match self.key_queue.pop_front() {
             Some(key) => Ok(event::Event::Key(key)),
             None => event::read(),
+        }
+    }
+    pub fn attach_popup(&mut self, popup: Box<dyn PluginPopUp>) {
+        self.input_machine.attach_popup_bindings(popup.clone());
+        self.popup = Some(popup);
+        self.enter_popup_mode();
+    }
+
+    pub fn drop_popup(&mut self) {
+        self.input_machine.drop_popup_bindings();
+        self.popup = None;
+        self.explorer_manager.set_plugin_display(None);
+        self.enter_normal_mode();
+    }
+    pub fn process_key_event(&mut self, key: KeyEvent) {
+        if key.kind == KeyEventKind::Press {
+            self.handle_key_event(key);
+            self.own_push_action(Action::PopupAct(PopupAction::UpdatePlugin));
+        };
+    }
+    fn check_popup(&mut self) {
+        match &self.popup {
+            None => {}
+            Some(active_popup) => {
+                if active_popup.should_quit() {
+                    if let Some(command) = active_popup.destruct() {
+                        self.run_command(command);
+                    }
+                    self.drop_popup();
+                }
+            }
         }
     }
     pub fn run(&mut self, cold_start: bool) -> Result<ExitResult> {
@@ -119,41 +166,8 @@ impl App {
         loop {
             let _ = self.render();
             if let event::Event::Key(key) = self.draw_key_event()? {
-                if key.kind == KeyEventKind::Press {
-                    match &mut self.popup {
-                        PopUp::TelescopePopUp(popup) => {
-                            if let Some(action) = popup.handle_key_event(key) {
-                                self.own_push_action(action);
-                            }
-                        }
-                        PopUp::None => {
-                            self.handle_key_event(key);
-                        }
-                        PopUp::InputPopUp(input) => {
-                            if let Some(action) = input.handle_key_event(key) {
-                                self.own_push_action(action);
-                            }
-                        }
-                        PopUp::FlashPopUp(flashpopup) => {
-                            if let Some(action) = flashpopup.handle_key_event(key) {
-                                self.own_push_action(action);
-                            }
-                            self.own_push_action(Action::PopupAct(PopupAction::UpdatePlugin));
-                        }
-                    }
-                };
-                match &self.popup {
-                    PopUp::None => {}
-                    active_popup => {
-                        if active_popup.should_quit() {
-                            if let Some(command) = active_popup.destruct() {
-                                self.run_command(command);
-                            }
-                            self.popup = PopUp::None;
-                            self.explorer_manager.set_plugin_display(None);
-                        }
-                    }
-                }
+                self.process_key_event(key);
+                self.check_popup();
                 if self.should_quit {
                     break;
                 }
@@ -246,6 +260,12 @@ impl App {
         self.command_line.focus();
         self.explorer_manager.unfocus();
     }
+    pub fn enter_popup_mode(&mut self) {
+        self.mode = Mode::PopUp;
+        self.explorer_manager.switch_mode(Mode::PopUp);
+        self.command_line.unfocus();
+        self.explorer_manager.focus();
+    }
 
     pub fn confirm_search_query(&mut self) -> Option<Action> {
         self.enter_normal_mode();
@@ -307,12 +327,12 @@ impl App {
     }
 
     pub fn handle_post_actions(&mut self) -> Result<()> {
-        if let PopUp::FlashPopUp(flashpopup) = &self.popup {
-            self.explorer_manager
-                .set_plugin_display(Some(flashpopup.display_details()));
-        } else {
-            self.explorer_manager.set_plugin_display(None);
-        }
+        match &self.popup {
+            None => self.explorer_manager.set_plugin_display(None),
+            Some(popup) => self
+                .explorer_manager
+                .set_plugin_display(Some(popup.display_details())),
+        };
         Ok(())
     }
 
@@ -352,7 +372,9 @@ impl App {
             let _ = self
                 .command_line
                 .draw(frame, *areas.get("command_line").unwrap());
-            let _ = self.popup.draw(frame, *areas.get("popup").unwrap());
+            if let Some(ref mut popup) = &mut self.popup {
+                popup.draw(frame, *areas.get("popup").unwrap());
+            }
         })?;
         Ok(())
     }
@@ -416,6 +438,7 @@ impl Clone for App {
             exit_status: self.exit_status.clone(),
             current_path: self.current_path.clone(),
             key_queue: self.key_queue.clone(),
+            plugins: self.plugins.clone(),
         }
     }
 }

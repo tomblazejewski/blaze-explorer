@@ -3,17 +3,31 @@
 use std::collections::HashMap;
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use tracing::info;
 
 use crate::{
     action::{Action, AppAction, CommandAction, ExplorerAction, PopupType, TextAction},
     function_helpers::{pull_current_branch, push_current_branch},
     input_machine::{InputMachine, KeyMapNode, KeyProcessingResult},
     mode::Mode,
+    plugin::plugin_popup::PluginPopUp,
 };
+
+fn get_default_search_command_action(last_key: KeyEvent) -> Option<Action> {
+    match last_key.code {
+        KeyCode::Char(ch) => Some(Action::TextAct(TextAction::InsertKey(ch))),
+        _ => None,
+    }
+}
+
+pub fn get_none_action(last_key: KeyEvent) -> Option<Action> {
+    None
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct AppInputMachine<T> {
     keymap_nodes: HashMap<Mode, KeyMapNode<T>>,
+    default_actions: HashMap<Mode, Box<fn(KeyEvent) -> Option<Action>>>,
 }
 
 impl InputMachine for AppInputMachine<Action> {
@@ -28,17 +42,7 @@ impl InputMachine for AppInputMachine<Action> {
     }
 
     fn get_default_action(&self, mode: &Mode, last_key: KeyEvent) -> Option<Action> {
-        match mode {
-            Mode::Normal => None,
-            Mode::Search => match last_key.code {
-                KeyCode::Char(ch) => Some(Action::TextAct(TextAction::InsertKey(ch))),
-                _ => None,
-            },
-            Mode::Command => match last_key.code {
-                KeyCode::Char(ch) => Some(Action::TextAct(TextAction::InsertKey(ch))),
-                _ => None,
-            },
-        }
+        self.default_actions.get(mode).unwrap()(last_key)
     }
 }
 
@@ -48,8 +52,45 @@ impl AppInputMachine<Action> {
         keymap_nodes.insert(Mode::Normal, default_key_map());
         keymap_nodes.insert(Mode::Search, search_key_map());
         keymap_nodes.insert(Mode::Command, command_key_map());
+        keymap_nodes.insert(Mode::PopUp, KeyMapNode::new());
 
-        AppInputMachine { keymap_nodes }
+        let mut default_actions = HashMap::new();
+        default_actions.insert(
+            Mode::Normal,
+            Box::new(get_none_action as fn(KeyEvent) -> Option<Action>),
+        );
+        default_actions.insert(Mode::PopUp, Box::new(get_none_action));
+        default_actions.insert(Mode::Search, Box::new(get_default_search_command_action));
+        default_actions.insert(Mode::Command, Box::new(get_default_search_command_action));
+
+        AppInputMachine {
+            keymap_nodes,
+            default_actions,
+        }
+    }
+
+    pub fn attach_popup_bindings(&mut self, popup: Box<dyn PluginPopUp>) {
+        let popup_keymap = popup.get_own_keymap();
+        for ((mode, seq), action) in popup_keymap {
+            self.attach_binding(mode, seq, action);
+        }
+        self.default_actions
+            .insert(Mode::PopUp, popup.get_default_action());
+    }
+
+    pub fn drop_popup_bindings(&mut self) {
+        //nullify the default action in the Mode::PopUp
+        self.default_actions
+            .insert(Mode::PopUp, Box::new(get_none_action));
+        //empty the Mode::PopUp keymap
+        self.keymap_nodes.insert(Mode::PopUp, KeyMapNode::new());
+    }
+
+    pub fn attach_binding(&mut self, mode: Mode, sequence: Vec<KeyEvent>, action: Action) {
+        self.keymap_nodes
+            .get_mut(&mode)
+            .unwrap()
+            .add_sequence(sequence, action);
     }
 }
 pub fn process_app_keys(
@@ -106,26 +147,26 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::ClearSearchQuery),
     );
-    root.add_sequence(
-        vec![
-            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
-            KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE),
-            KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
-        ],
-        Action::AppAct(AppAction::OpenPopup(PopupType::Telescope)),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)],
-        Action::AppAct(AppAction::OpenPopup(PopupType::Rename)),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Char('m'), KeyModifiers::NONE)],
-        Action::AppAct(AppAction::OpenPopup(PopupType::Flash(false))),
-    );
-    root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Char('M'), KeyModifiers::NONE)],
-        Action::AppAct(AppAction::OpenPopup(PopupType::Flash(true))),
-    );
+    // root.add_sequence(
+    //     vec![
+    //         KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
+    //         KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE),
+    //         KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
+    //     ],
+    //     Action::AppAct(AppAction::OpenPopup(PopupType::Telescope)),
+    // );
+    // root.add_sequence(
+    //     vec![KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)],
+    //     Action::AppAct(AppAction::OpenPopup(PopupType::Rename)),
+    // );
+    // root.add_sequence(
+    //     vec![KeyEvent::new(KeyCode::Char('m'), KeyModifiers::NONE)],
+    //     Action::AppAct(AppAction::OpenPopup(PopupType::Flash(false))),
+    // );
+    // root.add_sequence(
+    //     vec![KeyEvent::new(KeyCode::Char('M'), KeyModifiers::NONE)],
+    //     Action::AppAct(AppAction::OpenPopup(PopupType::Flash(true))),
+    // );
     root.add_sequence(
         vec![
             KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),

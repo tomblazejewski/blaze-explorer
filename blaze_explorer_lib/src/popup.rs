@@ -12,16 +12,16 @@ use crate::components::explorer_manager::ExplorerManager;
 use crate::components::explorer_table::GlobalStyling;
 use crate::flash_input_machine::FlashInputMachine;
 use crate::line_entry::LineEntry;
+use crate::plugin::plugin_popup::PluginPopUp;
 use crate::plugin::Plugin;
-use crate::simple_input_machine::SimpleInputMachine;
-use crate::telescope_input_machine::TelescopeInputMachine;
+use crate::simple_input_machine::TelescopeInputMachine;
 use crate::telescope_query::TelescopeQuery;
 use crate::tools::center_rect;
 use crate::{
     action::Action,
     input_machine::{InputMachine, KeyProcessingResult},
     mode::Mode,
-    telescope::{AppContext, PopUpComponent, Telescope},
+    telescope::{AppContext, PopUpComponent, TelescopeBackend},
 };
 
 const JUMP_KEYS: [char; 25] = [
@@ -201,115 +201,6 @@ impl PopUp {
     }
 }
 
-pub trait PopupEngine {
-    fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action>;
-
-    fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
-
-    fn confirm_result(&mut self) -> Option<Action> {
-        None
-    }
-
-    fn next_result(&mut self) {}
-
-    fn previous_result(&mut self) {}
-
-    fn update_search_query(&mut self, _query: String) {}
-
-    fn push_search_char(&mut self, ch: char);
-
-    fn drop_search_char(&mut self);
-
-    fn quit(&mut self);
-
-    fn erase_text(&mut self);
-
-    fn get_search_query(&self) -> String;
-
-    fn destruct(&self) -> Option<Box<dyn Command>> {
-        None
-    }
-}
-#[derive(Debug, Clone, PartialEq)]
-pub struct TelescopeWindow {
-    input_machine: SimpleInputMachine,
-    telescope_backend: Telescope,
-    current_sequence: Vec<KeyEvent>,
-    pub should_quit: bool,
-}
-
-impl TelescopeWindow {
-    pub fn new(ctx: AppContext) -> Self {
-        TelescopeWindow {
-            input_machine: SimpleInputMachine::new(),
-            telescope_backend: Telescope::new(ctx),
-            current_sequence: Vec::new(),
-            should_quit: false,
-        }
-    }
-}
-impl PopupEngine for TelescopeWindow {
-    fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action> {
-        let keymap_result =
-            self.input_machine
-                .process_keys(&Mode::Normal, &mut self.current_sequence, key_event);
-        match keymap_result {
-            KeyProcessingResult::Complete(action) => {
-                return Some(action);
-            }
-            KeyProcessingResult::Invalid => {
-                return self
-                    .input_machine
-                    .get_default_action(&Mode::Normal, key_event)
-            }
-            _ => {}
-        }
-        None
-    }
-
-    fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        frame.render_widget(Clear, area);
-        self.telescope_backend.draw(frame, area)?;
-        Ok(())
-    }
-
-    fn confirm_result(&mut self) -> Option<Action> {
-        self.telescope_backend.confirm_result()
-    }
-
-    fn next_result(&mut self) {
-        self.telescope_backend.next_result();
-    }
-
-    fn previous_result(&mut self) {
-        self.telescope_backend.previous_result();
-    }
-
-    fn update_search_query(&mut self, query: String) {
-        self.telescope_backend.update_search_query(query);
-    }
-
-    fn push_search_char(&mut self, ch: char) {
-        self.telescope_backend.query.append_char(ch)
-    }
-
-    fn drop_search_char(&mut self) {
-        self.telescope_backend.query.drop_char()
-    }
-
-    fn quit(&mut self) {
-        self.should_quit = true;
-    }
-
-    fn erase_text(&mut self) {
-        self.telescope_backend.query.clear_contents();
-    }
-
-    fn get_search_query(&self) -> String {
-        self.telescope_backend.query.get_contents()
-    }
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct ActionInput<T> {
     resulting_action: T,
@@ -344,7 +235,7 @@ impl ActionInput<RenameActive> {
         self.resulting_action.update_command_context(new_name);
     }
 }
-impl PopupEngine for ActionInput<RenameActive> {
+impl PluginPopUp for ActionInput<RenameActive> {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action> {
         let keymap_result =
             self.input_machine
@@ -494,7 +385,7 @@ impl FlashJump {
         ));
     }
 }
-impl PopupEngine for FlashJump {
+impl PluginPopUp for FlashJump {
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action> {
         let keymap_result =
             self.input_machine

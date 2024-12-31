@@ -22,8 +22,6 @@ use crate::git_helpers::{assign_git_styling, get_repo};
 use crate::history_stack::directory_history::DirectoryHistory;
 use crate::{mode::Mode, themes::CustomTheme};
 
-use super::Component;
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct FileData {
     pub id: usize,
