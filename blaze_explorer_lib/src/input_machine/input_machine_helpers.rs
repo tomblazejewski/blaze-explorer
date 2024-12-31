@@ -38,22 +38,29 @@ pub fn convert_str_to_events(input: &str) -> Vec<KeyEvent> {
 
 fn parse_key_sequence(sequence: &str) -> Option<(KeyCode, KeyModifiers)> {
     let mut modifiers = KeyModifiers::NONE;
-    let mut key_char = None;
 
-    for part in sequence.split('-') {
-        match part {
-            "C" => modifiers |= KeyModifiers::CONTROL,
-            "S" => modifiers |= KeyModifiers::SHIFT,
-            "A" => modifiers |= KeyModifiers::ALT,
-            _ if part.len() == 1 => key_char = Some(part.chars().next().unwrap()),
-            _ => return None, // Invalid sequence
+    match sequence {
+        "Esc" => Some((KeyCode::Esc, modifiers)),
+        "CR" => Some((KeyCode::Enter, modifiers)),
+        "BS" => Some((KeyCode::Backspace, modifiers)),
+        _ => {
+            let mut key_char = None;
+            for part in sequence.split('-') {
+                match part {
+                    "C" => modifiers |= KeyModifiers::CONTROL,
+                    "S" => modifiers |= KeyModifiers::SHIFT,
+                    "A" => modifiers |= KeyModifiers::ALT,
+                    _ if part.len() == 1 => key_char = Some(part.chars().next().unwrap()),
+                    _ => return None, // Invalid sequence
+                }
+            }
+
+            if let Some(c) = key_char {
+                Some((KeyCode::Char(c), modifiers))
+            } else {
+                None
+            }
         }
-    }
-
-    if let Some(c) = key_char {
-        Some((KeyCode::Char(c), modifiers))
-    } else {
-        None
     }
 }
 #[cfg(test)]
@@ -78,13 +85,16 @@ mod tests {
 
         assert_eq!(events, expected_events);
 
-        let input_complex = "<C-a> <S-h>c";
+        let input_complex = "<C-a> <S-h>c<Esc><CR><BS>";
         let events_complex = convert_str_to_events(input_complex);
         let expected_events_complex = vec![
             KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL),
             KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('h'), KeyModifiers::SHIFT),
             KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE),
         ];
         assert_eq!(events_complex, expected_events_complex);
     }
