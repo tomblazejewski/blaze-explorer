@@ -285,7 +285,8 @@ impl ShowInFolder {
 
 impl Command for ShowInFolder {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.popup = None;
+        //close popup
+        app.drop_popup();
         //split target_path into path and file to select
         let folder = self.target_path.parent().unwrap();
         let filename = self.target_path.file_name().unwrap();

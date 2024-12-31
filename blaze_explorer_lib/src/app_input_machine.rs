@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use tracing::info;
 
 use crate::{
     action::{Action, AppAction, CommandAction, ExplorerAction, PopupType, TextAction},
@@ -68,7 +69,14 @@ impl AppInputMachine<Action> {
         }
     }
 
-    pub fn attach_popup_bindings(&mut self, popup: Box<dyn PluginPopUp>) {}
+    pub fn attach_popup_bindings(&mut self, popup: Box<dyn PluginPopUp>) {
+        let popup_keymap = popup.get_own_keymap();
+        for ((mode, seq), action) in popup_keymap {
+            self.attach_binding(mode, seq, action);
+        }
+        self.default_actions
+            .insert(Mode::PopUp, popup.get_default_action());
+    }
 
     pub fn drop_popup_bindings(&mut self) {
         //nullify the default action in the Mode::PopUp

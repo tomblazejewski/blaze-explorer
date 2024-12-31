@@ -18,4 +18,5 @@ macro_rules! create_plugin_action {
         }
     };
 }
+
 pub use create_plugin_action;

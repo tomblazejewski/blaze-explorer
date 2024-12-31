@@ -1,31 +1,28 @@
-use libloading::Library;
+use libloading::{Library, Symbol};
 use std::collections::HashMap;
 
-use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use ratatui::crossterm::event::KeyEvent;
 
 use blaze_explorer_lib::{app::App, mode::Mode, plugin::Plugin};
 
-pub fn fetch_plugins(_app: &mut App, lib_map: &HashMap<String, Library>) -> Vec<Box<dyn Plugin>> {
-    let mut plugins: Vec<Box<dyn Plugin>> = Vec::new();
+type BindingsMap = HashMap<(Mode, Vec<KeyEvent>), String>;
+fn collect_plugin(lib: &Library, custom_bindings: Option<BindingsMap>) -> Box<dyn Plugin> {
+    let custom_bindings = custom_bindings.unwrap_or_default();
+    let get_plugin: Symbol<extern "Rust" fn(BindingsMap) -> Box<dyn Plugin>> =
+        unsafe { lib.get(b"get_plugin").unwrap() };
+    get_plugin(custom_bindings)
+}
 
-    //telescope
-    let telescope_lib = lib_map.get("blaze_telescope").unwrap();
-    let mut telescope_bindings = HashMap::new();
-    let get_plugin: libloading::Symbol<
-        extern "Rust" fn(HashMap<(Mode, Vec<KeyEvent>), String>) -> Box<dyn Plugin>,
-    > = unsafe { telescope_lib.get(b"get_plugin").unwrap() };
-    telescope_bindings.insert(
-        (
-            Mode::Normal,
-            vec![
-                KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
-                KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE),
-                KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
-            ],
-        ),
-        "OpenSFS".to_string(),
-    );
-    let telescope_plugin = get_plugin(telescope_bindings);
-    plugins.push(telescope_plugin);
+pub fn fetch_plugins(
+    _app: &mut App,
+    lib_map: &HashMap<String, Library>,
+) -> HashMap<String, Box<dyn Plugin>> {
+    let mut plugins = HashMap::new();
+    for lib in lib_map.values() {
+        let plugin = collect_plugin(lib, None);
+        let display = plugin.display_details();
+        plugins.insert(display, plugin);
+    }
+
     plugins
 }

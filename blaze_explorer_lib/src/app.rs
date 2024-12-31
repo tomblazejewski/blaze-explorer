@@ -74,7 +74,7 @@ pub struct App {
     pub exit_status: Option<ExitResult>,
     pub current_path: PathBuf,
     pub key_queue: VecDeque<KeyEvent>,
-    pub plugins: Vec<Box<dyn Plugin>>,
+    pub plugins: HashMap<String, Box<dyn Plugin>>,
 }
 impl App {
     pub fn new() -> Result<Self> {
@@ -93,19 +93,19 @@ impl App {
             exit_status: None,
             current_path: PathBuf::new(),
             key_queue: VecDeque::new(),
-            plugins: Vec::new(),
+            plugins: HashMap::new(),
         })
     }
 
-    pub fn attach_plugins(&mut self, plugins: Vec<Box<dyn Plugin>>) {
+    pub fn attach_plugins(&mut self, plugins: HashMap<String, Box<dyn Plugin>>) {
         self.plugins = plugins;
         self.attach_functionality();
     }
 
     fn attach_functionality(&mut self) {
-        for plugin in &self.plugins {
-            let bindings = plugin.get_bindings();
-            for ((mode, seq), action) in bindings {
+        for plugin in self.plugins.values() {
+            let plugin_keymap = plugin.get_plugin_keymap();
+            for ((mode, seq), action) in plugin_keymap {
                 self.input_machine.attach_binding(mode, seq, action);
             }
         }
@@ -125,25 +125,19 @@ impl App {
     pub fn attach_popup(&mut self, popup: Box<dyn PluginPopUp>) {
         self.input_machine.attach_popup_bindings(popup.clone());
         self.popup = Some(popup);
+        self.enter_popup_mode();
     }
 
     pub fn drop_popup(&mut self) {
         self.input_machine.drop_popup_bindings();
         self.popup = None;
+        self.explorer_manager.set_plugin_display(None);
+        self.enter_normal_mode();
     }
     pub fn process_key_event(&mut self, key: KeyEvent) {
         if key.kind == KeyEventKind::Press {
-            match &mut self.popup {
-                Some(popup) => {
-                    if let Some(action) = popup.handle_key_event(key) {
-                        self.own_push_action(action);
-                    }
-                    self.own_push_action(Action::PopupAct(PopupAction::UpdatePlugin));
-                }
-                None => {
-                    self.handle_key_event(key);
-                }
-            }
+            self.handle_key_event(key);
+            self.own_push_action(Action::PopupAct(PopupAction::UpdatePlugin));
         };
     }
     fn check_popup(&mut self) {
@@ -154,8 +148,7 @@ impl App {
                     if let Some(command) = active_popup.destruct() {
                         self.run_command(command);
                     }
-                    self.popup = None;
-                    self.explorer_manager.set_plugin_display(None);
+                    self.drop_popup();
                 }
             }
         }

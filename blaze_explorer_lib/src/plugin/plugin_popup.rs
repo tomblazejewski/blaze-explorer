@@ -1,12 +1,10 @@
-use std::fmt::Debug;
+use std::{collections::HashMap, fmt::Debug};
 
 use color_eyre::eyre::Result;
 use ratatui::{crossterm::event::KeyEvent, layout::Rect, Frame};
 
-use crate::{action::Action, app_input_machine::get_none_action, command::Command};
+use crate::{action::Action, app_input_machine::get_none_action, command::Command, mode::Mode};
 pub trait PluginPopUp: PluginPopUpClone {
-    fn handle_key_event(&mut self, key_event: KeyEvent) -> Option<Action>;
-
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
 
     fn confirm_result(&mut self) -> Option<Action> {
@@ -44,6 +42,7 @@ pub trait PluginPopUp: PluginPopUpClone {
     fn get_default_action(&self) -> Box<fn(KeyEvent) -> Option<Action>> {
         Box::new(get_none_action)
     }
+    fn get_own_keymap(&self) -> HashMap<(Mode, Vec<KeyEvent>), Action>;
 }
 
 pub trait PluginPopUpClone: Debug {
