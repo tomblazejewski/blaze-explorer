@@ -123,10 +123,12 @@ impl App {
         }
     }
     pub fn attach_popup(&mut self, popup: Box<dyn PluginPopUp>) {
+        self.input_machine.attach_popup_bindings(popup.clone());
         self.popup = Some(popup);
     }
 
     pub fn drop_popup(&mut self) {
+        self.input_machine.drop_popup_bindings();
         self.popup = None;
     }
     pub fn process_key_event(&mut self, key: KeyEvent) {
@@ -264,6 +266,12 @@ impl App {
         self.explorer_manager.switch_mode(Mode::Command);
         self.command_line.focus();
         self.explorer_manager.unfocus();
+    }
+    pub fn enter_popup_mode(&mut self) {
+        self.mode = Mode::PopUp;
+        self.explorer_manager.switch_mode(Mode::PopUp);
+        self.command_line.unfocus();
+        self.explorer_manager.focus();
     }
 
     pub fn confirm_search_query(&mut self) -> Option<Action> {

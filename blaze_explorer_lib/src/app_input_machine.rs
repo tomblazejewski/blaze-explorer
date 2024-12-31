@@ -9,6 +9,7 @@ use crate::{
     function_helpers::{pull_current_branch, push_current_branch},
     input_machine::{InputMachine, KeyMapNode, KeyProcessingResult},
     mode::Mode,
+    plugin::plugin_popup::PluginPopUp,
 };
 
 fn get_default_search_command_action(last_key: KeyEvent) -> Option<Action> {
@@ -50,6 +51,7 @@ impl AppInputMachine<Action> {
         keymap_nodes.insert(Mode::Normal, default_key_map());
         keymap_nodes.insert(Mode::Search, search_key_map());
         keymap_nodes.insert(Mode::Command, command_key_map());
+        keymap_nodes.insert(Mode::PopUp, KeyMapNode::new());
 
         let mut default_actions = HashMap::new();
         default_actions.insert(
@@ -66,12 +68,14 @@ impl AppInputMachine<Action> {
         }
     }
 
-    pub fn attach_popup_binding(
-        &mut self,
-        popup_type: PopupType,
-        sequence: Vec<KeyEvent>,
-        action: Action,
-    ) {
+    pub fn attach_popup_bindings(&mut self, popup: Box<dyn PluginPopUp>) {}
+
+    pub fn drop_popup_bindings(&mut self) {
+        //nullify the default action in the Mode::PopUp
+        self.default_actions
+            .insert(Mode::PopUp, Box::new(get_none_action));
+        //empty the Mode::PopUp keymap
+        self.keymap_nodes.insert(Mode::PopUp, KeyMapNode::new());
     }
 
     pub fn attach_binding(&mut self, mode: Mode, sequence: Vec<KeyEvent>, action: Action) {

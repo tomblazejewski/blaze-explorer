@@ -328,6 +328,7 @@ impl Command for SwitchMode {
             Mode::Normal => app.enter_normal_mode(),
             Mode::Command => app.enter_command_mode(),
             Mode::Search => app.enter_search_mode(),
+            Mode::PopUp => app.enter_popup_mode(),
         }
         None
     }
