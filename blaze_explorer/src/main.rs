@@ -55,29 +55,31 @@ fn collect_libs() -> HashMap<String, Library> {
 }
 fn main() -> Result<(), Box<dyn Error>> {
     initialize_logging()?;
-    let mut app = App::new().unwrap();
     let lib_map = collect_libs();
-    let plugins = fetch_plugins(&mut app, &lib_map);
-    app.attach_plugins(plugins);
-    let mut cold_start = true;
-    loop {
-        stdout().execute(EnterAlternateScreen)?;
-        enable_raw_mode()?;
-        let result = app.run(cold_start);
-        cold_start = false;
-        stdout().execute(LeaveAlternateScreen)?;
-        disable_raw_mode()?;
-        match result {
-            Ok(ExitResult::Quit) => break,
-            Ok(ExitResult::OpenNeovim(path)) => {
-                open_neovim(&path)?;
-                bring_app_back(&mut app);
+    {
+        let mut app = App::new().unwrap();
+        let plugins = fetch_plugins(&mut app, &lib_map);
+        app.attach_plugins(plugins);
+        let mut cold_start = true;
+        loop {
+            stdout().execute(EnterAlternateScreen)?;
+            enable_raw_mode()?;
+            let result = app.run(cold_start);
+            cold_start = false;
+            stdout().execute(LeaveAlternateScreen)?;
+            disable_raw_mode()?;
+            match result {
+                Ok(ExitResult::Quit) => break,
+                Ok(ExitResult::OpenNeovim(path)) => {
+                    open_neovim(&path)?;
+                    bring_app_back(&mut app);
+                }
+                Err(e) => {
+                    println!("{}", e);
+                }
+                _ => {}
             }
-            Err(e) => {
-                println!("{}", e);
-            }
-            _ => {}
         }
+        Ok(())
     }
-    Ok(())
 }
