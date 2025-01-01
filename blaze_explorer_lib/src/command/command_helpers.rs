@@ -49,3 +49,23 @@ macro_rules! custom_action {
 pub use custom_action;
 
 pub use match_popup_call;
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        action::{Action, AppAction},
+        app::App,
+    };
+
+    use super::*;
+
+    #[test]
+    fn test_custom_action() {
+        let action_func: fn(app: &mut App) -> Option<Action> = |mut app| None;
+        let action = custom_action!(action_func);
+        assert_eq!(
+            action,
+            Action::AppAct(AppAction::ExecuteFunction(Box::new(action_func)))
+        );
+    }
+}

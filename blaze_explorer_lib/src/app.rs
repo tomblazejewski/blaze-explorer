@@ -471,7 +471,7 @@ mod tests {
     fn test_move_directory() {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
-        let abs_path = path::absolute("tests/").unwrap();
+        let abs_path = path::absolute("../tests/").unwrap();
         app.move_directory(abs_path.clone(), None);
         assert_eq!(app.explorer_manager.get_current_path(), abs_path);
         app.move_directory(starting_path, None);
@@ -482,7 +482,7 @@ mod tests {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
         app.move_directory(starting_path.clone(), None);
-        let abs_path = path::absolute("tests/").unwrap();
+        let abs_path = path::absolute("../tests/").unwrap();
         app.move_directory(abs_path.clone(), None);
         app.undo_directory();
         assert_eq!(app.explorer_manager.get_current_path(), starting_path);
@@ -493,7 +493,7 @@ mod tests {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
         app.move_directory(starting_path.clone(), None);
-        let abs_path = path::absolute("tests/").unwrap();
+        let abs_path = path::absolute("../tests/").unwrap();
         app.move_directory(abs_path.clone(), None);
         app.undo_directory();
         assert_eq!(app.explorer_manager.get_current_path(), starting_path);

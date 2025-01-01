@@ -994,7 +994,7 @@ mod tests {
     fn test_change_directory() {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
-        let abs_path = path::absolute("tests/").unwrap();
+        let abs_path = path::absolute("../tests/").unwrap();
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
                 abs_path.clone(),
@@ -1008,7 +1008,7 @@ mod tests {
     fn test_select_up_down() {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
-        let abs_path = path::absolute("tests/").unwrap();
+        let abs_path = path::absolute("../tests/").unwrap();
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
                 abs_path.clone(),
@@ -1028,7 +1028,7 @@ mod tests {
     fn test_update_search_query() {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
-        let abs_path = path::absolute("tests/").unwrap();
+        let abs_path = path::absolute("../tests/").unwrap();
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
                 abs_path.clone(),
@@ -1048,7 +1048,7 @@ mod tests {
     fn test_clear_search_query() {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
-        let abs_path = path::absolute("tests/").unwrap();
+        let abs_path = path::absolute("../tests/").unwrap();
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
                 abs_path.clone(),
@@ -1073,8 +1073,8 @@ mod tests {
     fn test_parent_directory() {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
-        let abs_path = path::absolute("tests/folder_1").unwrap();
-        let parent_path = path::absolute("tests/").unwrap();
+        let abs_path = path::absolute("../tests/folder_1").unwrap();
+        let parent_path = path::absolute("../tests/").unwrap();
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
                 abs_path.clone(),
@@ -1095,7 +1095,7 @@ mod tests {
     fn test_delete() {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
-        let abs_path = path::absolute("tests/folder_1").unwrap();
+        let abs_path = path::absolute("../tests/folder_1").unwrap();
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
                 abs_path.clone(),
@@ -1155,8 +1155,8 @@ mod tests {
     fn test_jump_and_open() {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
-        let first_path = path::absolute("tests/").unwrap();
-        let expected_path = path::absolute("tests/folder_1").unwrap();
+        let first_path = path::absolute("../tests/").unwrap();
+        let expected_path = path::absolute("../tests/folder_1").unwrap();
         app.move_directory(first_path, None);
         app.action_list
             .push_back(Action::PopupAct(crate::action::PopupAction::JumpAndOpen(0)));
@@ -1170,8 +1170,8 @@ mod tests {
     fn test_select_directory() {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
-        let abs_path = path::absolute("tests/").unwrap();
-        let expected_path = path::absolute("tests/folder_1").unwrap();
+        let abs_path = path::absolute("../tests/").unwrap();
+        let expected_path = path::absolute("../tests/folder_1").unwrap();
         app.action_list
             .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
                 abs_path.clone(),

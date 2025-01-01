@@ -72,7 +72,7 @@ mod tests {
             directory: starting_path.clone(),
             selected: Some("src".into()),
         });
-        let new_path = path::absolute("tests/").unwrap();
+        let new_path = path::absolute("../tests/").unwrap();
         history.perform(DirectoryDetails {
             directory: new_path.clone(),
             selected: None,
