@@ -24,7 +24,7 @@ impl PluginDropSearchChar {
 }
 impl Command for PluginDropSearchChar {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match_popup_call!(app, drop_search_char)
+        match_popup_call!(app, drop_search_char->Option<Action>)
     }
 }
 
@@ -52,7 +52,7 @@ impl PluginNextResult {
 }
 impl Command for PluginNextResult {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match_popup_call!(app, next_result)
+        match_popup_call!(app, next_result->Option<Action>)
     }
 }
 
@@ -66,7 +66,7 @@ impl PluginPreviousResult {
 }
 impl Command for PluginPreviousResult {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match_popup_call!(app, previous_result)
+        match_popup_call!(app, previous_result->Option<Action>)
     }
 }
 #[derive(Clone, PartialEq, Debug)]
@@ -82,7 +82,7 @@ impl PluginPushSearchChar {
 
 impl Command for PluginPushSearchChar {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match_popup_call!(app, push_search_char, self.ch)
+        match_popup_call!(app, push_search_char, self.ch;->Option<Action>)
     }
 }
 #[derive(Clone, PartialEq, Debug)]
@@ -95,6 +95,6 @@ impl PluginEraseText {
 }
 impl Command for PluginEraseText {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match_popup_call!(app, erase_text)
+        match_popup_call!(app, erase_text->Option<Action>)
     }
 }

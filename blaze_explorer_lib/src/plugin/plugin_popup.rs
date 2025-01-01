@@ -3,7 +3,9 @@ use std::{collections::HashMap, fmt::Debug};
 use color_eyre::eyre::Result;
 use ratatui::{crossterm::event::KeyEvent, layout::Rect, Frame};
 
-use crate::{action::Action, app_input_machine::get_none_action, command::Command, mode::Mode};
+use crate::{
+    action::Action, app::App, app_input_machine::get_none_action, command::Command, mode::Mode,
+};
 pub trait PluginPopUp: PluginPopUpClone {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
 
@@ -11,21 +13,27 @@ pub trait PluginPopUp: PluginPopUpClone {
         None
     }
 
-    fn next_result(&mut self) {}
+    fn next_result(&mut self) -> Option<Action> {
+        None
+    }
 
-    fn previous_result(&mut self) {}
+    fn previous_result(&mut self) -> Option<Action> {
+        None
+    }
 
-    fn update_search_query(&mut self, _query: String) {}
+    fn update_search_query(&mut self, _query: String) -> Option<Action> {
+        None
+    }
 
-    fn push_search_char(&mut self, ch: char);
+    fn push_search_char(&mut self, ch: char) -> Option<Action>;
 
-    fn drop_search_char(&mut self);
+    fn drop_search_char(&mut self) -> Option<Action>;
 
     fn quit(&mut self);
 
     fn should_quit(&self) -> bool;
 
-    fn erase_text(&mut self);
+    fn erase_text(&mut self) -> Option<Action>;
 
     fn get_search_query(&self) -> String;
 
@@ -43,6 +51,8 @@ pub trait PluginPopUp: PluginPopUpClone {
         Box::new(get_none_action)
     }
     fn get_own_keymap(&self) -> HashMap<(Mode, Vec<KeyEvent>), Action>;
+
+    fn update_app(&mut self, _app: &mut App) {}
 }
 
 pub trait PluginPopUpClone: Debug {

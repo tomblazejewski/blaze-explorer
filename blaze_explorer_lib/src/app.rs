@@ -137,7 +137,6 @@ impl App {
     pub fn process_key_event(&mut self, key: KeyEvent) {
         if key.kind == KeyEventKind::Press {
             self.handle_key_event(key);
-            self.own_push_action(Action::PopupAct(PopupAction::UpdatePlugin));
         };
     }
     fn check_popup(&mut self) {

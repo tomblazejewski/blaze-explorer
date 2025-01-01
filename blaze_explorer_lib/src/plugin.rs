@@ -59,6 +59,8 @@ pub trait Plugin: PluginSuper {
         all_keymap.extend(popup_keymap);
         all_keymap
     }
+
+    fn update_app(&self, _app: &mut App) {}
 }
 
 pub trait PluginSuper: Debug {

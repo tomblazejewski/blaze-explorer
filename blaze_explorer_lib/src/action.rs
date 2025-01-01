@@ -3,7 +3,7 @@ use crate::{
         DeleteSplit, DisplayMessage, ExecuteFunction, FocusDown, FocusLeft, FocusRight, FocusUp,
         JumpAndClose, JumpAndOpen, JumpToId, OpenNeovimHere, ParseCommand, ParseKeyStrokes,
         RedoDirectory, SplitHorizontally, SplitVertically, TerminalCommand, UndoDirectory,
-        UpdatePlugin,
+        UpdatePlugin, UpdatePopup,
     },
     plugin::{plugin_action::PluginAction, plugin_popup::PluginPopUp},
 };
@@ -95,8 +95,7 @@ pub enum PopupAction {
     EraseText,
     UpdateSearchQuery(String),
     UpdatePlugin,
-    JumpAndClose(usize),
-    JumpAndOpen(usize),
+    UpdatePopup,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -159,6 +158,7 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::TextAct(TextAction::EraseText) => Box::new(EraseText::new()),
         Action::TextAct(TextAction::DropKey) => Box::new(DropKey::new()),
         Action::PopupAct(PopupAction::UpdatePlugin) => Box::new(UpdatePlugin::new()),
+        Action::PopupAct(PopupAction::UpdatePopup) => Box::new(UpdatePopup::new()),
         Action::Noop => Box::new(Noop::new()),
         Action::CommandAct(_) => Box::new(Noop::new()),
         Action::PluginAct(plugin_action) => plugin_action.get_command(),

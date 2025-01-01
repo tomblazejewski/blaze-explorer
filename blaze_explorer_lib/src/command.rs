@@ -465,6 +465,27 @@ impl PartialEq for OpenPopup {
 }
 
 #[derive(Clone, PartialEq, Debug)]
+pub struct UpdatePopup {}
+
+impl UpdatePopup {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+impl Command for UpdatePopup {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        match app.popup {
+            None => {}
+            Some(ref mut popup) => {
+                let mut popup = popup.clone();
+                popup.update_app(app);
+                app.popup = Some(popup);
+            }
+        };
+        None
+    }
+}
+#[derive(Clone, PartialEq, Debug)]
 pub struct UpdatePlugin {}
 
 impl UpdatePlugin {

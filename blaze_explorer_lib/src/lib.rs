@@ -7,7 +7,6 @@ pub mod app_input_machine;
 pub mod command;
 pub mod components;
 pub mod explorer_helpers;
-pub mod flash_input_machine;
 pub mod function_helpers;
 pub mod git_helpers;
 pub mod history_stack;
