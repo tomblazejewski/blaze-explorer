@@ -1,16 +1,23 @@
-use libloading::{Library, Symbol};
+use libloading::{Error, Library, Symbol};
 use std::collections::HashMap;
+use tracing::info;
 
 use ratatui::crossterm::event::KeyEvent;
 
 use blaze_explorer_lib::{app::App, mode::Mode, plugin::Plugin};
 
 type BindingsMap = HashMap<(Mode, Vec<KeyEvent>), String>;
-fn collect_plugin(lib: &Library, custom_bindings: Option<BindingsMap>) -> Box<dyn Plugin> {
+fn collect_plugin(lib: &Library, custom_bindings: Option<BindingsMap>) -> Option<Box<dyn Plugin>> {
     let custom_bindings = custom_bindings.unwrap_or_default();
-    let get_plugin: Symbol<extern "Rust" fn(BindingsMap) -> Box<dyn Plugin>> =
-        unsafe { lib.get(b"get_plugin").unwrap() };
-    get_plugin(custom_bindings)
+    let get_plugin: Result<Symbol<extern "Rust" fn(BindingsMap) -> Box<dyn Plugin>>, Error> =
+        unsafe { lib.get(b"get_plugin") };
+    match get_plugin {
+        Ok(plugin) => return Some(plugin(custom_bindings)),
+        Err(err) => {
+            info!("Failed to load plugin: {}", err);
+            return None;
+        }
+    }
 }
 
 pub fn fetch_plugins(
@@ -20,8 +27,10 @@ pub fn fetch_plugins(
     let mut plugins = HashMap::new();
     for lib in lib_map.values() {
         let plugin = collect_plugin(lib, None);
-        let display = plugin.display_details();
-        plugins.insert(display, plugin);
+        if let Some(plugin) = plugin {
+            let display = plugin.display_details();
+            plugins.insert(display, plugin);
+        };
     }
 
     plugins
