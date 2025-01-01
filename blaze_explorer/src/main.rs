@@ -51,7 +51,6 @@ fn collect_libs() -> HashMap<String, Library> {
             }
         }
     }
-    info!("Plugin map {:?}", lib_map);
     lib_map
 }
 fn main() -> Result<(), Box<dyn Error>> {
