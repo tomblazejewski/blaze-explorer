@@ -97,8 +97,8 @@ impl App {
         })
     }
 
-    pub fn attach_plugins(&mut self, plugins: HashMap<String, Box<dyn Plugin>>) {
-        self.plugins = plugins;
+    pub fn attach_plugins(&mut self, plugins: &HashMap<String, Box<dyn Plugin>>) {
+        self.plugins = plugins.to_owned();
         self.attach_functionality();
     }
 

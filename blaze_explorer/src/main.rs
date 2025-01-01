@@ -51,6 +51,7 @@ fn collect_libs() -> HashMap<String, Library> {
             }
         }
     }
+    info!("Plugin map {:?}", lib_map);
     lib_map
 }
 fn main() -> Result<(), Box<dyn Error>> {
@@ -59,7 +60,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     {
         let mut app = App::new().unwrap();
         let plugins = fetch_plugins(&mut app, &lib_map);
-        app.attach_plugins(plugins);
+        app.attach_plugins(&plugins);
         let mut cold_start = true;
         loop {
             stdout().execute(EnterAlternateScreen)?;
