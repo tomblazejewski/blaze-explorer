@@ -7,6 +7,7 @@ use ratatui::crossterm::event::KeyEvent;
 use crate::{action::Action, app::App};
 
 pub mod plugin_action;
+pub mod plugin_commands;
 pub mod plugin_helpers;
 pub mod plugin_popup;
 
