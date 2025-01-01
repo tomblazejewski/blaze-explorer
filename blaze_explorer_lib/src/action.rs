@@ -158,13 +158,10 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::TextAct(TextAction::InsertKey(ch)) => Box::new(InsertKey::new(ctx, ch)),
         Action::TextAct(TextAction::EraseText) => Box::new(EraseText::new()),
         Action::TextAct(TextAction::DropKey) => Box::new(DropKey::new()),
-        Action::PopupAct(PopupAction::EraseText) => Box::new(EraseText::new()),
         Action::PopupAct(PopupAction::UpdatePlugin) => Box::new(UpdatePlugin::new()),
-        Action::PopupAct(PopupAction::JumpAndClose(id)) => Box::new(JumpAndClose::new(id)),
-        Action::PopupAct(PopupAction::JumpAndOpen(id)) => Box::new(JumpAndOpen::new(id)),
         Action::Noop => Box::new(Noop::new()),
         Action::CommandAct(_) => Box::new(Noop::new()),
         Action::PluginAct(plugin_action) => plugin_action.get_command(),
-        _ => todo!(),
+        action => panic!("Action {:?}", action),
     }
 }

@@ -12,10 +12,9 @@ fn collect_plugin(lib: &Library, custom_bindings: Option<BindingsMap>) -> Option
     let get_plugin: Result<Symbol<extern "Rust" fn(BindingsMap) -> Box<dyn Plugin>>, Error> =
         unsafe { lib.get(b"get_plugin") };
     match get_plugin {
-        Ok(plugin) => return Some(plugin(custom_bindings)),
+        Ok(plugin) => Some(plugin(custom_bindings)),
         Err(err) => {
-            info!("Failed to load plugin: {}", err);
-            return None;
+            panic!("Failed to load plugin: {}", err);
         }
     }
 }

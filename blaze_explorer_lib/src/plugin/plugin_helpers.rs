@@ -20,3 +20,25 @@ macro_rules! create_plugin_action {
 }
 
 pub use create_plugin_action;
+
+use crate::{
+    action::{Action, AppAction},
+    app::App,
+};
+
+use super::Plugin;
+
+pub enum PluginFetchResult {
+    Err(Option<Action>),
+    Ok(Box<dyn Plugin>),
+}
+
+pub fn access_plugin(app: &App, plugin_name: &str) -> PluginFetchResult {
+    match app.plugins.get(plugin_name) {
+        None => PluginFetchResult::Err(Some(Action::AppAct(AppAction::DisplayMessage(format!(
+            "Failed to fetch the {} plugin when trying to open the popup",
+            plugin_name
+        ))))),
+        Some(plugin) => PluginFetchResult::Ok(plugin.to_owned()),
+    }
+}

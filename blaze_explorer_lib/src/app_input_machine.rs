@@ -69,10 +69,10 @@ impl AppInputMachine<Action> {
     }
 
     pub fn attach_popup_bindings(&mut self, popup: Box<dyn PluginPopUp>) {
+        //Reset popup mode bindings before appending
+        self.keymap_nodes.insert(Mode::PopUp, KeyMapNode::new());
         let popup_keymap = popup.get_own_keymap();
-        for ((mode, seq), action) in popup_keymap {
-            self.attach_binding(mode, seq, action);
-        }
+        self.attach_from_hashmap(popup_keymap);
         self.default_actions
             .insert(Mode::PopUp, popup.get_default_action());
     }
@@ -90,6 +90,12 @@ impl AppInputMachine<Action> {
             .get_mut(&mode)
             .unwrap()
             .add_sequence(sequence, action);
+    }
+
+    pub fn attach_from_hashmap(&mut self, keymap: HashMap<(Mode, Vec<KeyEvent>), Action>) {
+        for ((mode, seq), action) in keymap {
+            self.attach_binding(mode, seq, action);
+        }
     }
 }
 pub fn process_app_keys(
