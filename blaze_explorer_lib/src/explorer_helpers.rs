@@ -54,6 +54,24 @@ pub fn jump_highlight(
         Line::from(line_text)
     }
 }
+pub fn calculate_distance(x_0: f32, y_0: f32, x_1: f32, y_1: f32) -> f32 {
+    //calculate straight line distance
+    ((x_0 - x_1).powi(2) + (y_0 - y_1).powi(2)).powf(0.5)
+}
+
+#[macro_export]
+macro_rules! delegate_to_focused {
+    ($self:ident, $method:ident $(, $args:expr )* ) => {
+        match &mut $self.explorers.get_mut(&$self.focused_id).unwrap().split {
+            Split::Single(ref mut table) => {
+                table.$method($($args),*)
+            }
+            _ => panic!("Impossible!"),
+        }
+        }
+}
+
+pub use delegate_to_focused;
 
 #[cfg(test)]
 mod tests {
@@ -99,5 +117,16 @@ mod tests {
         let expected_string = "<cr>a<C-b><S-c>".to_string();
         let actual_string = convert_sequence_to_string(sequence);
         assert_eq!(actual_string, expected_string);
+    }
+
+    #[test]
+    fn test_calculate_distance() {
+        let x_0 = 0.0;
+        let y_0 = 0.0;
+        let x_1 = 1.0;
+        let y_1 = 1.0;
+        let expected_distance = f32::sqrt(2.0);
+        let actual_distance = calculate_distance(x_0, y_0, x_1, y_1);
+        assert_eq!(actual_distance, expected_distance);
     }
 }

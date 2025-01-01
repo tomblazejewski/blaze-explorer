@@ -7,25 +7,11 @@ use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
 
 use super::explorer_table::{ExplorerTable, FileData, GlobalStyling};
-use crate::explorer_helpers::convert_sequence_to_string;
+use crate::explorer_helpers::{
+    calculate_distance, convert_sequence_to_string, delegate_to_focused,
+};
 use crate::history_stack::directory_history::DirectoryHistory;
 use crate::mode::Mode;
-
-macro_rules! delegate_to_focused {
-    ($self:ident, $method:ident $(, $args:expr )* ) => {
-        match &mut $self.explorers.get_mut(&$self.focused_id).unwrap().split {
-            Split::Single(ref mut table) => {
-                table.$method($($args),*)
-            }
-            _ => panic!("Impossible!"),
-        }
-        }
-}
-
-pub fn calculate_distance(x_0: f32, y_0: f32, x_1: f32, y_1: f32) -> f32 {
-    //calculate straight line distance
-    ((x_0 - x_1).powi(2) + (y_0 - y_1).powi(2)).powf(0.5)
-}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ParentRelationship {
