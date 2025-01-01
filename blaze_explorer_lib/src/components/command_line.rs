@@ -72,17 +72,6 @@ impl CommandLine {
         }
     }
 
-    pub fn handle_text_action(&mut self, action: TextAction) -> Option<Action> {
-        match action {
-            TextAction::InsertKey(c) => self.append_char(c),
-            TextAction::EraseText => self.clear_contents(),
-            TextAction::DropKey => return self.remove_char(),
-        }
-        Some(Action::ExplorerAct(ExplorerAction::UpdateSearchQuery(
-            self.contents.clone(),
-        )))
-    }
-
     pub fn unfocus(&mut self) {
         self.focused = false;
     }
