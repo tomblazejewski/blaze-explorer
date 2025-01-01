@@ -1,9 +1,8 @@
 use crate::{
     command::{
         DeleteSplit, DisplayMessage, ExecuteFunction, FocusDown, FocusLeft, FocusRight, FocusUp,
-        JumpAndClose, JumpAndOpen, JumpToId, OpenNeovimHere, ParseCommand, ParseKeyStrokes,
-        RedoDirectory, SplitHorizontally, SplitVertically, TerminalCommand, UndoDirectory,
-        UpdatePlugin, UpdatePopup,
+        JumpToId, OpenNeovimHere, ParseCommand, ParseKeyStrokes, RedoDirectory, SplitHorizontally,
+        SplitVertically, TerminalCommand, UndoDirectory, UpdatePlugin, UpdatePopup,
     },
     plugin::{plugin_action::PluginAction, plugin_popup::PluginPopUp},
 };

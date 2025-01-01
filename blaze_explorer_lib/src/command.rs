@@ -136,48 +136,6 @@ impl Command for JumpToId {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct JumpAndClose {
-    id: usize,
-}
-
-impl JumpAndClose {
-    pub fn new(id: usize) -> Self {
-        Self { id }
-    }
-}
-
-impl Command for JumpAndClose {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &mut app.popup {
-            None => {}
-            Some(ref mut popup) => popup.quit(),
-        }
-        Some(Action::ExplorerAct(ExplorerAction::JumpToId(self.id)))
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct JumpAndOpen {
-    id: usize,
-}
-
-impl JumpAndOpen {
-    pub fn new(id: usize) -> Self {
-        Self { id }
-    }
-}
-
-impl Command for JumpAndOpen {
-    fn execute(&mut self, app: &mut App) -> Option<Action> {
-        match &mut app.popup {
-            None => {}
-            Some(ref mut popup) => popup.quit(),
-        }
-        app.explorer_manager.jump_to_id(self.id);
-        Some(Action::ExplorerAct(ExplorerAction::SelectDirectory))
-    }
-}
-#[derive(Clone, PartialEq, Debug)]
 pub struct ResetStyling {}
 
 impl ResetStyling {
