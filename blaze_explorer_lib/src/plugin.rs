@@ -29,12 +29,16 @@ pub trait Plugin: PluginSuper {
     fn display_details(&self) -> String {
         String::from("Not implemented")
     }
-    fn attach_functionality(
-        &self,
-        app: &mut App,
-    ) -> HashMap<String, Box<fn(&mut App) -> Option<Action>>>;
     fn get_plugin_bindings(&self) -> HashMap<(Mode, Vec<KeyEvent>), String>;
     fn get_popup_bindings(&self) -> HashMap<(Mode, Vec<KeyEvent>), String>;
+    fn get_all_bindings(&self) -> HashMap<(Mode, Vec<KeyEvent>), String> {
+        let plugin_bindings = self.get_plugin_bindings();
+        let popup_bindings = self.get_popup_bindings();
+        let mut all_bindings = HashMap::new();
+        all_bindings.extend(plugin_bindings);
+        all_bindings.extend(popup_bindings);
+        all_bindings
+    }
     fn get_functionality_map(&self) -> HashMap<String, Action>;
     fn get_plugin_keymap(&self) -> HashMap<(Mode, Vec<KeyEvent>), Action> {
         let functionality_map = self.get_functionality_map();
@@ -45,6 +49,14 @@ pub trait Plugin: PluginSuper {
         let functionality_map = self.get_functionality_map();
         let popup_bindings = self.get_popup_bindings();
         build_keymap(functionality_map, popup_bindings)
+    }
+    fn get_all_keymaps(&self) -> HashMap<(Mode, Vec<KeyEvent>), Action> {
+        let plugin_keymap = self.get_plugin_keymap();
+        let popup_keymap = self.get_popup_keymap();
+        let mut all_keymap = HashMap::new();
+        all_keymap.extend(plugin_keymap);
+        all_keymap.extend(popup_keymap);
+        all_keymap
     }
 }
 

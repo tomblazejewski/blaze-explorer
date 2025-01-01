@@ -3,10 +3,9 @@
 use std::collections::HashMap;
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use tracing::info;
 
 use crate::{
-    action::{Action, AppAction, CommandAction, ExplorerAction, PopupType, TextAction},
+    action::{Action, AppAction, CommandAction, ExplorerAction, TextAction},
     function_helpers::{pull_current_branch, push_current_branch},
     input_machine::{InputMachine, KeyMapNode, KeyProcessingResult},
     mode::Mode,

@@ -7,8 +7,9 @@ use ratatui::{
 };
 use std::cmp::min;
 
+use crate::action::TextAction;
 use crate::{
-    action::{Action, AppAction, ExplorerAction, TextAction},
+    action::{Action, AppAction, ExplorerAction},
     line_entry::LineEntry,
     mode::Mode,
 };
