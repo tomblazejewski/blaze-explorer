@@ -49,7 +49,7 @@ pub fn access_plugin(app: &App, plugin_name: &str) -> PluginFetchResult {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct DummyPlugin {
+pub struct DummyPlugin {
     plugin_bindings: HashMap<(Mode, Vec<KeyEvent>), String>,
     popup_bindings: HashMap<(Mode, Vec<KeyEvent>), String>,
     functionality_map: HashMap<String, Action>,
@@ -79,7 +79,7 @@ impl DummyPlugin {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct DummyPluginPopUp {
+pub struct DummyPluginPopUp {
     keymap: HashMap<(Mode, Vec<KeyEvent>), Action>,
     should_quit: bool,
 }

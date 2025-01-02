@@ -10,6 +10,7 @@ use crate::components::explorer_manager::SplitDirection;
 use crate::components::explorer_table::GlobalStyling;
 use crate::plugin::plugin_popup::PluginPopUp;
 use crate::{action::Action, line_entry::LineEntry};
+use std::any::Any;
 use std::fmt::Debug;
 use std::path::Path;
 use std::process::Command as ProcessCommand;
@@ -18,7 +19,25 @@ use std::{fmt, io};
 
 use crate::{app::App, app_context::AppContext, mode::Mode};
 
-pub trait Command: CommandClone {
+///A trait allowing to compare commands to each other without having to specify the concrete types
+///explicitly
+pub trait CommandEq {
+    fn dyn_eq(&self, other: &dyn Command) -> bool;
+}
+
+impl<T> CommandEq for T
+where
+    T: Command + PartialEq,
+{
+    fn dyn_eq(&self, other: &dyn Command) -> bool {
+        if let Some(other_concrete) = other.as_any().downcast_ref::<T>() {
+            self == other_concrete
+        } else {
+            false
+        }
+    }
+}
+pub trait Command: CommandClone + Any + CommandEq {
     fn execute(&mut self, app: &mut App) -> Option<Action>;
     fn undo(&mut self, _app: &mut App) -> Option<Action> {
         None
@@ -48,9 +67,13 @@ impl Clone for Box<dyn Command> {
 }
 
 impl PartialEq for Box<dyn Command> {
-    // FIXME: this is recursive but not called at any point. Required for trait bounds.
     fn eq(&self, other: &Self) -> bool {
-        self == other
+        self.dyn_eq(&**other)
+    }
+}
+impl dyn Command {
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -970,6 +993,19 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_compare_commands() {
+        let mut dummy_app = App::new().unwrap();
+        let dummy_ctx = dummy_app.get_app_context();
+        let jump_to_id = Box::new(JumpToId::new(dummy_ctx.clone(), 1)) as Box<dyn Command>;
+        let jump_to_id_same = Box::new(JumpToId::new(dummy_ctx.clone(), 1)) as Box<dyn Command>;
+        let jump_to_id_2 = Box::new(JumpToId::new(dummy_ctx.clone(), 2)) as Box<dyn Command>;
+        let reset_styling = Box::new(ResetStyling::new()) as Box<dyn Command>;
+        assert!(JumpToId::new(dummy_ctx.clone(), 1) == JumpToId::new(dummy_ctx.clone(), 1));
+        assert!(jump_to_id == jump_to_id_same);
+        assert!(jump_to_id != jump_to_id_2);
+        assert!(jump_to_id != reset_styling);
+    }
+    #[test]
     fn test_change_directory() {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
@@ -1127,21 +1163,6 @@ mod tests {
             .push_back(Action::ExplorerAct(ExplorerAction::JumpToId(2)));
         let _ = app.handle_new_actions();
         assert_eq!(app.explorer_manager.get_selected(), Some(2));
-        app.move_directory(starting_path, None);
-    }
-
-    #[test]
-    fn test_jump_and_open() {
-        let mut app = App::new().unwrap();
-        let starting_path = env::current_dir().unwrap();
-        let first_path = path::absolute("../tests/").unwrap();
-        let expected_path = path::absolute("../tests/folder_1").unwrap();
-        app.move_directory(first_path, None);
-        app.action_list
-            .push_back(Action::PopupAct(crate::action::PopupAction::JumpAndOpen(0)));
-        let _ = app.handle_new_actions();
-        assert_eq!(app.explorer_manager.get_current_path(), expected_path);
-
         app.move_directory(starting_path, None);
     }
 

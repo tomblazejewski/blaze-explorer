@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use crate::{components::explorer_manager::ExplorerManager, mode::Mode};
 
+#[derive(Debug, Clone)]
 pub struct AppContext {
     pub current_directory: PathBuf,
     pub explorer_manager: ExplorerManager,

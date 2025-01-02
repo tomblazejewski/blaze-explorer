@@ -1,3 +1,4 @@
+#![feature(trait_upcasting)]
 #![feature(reentrant_lock)]
 #![feature(str_split_remainder)]
 pub mod action;
