@@ -476,10 +476,6 @@ impl UpdatePlugin {
 }
 impl Command for UpdatePlugin {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        //FIXME: update when adding Flash back
-        // if let PopUp::FlashPopUp(ref mut flash) = &mut app.popup {
-        //     flash.update_interface(&mut app.explorer_manager);
-        // }
         None
     }
 }

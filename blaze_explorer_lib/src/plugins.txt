@@ -1,6 +1,0 @@
-Need to distinguish between different states of plugins:
-- unattached - this plugin will not become activated even if the right key combination is entered
-- attached - useable under normal circumstances
-- activated - the plugin is listening to the key combinations
-
-:
