@@ -7,6 +7,7 @@ pub mod app_context;
 pub mod app_input_machine;
 pub mod command;
 pub mod components;
+pub mod core_features;
 pub mod explorer_helpers;
 pub mod function_helpers;
 pub mod git_helpers;
