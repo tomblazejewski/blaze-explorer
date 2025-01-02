@@ -19,9 +19,37 @@ macro_rules! create_plugin_action {
     };
 }
 
+#[macro_export]
+macro_rules! construct_plugin {
+    ($functionalities_getter:ident, $bindings_getter:ident, $default_bindings:ident) => {{
+        let functionality_map = $functionalities_getter();
+        let mut bindings_map = $bindings_getter();
+        bindings_map.extend($default_bindings);
+
+        let mut plugin_bindings = HashMap::new();
+        let mut popup_bindings = HashMap::new();
+
+        for ((mode, events), string_repr) in bindings_map.iter() {
+            match mode {
+                Mode::PopUp => {
+                    popup_bindings.insert((mode.clone(), events.clone()), string_repr.clone());
+                }
+                _ => {
+                    plugin_bindings.insert((mode.clone(), events.clone()), string_repr.clone());
+                }
+            }
+        }
+        Self {
+            plugin_bindings,
+            popup_bindings,
+            functionality_map,
+        }
+    }};
+}
 use std::collections::HashMap;
 
 use color_eyre::eyre::Result;
+pub use construct_plugin;
 pub use create_plugin_action;
 use ratatui::{crossterm::event::KeyEvent, layout::Rect, Frame};
 
