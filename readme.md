@@ -31,8 +31,6 @@ Currently under development and unstable.
 | `:`           | Enter command mode                                                                              |
 | `<space>sg`   | Search files by name (similar to [telescope](https://github.com/nvim-telescope/telescope.nvim)) |
 | `<space>on`   | Open neovim in current directory (comes back to the app after closing neovim)                   |
-| `m`           | Jump to item (similar to [flash](https://github.com/folke/flash.nvim))                          |
-| `M`           | Jump to item and open it (see above)                                                            |
 
 ### Git integration
 
@@ -42,14 +40,6 @@ Currently under development and unstable.
 | `<space>ht` | Show git status                                 |
 | `<space>hP` | Push current branch to remote                   |
 | `<space>hO` | Pull current branch from remote                 |
-
-## Telescope
-
-| Mappings  | Action             |
-| --------- | ------------------ |
-| `<C-n>`   | Next item          |
-| `<C-p>`   | Previous item      |
-| `<Enter>` | Open selected item |
 
 # Commands
 
