@@ -684,35 +684,19 @@ fn backup_dir() -> PathBuf {
 #[derive(Clone, PartialEq, Debug)]
 pub struct RenameActive {
     pub first_path: PathBuf,
-    pub second_path: Option<PathBuf>,
+    pub second_path: PathBuf,
     reversible: bool,
 }
 
 /// Rename currently selected file
 impl RenameActive {
-    // pub fn new(ctx: AppContext, new_name: String) -> Self {
-    //     let first_path = ctx.explorer_manager.select_directory().unwrap();
-    //     let second_path = first_path.parent().unwrap().join(new_name);
-    //     Self {
-    //         first_path,
-    //         second_path,
-    //         reversible: false,
-    //     }
-    // }
-
-    pub fn default(mut ctx: AppContext) -> Self {
-        let first_path = ctx.explorer_manager.select_directory().unwrap();
-        let second_path = None;
+    pub fn new(first_path: PathBuf, new_name: String) -> Self {
+        let second_path = first_path.parent().unwrap().join(new_name);
         Self {
             first_path,
             second_path,
             reversible: false,
         }
-    }
-    pub fn update_command_context(&mut self, new_path: String) {
-        let new_path = self.first_path.parent().unwrap().join(new_path);
-        self.second_path = Some(new_path);
-        self.reversible = true;
     }
 }
 
@@ -725,13 +709,13 @@ fn rename_path(first_path: PathBuf, second_path: PathBuf) {
 
 impl Command for RenameActive {
     fn execute(&mut self, _app: &mut App) -> Option<Action> {
-        rename_path(self.first_path.clone(), self.second_path.clone().unwrap());
+        rename_path(self.first_path.clone(), self.second_path.clone());
         self.reversible = true;
         None
     }
 
     fn undo(&mut self, _app: &mut App) -> Option<Action> {
-        rename_path(self.second_path.clone().unwrap(), self.first_path.clone());
+        rename_path(self.second_path.clone(), self.first_path.clone());
         None
     }
     fn is_reversible(&self) -> bool {

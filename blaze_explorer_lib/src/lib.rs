@@ -17,5 +17,6 @@ pub mod line_entry;
 pub mod logging;
 pub mod mode;
 pub mod plugin;
+pub mod query;
 pub mod themes;
 pub mod tools;
