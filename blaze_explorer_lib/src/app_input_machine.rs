@@ -5,11 +5,12 @@ use std::collections::HashMap;
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::{
-    action::{Action, AppAction, CommandAction, ExplorerAction, TextAction},
+    action::{Action, AppAction, CommandAction, ExplorerAction, PopupAction, TextAction},
+    create_plugin_action,
     function_helpers::{pull_current_branch, push_current_branch},
     input_machine::{InputMachine, KeyMapNode, KeyProcessingResult},
     mode::Mode,
-    plugin::plugin_popup::PluginPopUp,
+    plugin::{plugin_commands::PluginPushSearchChar, plugin_popup::PluginPopUp},
 };
 
 fn get_default_search_command_action(last_key: KeyEvent) -> Option<Action> {

@@ -46,20 +46,25 @@ macro_rules! construct_plugin {
         }
     }};
 }
+use crate::plugin::plugin_action::PluginAction;
 use std::collections::HashMap;
 
 use color_eyre::eyre::Result;
 pub use construct_plugin;
 pub use create_plugin_action;
-use ratatui::{crossterm::event::KeyEvent, layout::Rect, Frame};
+use ratatui::{
+    crossterm::event::{KeyCode, KeyEvent},
+    layout::Rect,
+    Frame,
+};
 
 use crate::{
-    action::{Action, AppAction},
+    action::{Action, AppAction, PopupAction},
     app::App,
     mode::Mode,
 };
 
-use super::{plugin_popup::PluginPopUp, Plugin};
+use super::{plugin_commands::PluginPushSearchChar, plugin_popup::PluginPopUp, Plugin};
 
 pub enum PluginFetchResult {
     Err(Option<Action>),
@@ -155,5 +160,35 @@ impl PluginPopUp for DummyPluginPopUp {
 
     fn get_own_keymap(&self) -> HashMap<(Mode, Vec<KeyEvent>), Action> {
         self.keymap.clone()
+    }
+}
+pub fn get_push_on_char_action(key_event: KeyEvent) -> Option<Action> {
+    match key_event.code {
+        KeyCode::Char(ch) => Some(create_plugin_action!(PluginPushSearchChar, ch)),
+        _ => Some(Action::PopupAct(PopupAction::Quit)),
+    }
+}
+#[cfg(test)]
+mod tests {
+    use crate::plugin::plugin_action::PluginAction;
+    use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+    use crate::{
+        action::{Action, PopupAction},
+        plugin::{plugin_commands::PluginPushSearchChar, plugin_helpers::get_push_on_char_action},
+    };
+
+    #[test]
+    fn test_default_action() {
+        let caps_event = KeyEvent::new(KeyCode::CapsLock, KeyModifiers::NONE);
+        let char_event = KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE);
+        assert_eq!(
+            get_push_on_char_action(caps_event),
+            Some(Action::PopupAct(PopupAction::Quit))
+        );
+        assert_eq!(
+            get_push_on_char_action(char_event),
+            Some(create_plugin_action!(PluginPushSearchChar, 'a'))
+        );
     }
 }
