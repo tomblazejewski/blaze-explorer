@@ -161,6 +161,6 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::Noop => Box::new(Noop::new()),
         Action::CommandAct(_) => Box::new(Noop::new()),
         Action::PluginAct(plugin_action) => plugin_action.get_command(),
-        action => panic!("Action {:?}", action),
+        action => panic!("Action {:?} not implemented", action),
     }
 }

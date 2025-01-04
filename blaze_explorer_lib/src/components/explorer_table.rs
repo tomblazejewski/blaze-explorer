@@ -3,11 +3,13 @@ use git2::{Repository, Status, StatusOptions};
 use layout::Alignment;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::time::Instant;
 use std::{
     fmt::Debug,
     fs,
     path::{self, Path},
 };
+use tracing::info;
 
 use color_eyre::eyre::Result;
 use ratatui::{
@@ -266,7 +268,7 @@ impl ExplorerTable {
         None
     }
 
-    fn refresh_contents(&mut self) {
+    pub fn refresh_contents(&mut self) {
         //get currently selected item
         if self.elements_list.is_empty() {
             self.state.select(None);

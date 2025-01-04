@@ -362,6 +362,9 @@ impl ExplorerManager {
     pub fn jump_to_id(&mut self, id: usize) {
         delegate_to_focused!(self, jump_to_id, id);
     }
+    pub fn refresh_contents(&mut self) {
+        delegate_to_focused!(self, refresh_contents);
+    }
 
     pub fn find_elements(&self, query: &str) -> Vec<FileData> {
         match &self.explorers.get(&self.focused_id).unwrap().split {
