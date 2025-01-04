@@ -49,12 +49,6 @@ fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
     areas.insert("explorer_table".to_string(), main_box[0]);
     areas.insert("command_line".to_string(), command_bar);
 
-    let popup_area = center_rect(
-        frame.size(),
-        Constraint::Percentage(80),
-        Constraint::Percentage(80),
-    );
-    areas.insert("popup".to_string(), popup_area);
     areas
 }
 
@@ -372,7 +366,7 @@ impl App {
                 .command_line
                 .draw(frame, *areas.get("command_line").unwrap());
             if let Some(ref mut popup) = &mut self.popup {
-                popup.draw(frame, *areas.get("popup").unwrap());
+                popup.draw(frame, frame.size());
             }
         })?;
         Ok(())

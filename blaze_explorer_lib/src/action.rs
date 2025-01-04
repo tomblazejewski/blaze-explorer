@@ -136,7 +136,12 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::AppAct(AppAction::SwitchMode(mode)) => Box::new(SwitchMode::new(ctx, mode)),
         Action::AppAct(AppAction::ConfirmSearchQuery) => Box::new(ConfirmSearchQuery::new()),
         Action::AppAct(AppAction::ConfirmCommand) => Box::new(ConfirmCommand::new(ctx)),
-        Action::AppAct(AppAction::OpenPopup(popup_type)) => Box::new(OpenPopup::new(popup_type)),
+        Action::AppAct(AppAction::OpenPopup(popup_type)) => {
+            panic!(
+                "Trying to use OpenPopUp to open a {:?} popup - this will not work",
+                popup_type
+            );
+        }
         Action::AppAct(AppAction::ShowInFolder(path)) => Box::new(ShowInFolder::new(ctx, path)),
         Action::AppAct(AppAction::Delete) => Box::new(DeleteSelection::new(ctx)),
         Action::AppAct(AppAction::OpenNeovimHere) => Box::new(OpenNeovimHere::new(ctx)),

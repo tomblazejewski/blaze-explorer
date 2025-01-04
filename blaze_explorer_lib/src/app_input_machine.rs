@@ -6,7 +6,8 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::{
     action::{Action, AppAction, CommandAction, ExplorerAction, PopupAction, TextAction},
-    create_plugin_action,
+    core_features::rename::open_rename_popup,
+    create_plugin_action, custom_action,
     function_helpers::{pull_current_branch, push_current_branch},
     input_machine::{InputMachine, KeyMapNode, KeyProcessingResult},
     mode::Mode,
@@ -153,10 +154,10 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::ClearSearchQuery),
     );
-    // root.add_sequence(
-    //     vec![KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)],
-    //     Action::AppAct(AppAction::OpenPopup(PopupType::Rename)),
-    // );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)],
+        custom_action!(open_rename_popup),
+    );
     root.add_sequence(
         vec![
             KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),

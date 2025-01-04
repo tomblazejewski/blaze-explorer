@@ -59,6 +59,13 @@ impl Query {
             suffix,
         }
     }
+    pub fn new_with_contents(prefix: String, contents: String, suffix: String) -> Self {
+        Self {
+            contents,
+            prefix,
+            suffix,
+        }
+    }
 }
 
 #[cfg(test)]

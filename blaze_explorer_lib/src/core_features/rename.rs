@@ -22,7 +22,7 @@ use crate::{
         plugin_helpers::get_push_on_char_action,
         plugin_popup::PluginPopUp,
     },
-    query::Query,
+    query::{self, Query},
     tools::center_rect,
 };
 pub fn open_rename_popup(app: &mut App) -> Option<Action> {
@@ -74,7 +74,12 @@ impl RenamePopUp {
             None => "".to_string(),
         };
         let initial_name = dir.file_name().unwrap().to_str().unwrap().to_string();
-        let query = Query::new("".to_string(), format!(".{}", extension.clone()));
+        let initial_name_without_extension = initial_name.split(".").next().unwrap();
+        let query = Query::new_with_contents(
+            "".to_string(),
+            initial_name_without_extension.to_string(),
+            extension.clone(),
+        );
         Self {
             should_quit: false,
             query,
@@ -99,7 +104,7 @@ impl PluginPopUp for RenamePopUp {
         let query_paragraph = Paragraph::new(rename_field_output);
         let query_paragraph = query_paragraph.block(query_block);
 
-        frame.render_widget(Clear, area);
+        frame.render_widget(Clear, query_area);
         frame.render_widget(query_paragraph, query_area);
 
         Ok(())
@@ -144,6 +149,7 @@ impl PluginPopUp for RenamePopUp {
         Box::new(get_push_on_char_action)
     }
     fn confirm_result(&mut self) -> Option<Action> {
+        self.quit();
         Some(create_plugin_action!(
             RenameActive,
             self.initial_path.clone(),
