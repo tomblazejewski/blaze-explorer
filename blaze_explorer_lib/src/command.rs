@@ -630,15 +630,20 @@ impl Debug for DeleteSelection {
 }
 
 fn move_recursively(from: &PathBuf, to: &Path) -> io::Result<()> {
-    // Create the destination directory
-    fs::create_dir_all(to)?;
+    // Create the destination directory, if it's a folder
+    let is_folder_path = !to.file_name().unwrap().to_str().unwrap().contains(".");
+    if is_folder_path {
+        fs::create_dir_all(to)?;
+    }
 
-    // Iterate over the directory entries
+    //if file, rename
     if !from.is_dir() {
         let dst_path = to.join(from.file_name().unwrap());
         fs::rename(from, &dst_path)?;
+        println!("Renamed {} to {}", from.display(), dst_path.display());
         return Ok(());
     }
+    // Iterate over the directory entries
     for entry in fs::read_dir(from)? {
         let entry = entry?;
         let file_type = entry.file_type()?;
@@ -704,9 +709,45 @@ fn rename_path(first_path: PathBuf, second_path: PathBuf) -> io::Result<()> {
     fs::rename(first_path.clone(), second_path)
 }
 
+fn rename_recursively(first_path: PathBuf, second_path: PathBuf) -> io::Result<()> {
+    // Create the destination directory, if it's a folder
+    let is_folder_path = !second_path
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .contains(".");
+    if is_folder_path {
+        fs::create_dir_all(second_path.clone())?;
+        //loop over the directories in the folder
+        for entry in fs::read_dir(first_path)? {
+            let entry = entry?;
+            let file_type = entry.file_type()?;
+
+            //src_path - the new first_path
+            //dst_path - the new second_path
+            let src_path = entry.path();
+            let dst_path = second_path.join(entry.file_name());
+
+            // If the entry is a directory, call the function recursively
+            if file_type.is_dir() {
+                move_recursively(&src_path, &dst_path)?;
+            } else {
+                // If it's a file, copy it
+                fs::rename(&src_path, &dst_path)?;
+            }
+        }
+    } else {
+        //rename immediately
+        fs::rename(first_path.clone(), second_path.clone())?;
+        return Ok(());
+    }
+    Ok(())
+}
+
 impl Command for RenameActive {
     fn execute(&mut self, _app: &mut App) -> Option<Action> {
-        match rename_path(self.first_path.clone(), self.second_path.clone()) {
+        match rename_recursively(self.first_path.clone(), self.second_path.clone()) {
             Ok(_) => {
                 self.reversible = true;
                 None
@@ -720,7 +761,7 @@ impl Command for RenameActive {
     }
 
     fn undo(&mut self, _app: &mut App) -> Option<Action> {
-        match rename_path(self.second_path.clone(), self.first_path.clone()) {
+        match rename_recursively(self.second_path.clone(), self.first_path.clone()) {
             Ok(_) => None,
             Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
                 "Failed to rename {}: {}",
@@ -1233,6 +1274,29 @@ mod tests {
             RenameActive::new(apparent_current_path.clone(), "sheet1.csv".to_string());
         rename_active.execute(&mut app);
         let expected_path = test_path.join("sheet1.csv");
+        app.explorer_manager.refresh_contents();
+        assert_eq!(
+            app.explorer_manager.select_directory().unwrap(),
+            expected_path
+        );
+        rename_active.undo(&mut app);
+        app.explorer_manager.refresh_contents();
+        assert_eq!(
+            app.explorer_manager.select_directory().unwrap(),
+            apparent_current_path
+        );
+    }
+    #[test]
+    fn test_rename_active_folder() {
+        let mut app = App::new().unwrap();
+        let current_path = env::current_dir().unwrap();
+        let test_path = current_path.parent().unwrap().join("tests");
+        app.update_path(test_path.clone(), Some("folder_1".to_string()));
+        let apparent_current_path = test_path.join("folder_1");
+        let mut rename_active =
+            RenameActive::new(apparent_current_path.clone(), "folder_2".to_string());
+        rename_active.execute(&mut app);
+        let expected_path = test_path.join("folder_2");
         app.explorer_manager.refresh_contents();
         assert_eq!(
             app.explorer_manager.select_directory().unwrap(),
