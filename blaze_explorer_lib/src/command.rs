@@ -749,15 +749,20 @@ impl Command for RenameActive {
     fn execute(&mut self, _app: &mut App) -> Option<Action> {
         match rename_recursively(self.first_path.clone(), self.second_path.clone()) {
             Ok(_) => {
-                self.reversible = true;
                 //attempt to remove the old path
                 match remove_no_backup(self.first_path.clone()) {
-                    Ok(_) => None,
-                    Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
-                        "Failed to remove the original path {}: {}",
-                        self.first_path.display(),
-                        e
-                    )))),
+                    Ok(_) => {
+                        self.reversible = true;
+                        None
+                    }
+                    Err(e) => {
+                        remove_no_backup(self.second_path.clone()).unwrap();
+                        Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                            "Failed to remove the original path {}: {}",
+                            self.first_path.display(),
+                            e
+                        ))))
+                    }
                 }
             }
             Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
@@ -772,11 +777,14 @@ impl Command for RenameActive {
         match rename_recursively(self.second_path.clone(), self.first_path.clone()) {
             Ok(_) => match remove_no_backup(self.second_path.clone()) {
                 Ok(_) => None,
-                Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
-                    "Failed to remove the original path {}: {}",
-                    self.second_path.display(),
-                    e
-                )))),
+                Err(e) => {
+                    remove_no_backup(self.first_path.clone()).unwrap();
+                    Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                        "Failed to remove the original path {}: {}",
+                        self.second_path.display(),
+                        e
+                    ))))
+                }
             },
             Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
                 "Failed to rename {}: {}",
