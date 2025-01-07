@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let lib_map = collect_libs();
     {
         let mut app = App::new().unwrap();
-        let plugins = fetch_plugins(&mut app, &lib_map);
+        let plugins = fetch_plugins(&lib_map);
         app.attach_plugins(&plugins);
         let mut cold_start = true;
         loop {
