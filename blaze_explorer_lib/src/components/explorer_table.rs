@@ -239,7 +239,8 @@ impl ExplorerTable {
     }
 
     pub fn get_git_map(&self) -> Option<HashMap<String, Status>> {
-        let mut map = HashMap::new();
+        let mut map: HashMap<String, Status> = HashMap::new();
+        return Some(map);
         if let Some(repo) = &self.repo {
             let statuses = repo
                 .statuses(Some(

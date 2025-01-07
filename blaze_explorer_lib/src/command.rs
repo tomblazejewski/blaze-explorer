@@ -706,7 +706,10 @@ impl RenameActive {
 }
 
 fn remove_no_backup(path: PathBuf) -> io::Result<()> {
-    fs::remove_dir_all(path)
+    match path.is_dir() {
+        true => fs::remove_dir_all(path),
+        false => fs::remove_file(path),
+    }
 }
 
 fn rename_recursively(first_path: PathBuf, second_path: PathBuf) -> io::Result<()> {
@@ -745,18 +748,29 @@ fn rename_recursively(first_path: PathBuf, second_path: PathBuf) -> io::Result<(
     Ok(())
 }
 
+fn remove_if_folder(path: PathBuf) -> io::Result<()> {
+    if path.is_dir() {
+        fs::remove_dir_all(path)?
+    }
+    Ok(())
+}
 impl Command for RenameActive {
     fn execute(&mut self, _app: &mut App) -> Option<Action> {
         match rename_recursively(self.first_path.clone(), self.second_path.clone()) {
             Ok(_) => {
                 //attempt to remove the old path
-                match remove_no_backup(self.first_path.clone()) {
+                match remove_if_folder(self.first_path.clone()) {
                     Ok(_) => {
                         self.reversible = true;
                         None
                     }
                     Err(e) => {
-                        remove_no_backup(self.second_path.clone()).unwrap();
+                        println!(
+                            "Failed to remove the original path {}: {}",
+                            self.first_path.display(),
+                            e
+                        );
+                        remove_if_folder(self.second_path.clone()).unwrap();
                         Some(Action::AppAct(AppAction::DisplayMessage(format!(
                             "Failed to remove the original path {}: {}",
                             self.first_path.display(),
@@ -775,10 +789,10 @@ impl Command for RenameActive {
 
     fn undo(&mut self, _app: &mut App) -> Option<Action> {
         match rename_recursively(self.second_path.clone(), self.first_path.clone()) {
-            Ok(_) => match remove_no_backup(self.second_path.clone()) {
+            Ok(_) => match remove_if_folder(self.second_path.clone()) {
                 Ok(_) => None,
                 Err(e) => {
-                    remove_no_backup(self.first_path.clone()).unwrap();
+                    remove_if_folder(self.first_path.clone()).unwrap();
                     Some(Action::AppAct(AppAction::DisplayMessage(format!(
                         "Failed to remove the original path {}: {}",
                         self.second_path.display(),
@@ -1041,7 +1055,6 @@ mod tests {
     use std::{collections::VecDeque, env, path, thread, time::Duration};
 
     use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-    use tracing::info;
 
     use crate::{
         action::ExplorerAction,
@@ -1165,7 +1178,6 @@ mod tests {
         app.move_directory(starting_path, None);
     }
     #[test]
-    #[ignore]
     fn test_delete() {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
