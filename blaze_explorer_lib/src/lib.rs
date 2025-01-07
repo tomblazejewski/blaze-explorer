@@ -1,3 +1,4 @@
+#![crate_name = "blaze_explorer_lib"]
 #![feature(trait_upcasting)]
 #![feature(reentrant_lock)]
 #![feature(str_split_remainder)]

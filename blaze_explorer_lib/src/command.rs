@@ -1,8 +1,9 @@
 pub mod command_helpers;
 pub mod command_utilities;
 pub mod key_press;
-use chrono::offset;
-use directories::ProjectDirs;
+use command_utilities::{
+    get_backup_dir, move_path, remove_if_folder, remove_with_backup, rename_recursively,
+};
 use key_press::decode_expression;
 
 use crate::action::{AppAction, ExplorerAction};
@@ -12,11 +13,10 @@ use crate::components::explorer_table::GlobalStyling;
 use crate::plugin::plugin_popup::PluginPopUp;
 use crate::{action::Action, line_entry::LineEntry};
 use std::any::Any;
+use std::fmt;
 use std::fmt::Debug;
-use std::path::Path;
 use std::process::Command as ProcessCommand;
-use std::{collections::HashMap, fs, path::PathBuf};
-use std::{fmt, io};
+use std::{collections::HashMap, path::PathBuf};
 
 use crate::{app::App, app_context::AppContext, mode::Mode};
 
@@ -589,7 +589,7 @@ impl Command for DeleteSelection {
                 None => {
                     let contents_map = contents
                         .iter()
-                        .map(|f| (f.to_owned(), backup_dir()))
+                        .map(|f| (f.to_owned(), get_backup_dir()))
                         .collect::<HashMap<PathBuf, PathBuf>>();
                     self.backup_path = Some(contents_map);
                 }
@@ -599,7 +599,7 @@ impl Command for DeleteSelection {
                 .iter()
                 .map(|f| {
                     let backup_path = self.backup_path.as_ref().unwrap().get(f).unwrap();
-                    remove_path(f, backup_path)
+                    remove_with_backup(f, backup_path)
                 })
                 .collect::<Vec<()>>();
         };
@@ -630,63 +630,6 @@ impl Debug for DeleteSelection {
     }
 }
 
-fn move_recursively(from: &PathBuf, to: &Path) -> io::Result<()> {
-    // Create the destination directory, if it's a folder
-    let is_folder_path = !to.file_name().unwrap().to_str().unwrap().contains(".");
-    if is_folder_path {
-        fs::create_dir_all(to)?;
-    }
-
-    //if file, rename
-    if !from.is_dir() {
-        let dst_path = to.join(from.file_name().unwrap());
-        fs::rename(from, &dst_path)?;
-        println!("Renamed {} to {}", from.display(), dst_path.display());
-        return Ok(());
-    }
-    // Iterate over the directory entries
-    for entry in fs::read_dir(from)? {
-        let entry = entry?;
-        let file_type = entry.file_type()?;
-
-        let src_path = entry.path();
-        let dst_path = to.join(entry.file_name());
-
-        // If the entry is a directory, call the function recursively
-        if file_type.is_dir() {
-            move_recursively(&src_path, &dst_path)?;
-        } else {
-            // If it's a file, copy it
-            fs::rename(&src_path, &dst_path)?;
-        }
-    }
-
-    Ok(())
-}
-fn move_path(from: &PathBuf, to: &PathBuf) -> Result<(), std::io::Error> {
-    //create the to directory
-    fs::rename(from, to)?;
-    Ok(())
-}
-fn remove_path(path: &PathBuf, backup_path: &Path) {
-    //write contents to a file so this can be recovered later on
-    let path_buf = { backup_path };
-    move_recursively(path, path_buf).unwrap();
-    if path.is_dir() {
-        remove_no_backup(path.to_path_buf()).unwrap();
-    }
-}
-
-fn backup_dir() -> PathBuf {
-    let mut backup_name = format!(
-        "backup_{}",
-        offset::Local::now().format("%d_%h_%Y_%H_%M_%S_%3f")
-    );
-    backup_name += ".blzbkp";
-    let proj_dir = ProjectDirs::from("", "", "blaze_explorer").unwrap();
-    proj_dir.cache_dir().join(backup_name)
-}
-
 #[derive(Clone, PartialEq, Debug)]
 pub struct RenameActive {
     pub first_path: PathBuf,
@@ -706,55 +649,6 @@ impl RenameActive {
     }
 }
 
-fn remove_no_backup(path: PathBuf) -> io::Result<()> {
-    match path.is_dir() {
-        true => fs::remove_dir_all(path),
-        false => fs::remove_file(path),
-    }
-}
-
-fn rename_recursively(first_path: PathBuf, second_path: PathBuf) -> io::Result<()> {
-    // Create the destination directory, if it's a folder
-    let is_folder_path = !second_path
-        .file_name()
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .contains(".");
-    if is_folder_path {
-        fs::create_dir_all(second_path.clone())?;
-        //loop over the directories in the folder
-        for entry in fs::read_dir(first_path)? {
-            let entry = entry?;
-            let file_type = entry.file_type()?;
-
-            //src_path - the new first_path
-            //dst_path - the new second_path
-            let src_path = entry.path();
-            let dst_path = second_path.join(entry.file_name());
-
-            // If the entry is a directory, call the function recursively
-            if file_type.is_dir() {
-                move_recursively(&src_path, &dst_path)?;
-            } else {
-                // If it's a file, copy it
-                fs::rename(&src_path, &dst_path)?;
-            }
-        }
-    } else {
-        //rename immediately
-        fs::rename(first_path.clone(), second_path.clone())?;
-        return Ok(());
-    }
-    Ok(())
-}
-
-fn remove_if_folder(path: PathBuf) -> io::Result<()> {
-    if path.is_dir() {
-        fs::remove_dir_all(path)?
-    }
-    Ok(())
-}
 impl Command for RenameActive {
     fn execute(&mut self, _app: &mut App) -> Option<Action> {
         match rename_recursively(self.first_path.clone(), self.second_path.clone()) {
