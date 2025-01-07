@@ -240,15 +240,16 @@ impl ExplorerTable {
 
     pub fn get_git_map(&self) -> Option<HashMap<String, Status>> {
         let mut map: HashMap<String, Status> = HashMap::new();
-        return Some(map);
         if let Some(repo) = &self.repo {
-            let statuses = repo
-                .statuses(Some(
-                    StatusOptions::new()
-                        .include_ignored(true)
-                        .include_untracked(true),
-                ))
-                .unwrap();
+            let statuses = match repo.statuses(Some(
+                StatusOptions::new()
+                    .include_ignored(true)
+                    .include_untracked(true),
+            )) {
+                Ok(statuses) => statuses,
+                // Give up on error
+                Err(_) => return None,
+            };
             let root_path = repo.path().parent().unwrap();
             for status_entry in statuses.iter() {
                 // create an absolute path made of the git root path and the status_entry path
