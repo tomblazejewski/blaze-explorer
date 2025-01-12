@@ -312,6 +312,7 @@ impl Command for SwitchMode {
             Mode::Command => app.enter_command_mode(),
             Mode::Search => app.enter_search_mode(),
             Mode::PopUp => app.enter_popup_mode(),
+            Mode::Visual => app.enter_visual_mode(),
         }
         None
     }
@@ -1255,5 +1256,13 @@ mod tests {
             app.explorer_manager.select_directory().unwrap(),
             apparent_current_path
         );
+    }
+
+    #[test]
+    fn test_switch_to_visual() {
+        let mut app = App::new().unwrap();
+        let mut command = SwitchMode::new(app.get_app_context(), Mode::Visual);
+        command.execute(&mut app);
+        assert_eq!(app.mode, Mode::Visual);
     }
 }

@@ -19,14 +19,6 @@ use crate::{
 };
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum PopupType {
-    None,
-    Telescope,
-    Rename,
-    Flash(bool),
-}
-
-#[derive(Clone, Debug, PartialEq)]
 pub enum ExplorerAction {
     ChangeDirectory(PathBuf),
     ParentDirectory,

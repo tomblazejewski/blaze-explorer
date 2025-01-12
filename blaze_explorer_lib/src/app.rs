@@ -1,30 +1,30 @@
 use std::collections::{HashMap, VecDeque};
 use std::env::set_current_dir;
-use std::io::{stdout, Stdout};
+use std::io::{Stdout, stdout};
 use std::path::{self, PathBuf};
 
 use color_eyre::Result;
+use ratatui::Frame;
 use ratatui::crossterm::event::{Event, KeyEvent};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::Frame;
 use ratatui::{
+    Terminal,
     crossterm::event::{self, KeyEventKind},
     prelude::CrosstermBackend,
-    Terminal,
 };
 
-use crate::action::{get_command, AppAction, CommandAction, ExplorerAction};
+use crate::action::{AppAction, CommandAction, ExplorerAction, get_command};
 use crate::app_context::AppContext;
 use crate::app_input_machine::AppInputMachine;
 use crate::command::Command;
 use crate::components::command_line::CommandLine;
 use crate::components::explorer_manager::ExplorerManager;
 use crate::history_stack::directory_history::DirectoryDetails;
-use crate::history_stack::{command_history::CommandHistory, HistoryStack};
+use crate::history_stack::{HistoryStack, command_history::CommandHistory};
 use crate::input_machine::{InputMachine, KeyProcessingResult};
 use crate::line_entry::LineEntry;
-use crate::plugin::plugin_popup::PluginPopUp;
 use crate::plugin::Plugin;
+use crate::plugin::plugin_popup::PluginPopUp;
 use crate::{action::Action, components::Component, mode::Mode};
 
 #[derive(Clone, PartialEq, Debug)]
@@ -255,6 +255,12 @@ impl App {
     pub fn enter_popup_mode(&mut self) {
         self.mode = Mode::PopUp;
         self.explorer_manager.switch_mode(Mode::PopUp);
+        self.command_line.unfocus();
+        self.explorer_manager.focus();
+    }
+    pub fn enter_visual_mode(&mut self) {
+        self.mode = Mode::Visual;
+        self.explorer_manager.switch_mode(Mode::Visual);
         self.command_line.unfocus();
         self.explorer_manager.focus();
     }
