@@ -660,11 +660,6 @@ impl Command for RenameActive {
                         None
                     }
                     Err(e) => {
-                        println!(
-                            "Failed to remove the original path {}: {}",
-                            self.first_path.display(),
-                            e
-                        );
                         remove_if_folder(self.second_path.clone()).unwrap();
                         Some(Action::AppAct(AppAction::DisplayMessage(format!(
                             "Failed to remove the original path {}: {}",

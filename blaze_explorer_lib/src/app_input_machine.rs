@@ -5,13 +5,13 @@ use std::collections::HashMap;
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::{
-    action::{Action, AppAction, CommandAction, ExplorerAction, PopupAction, TextAction},
+    action::{Action, AppAction, CommandAction, ExplorerAction, TextAction},
     core_features::rename::open_rename_popup,
-    create_plugin_action, custom_action,
+    custom_action,
     function_helpers::{pull_current_branch, push_current_branch},
     input_machine::{InputMachine, KeyMapNode, KeyProcessingResult},
     mode::Mode,
-    plugin::{plugin_commands::PluginPushSearchChar, plugin_popup::PluginPopUp},
+    plugin::plugin_popup::PluginPopUp,
 };
 
 type DefaultActionMap = HashMap<Mode, Box<fn(KeyEvent) -> Option<Action>>>;

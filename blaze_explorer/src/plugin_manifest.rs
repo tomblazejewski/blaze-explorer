@@ -1,10 +1,9 @@
 use libloading::{Error, Library, Symbol};
 use std::collections::HashMap;
-use tracing::info;
 
 use ratatui::crossterm::event::KeyEvent;
 
-use blaze_explorer_lib::{app::App, mode::Mode, plugin::Plugin};
+use blaze_explorer_lib::{mode::Mode, plugin::Plugin};
 
 type BindingsMap = HashMap<(Mode, Vec<KeyEvent>), String>;
 fn collect_plugin(lib: &Library, custom_bindings: Option<BindingsMap>) -> Option<Box<dyn Plugin>> {

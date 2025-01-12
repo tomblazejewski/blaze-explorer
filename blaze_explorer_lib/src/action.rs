@@ -12,9 +12,8 @@ use crate::app::App;
 use crate::{
     command::{
         ChangeDirectory, ClearSearchQuery, Command, ConfirmCommand, ConfirmSearchQuery,
-        DeleteSelection, DropKey, EraseText, InsertKey, NextSearchResult, Noop, OpenPopup,
-        ParentDirectory, Quit, SelectDirectory, SelectDown, SelectUp, ShowInFolder, SwitchMode,
-        UpdateSearchQuery,
+        DeleteSelection, DropKey, EraseText, InsertKey, NextSearchResult, Noop, ParentDirectory,
+        Quit, SelectDirectory, SelectDown, SelectUp, ShowInFolder, SwitchMode, UpdateSearchQuery,
     },
     mode::Mode,
 };

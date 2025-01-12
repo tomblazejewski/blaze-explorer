@@ -3,13 +3,11 @@ use git2::{Repository, Status, StatusOptions};
 use layout::Alignment;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::time::Instant;
 use std::{
     fmt::Debug,
     fs,
     path::{self, Path},
 };
-use tracing::info;
 
 use color_eyre::eyre::Result;
 use ratatui::{

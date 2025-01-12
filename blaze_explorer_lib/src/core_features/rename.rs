@@ -1,3 +1,4 @@
+use crate::plugin::plugin_action::PluginAction;
 use std::{collections::HashMap, path::PathBuf};
 
 use color_eyre::eyre::Result;
@@ -9,7 +10,7 @@ use ratatui::{
 };
 
 use crate::{
-    action::{Action, AppAction},
+    action::Action,
     app::App,
     command::RenameActive,
     create_plugin_action,
@@ -17,12 +18,11 @@ use crate::{
     line_entry::LineEntry,
     mode::Mode,
     plugin::{
-        plugin_action::PluginAction,
         plugin_commands::{PluginConfirmResult, PluginDropSearchChar, PluginQuit},
         plugin_helpers::get_push_on_char_action,
         plugin_popup::PluginPopUp,
     },
-    query::{self, Query},
+    query::Query,
     tools::center_rect,
 };
 pub fn open_rename_popup(app: &mut App) -> Option<Action> {
@@ -160,7 +160,7 @@ impl PluginPopUp for RenamePopUp {
 
 #[cfg(test)]
 mod tests {
-    use std::{env, path};
+    use std::env;
 
     use super::*;
     #[test]

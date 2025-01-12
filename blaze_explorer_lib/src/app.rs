@@ -13,7 +13,7 @@ use ratatui::{
     Terminal,
 };
 
-use crate::action::{get_command, AppAction, CommandAction, ExplorerAction, PopupAction};
+use crate::action::{get_command, AppAction, CommandAction, ExplorerAction};
 use crate::app_context::AppContext;
 use crate::app_input_machine::AppInputMachine;
 use crate::command::Command;
@@ -25,7 +25,6 @@ use crate::input_machine::{InputMachine, KeyProcessingResult};
 use crate::line_entry::LineEntry;
 use crate::plugin::plugin_popup::PluginPopUp;
 use crate::plugin::Plugin;
-use crate::tools::center_rect;
 use crate::{action::Action, components::Component, mode::Mode};
 
 #[derive(Clone, PartialEq, Debug)]
