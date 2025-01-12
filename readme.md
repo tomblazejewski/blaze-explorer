@@ -45,6 +45,30 @@ Currently under development and unstable.
 The only built-in command is the quit command, `q`, which closes the app.
 One can use the terminal commands, such as `git status`, similar to neovim, by pre-pending them with an exclamation mark: `!git status`, when in command mode.
 
+# Plugins
+
+The following plugins are available:
+
+- [Telescope](https://github.com/tomblazejewski/blaze_telescope)
+- [Flash](https://github.com/tomblazejewski/blaze_flash)
+
+Given the core features of the library are not yet published as crate, integrating plugins must be done manually.
+The app and plugins need to be arranged in the following structure for the libraries to be recognised:
+
+```
+.
+├── blaze_explorer
+└── blaze_plugins/
+  ├── blaze_flash
+  └── blaze_telescope.
+```
+
+Building of the projects needs to be done in a specific order:
+
+1. Build the core library by running `cargo build --lib` inside of the `blaze_explorer` directory
+2. Build the plugins by running `cargo build --lib` inside of the each subdirectory in the `blaze_plugins` directory
+3. Build the app by running `cargo build` inside of the `blaze_explorer` directory
+
 # To-do
 
 - [ ] File manipulation abilities
@@ -64,9 +88,10 @@ One can use the terminal commands, such as `git status`, similar to neovim, by p
   - [x] Show tracked/untracked/staged/unstaged/modified files
   - [ ] Implement shortcuts for commiting/pushing/checking out individual/ groups of files
   - [ ] Preview file changes with a shortcut
-- [ ] Plugin management
+- [x] Plugin management
   - [x] Manage the non-core features through the Plugin trait
   - [x] Allow attaching certain plugins upon launching the app
+  - [x] Allow defining custom keys to plugin actions (in code)
 - [ ] Keymap system
   - [ ] Enable motions/multipliers for commands (e.g. 3dd)
   - [ ] Allow managing/adding keymaps through an accessible interface (lua script/toml file)
