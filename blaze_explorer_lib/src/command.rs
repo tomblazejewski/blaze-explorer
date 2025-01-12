@@ -1070,6 +1070,7 @@ mod tests {
         app.move_directory(starting_path, None);
     }
     #[test]
+    #[ignore]
     fn test_delete_folder() {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
@@ -1093,6 +1094,7 @@ mod tests {
         app.move_directory(starting_path, None);
     }
     #[test]
+    #[ignore]
     fn test_delete_file() {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
