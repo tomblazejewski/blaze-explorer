@@ -14,6 +14,7 @@ use crate::{
     plugin::{plugin_commands::PluginPushSearchChar, plugin_popup::PluginPopUp},
 };
 
+type DefaultActionMap = HashMap<Mode, Box<fn(KeyEvent) -> Option<Action>>>;
 fn get_default_search_command_action(last_key: KeyEvent) -> Option<Action> {
     match last_key.code {
         KeyCode::Char(ch) => Some(Action::TextAct(TextAction::InsertKey(ch))),
@@ -28,7 +29,7 @@ pub fn get_none_action(last_key: KeyEvent) -> Option<Action> {
 #[derive(Debug, Clone, PartialEq)]
 pub struct AppInputMachine<T> {
     keymap_nodes: HashMap<Mode, KeyMapNode<T>>,
-    default_actions: HashMap<Mode, Box<fn(KeyEvent) -> Option<Action>>>,
+    default_actions: DefaultActionMap,
 }
 
 impl InputMachine for AppInputMachine<Action> {
