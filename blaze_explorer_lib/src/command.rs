@@ -170,7 +170,8 @@ impl ResetStyling {
 
 impl Command for ResetStyling {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.explorer_manager.set_styling(GlobalStyling::None);
+        app.explorer_manager
+            .set_highlighting_rule(GlobalStyling::None);
         None
     }
 }
@@ -214,7 +215,7 @@ impl UpdateSearchQuery {
 impl Command for UpdateSearchQuery {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         app.explorer_manager
-            .set_styling(GlobalStyling::HighlightSearch(self.query.clone()));
+            .set_highlighting_rule(GlobalStyling::HighlightSearch(self.query.clone()));
         None
     }
 }
@@ -548,7 +549,8 @@ impl UpdateStyling {
 }
 impl Command for UpdateStyling {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.explorer_manager.set_styling(self.styling.clone());
+        app.explorer_manager
+            .set_highlighting_rule(self.styling.clone());
         None
     }
 }
@@ -1264,5 +1266,15 @@ mod tests {
         let mut command = SwitchMode::new(app.get_app_context(), Mode::Visual);
         command.execute(&mut app);
         assert_eq!(app.mode, Mode::Visual);
+    }
+    #[test]
+    fn test_switch_to_visual_and_back() {
+        let mut app = App::new().unwrap();
+        let mut command = SwitchMode::new(app.get_app_context(), Mode::Visual);
+        command.execute(&mut app);
+        assert_eq!(app.mode, Mode::Visual);
+        app.handle_key_event(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+        app.handle_new_actions();
+        assert_eq!(app.mode, Mode::Normal);
     }
 }

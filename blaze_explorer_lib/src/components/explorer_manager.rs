@@ -2,9 +2,9 @@ use core::panic;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use ratatui::Frame;
 use ratatui::crossterm::event::KeyEvent;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::Frame;
 
 use super::explorer_table::{ExplorerTable, FileData, GlobalStyling};
 use crate::explorer_helpers::{
@@ -174,12 +174,6 @@ impl ExplorerManager {
                 }
             })
             .collect();
-        // for (key, value) in draw_map.iter() {
-        //     let table = self.explorers.get_mut(key).unwrap();
-        //     if let Split::Single(table) = &mut table.split {
-        //         let _ = table.draw(frame, *value);
-        //     }
-        // }
     }
     pub fn get_drawable(
         &self,
@@ -373,8 +367,8 @@ impl ExplorerManager {
         }
     }
 
-    pub fn set_styling(&mut self, styling: GlobalStyling) {
-        delegate_to_focused!(self, set_styling, styling);
+    pub fn set_highlighting_rule(&mut self, highlighting_rule: GlobalStyling) {
+        delegate_to_focused!(self, set_highlighting_rule, highlighting_rule);
     }
     pub fn set_plugin_display(&mut self, plugin_display: Option<String>) {
         delegate_to_focused!(self, set_plugin_display, plugin_display);

@@ -1,4 +1,6 @@
-use chrono::{offset::Utc, DateTime};
+pub mod explorer_styling;
+use chrono::{DateTime, offset::Utc};
+use explorer_styling::ExplorerStyle;
 use git2::{Repository, Status, StatusOptions};
 use layout::Alignment;
 use std::collections::HashMap;
@@ -11,10 +13,10 @@ use std::{
 
 use color_eyre::eyre::Result;
 use ratatui::{
-    prelude::*,
-    style::{palette::tailwind, Style},
-    widgets::*,
     Frame,
+    prelude::*,
+    style::{Style, palette::tailwind},
+    widgets::*,
 };
 
 use crate::explorer_helpers::{highlight_search_result, jump_highlight};
@@ -115,7 +117,7 @@ pub struct ExplorerTable {
     selected_ids: Option<Vec<usize>>,
     theme: CustomTheme,
     focused: bool,
-    styling: GlobalStyling,
+    style: ExplorerStyle,
     plugin_display: Option<String>,
     directory_history: DirectoryHistory,
     repo: Option<Repository>,
@@ -137,7 +139,7 @@ impl Clone for ExplorerTable {
             selected_ids: self.selected_ids.clone(),
             theme: self.theme.clone(),
             focused: self.focused,
-            styling: self.styling.clone(),
+            style: self.style.clone(),
             plugin_display: self.plugin_display.clone(),
             directory_history: self.directory_history.clone(),
             repo: get_repo(self.current_path.clone()),
@@ -160,7 +162,7 @@ impl Debug for ExplorerTable {
             .field("selected_ids", &self.selected_ids)
             .field("theme", &self.theme)
             .field("focused", &self.focused)
-            .field("styling", &self.styling)
+            .field("style", &self.style)
             .field("plugin_display", &self.plugin_display)
             .field("directory_history", &self.directory_history)
             .field("repo", &repo_display)
@@ -177,7 +179,7 @@ impl PartialEq for ExplorerTable {
             && self.selected_ids == other.selected_ids
             && self.theme == other.theme
             && self.focused == other.focused
-            && self.styling == other.styling
+            && self.style == other.style
             && self.plugin_display == other.plugin_display
             && self.directory_history == other.directory_history
             && self.git_map == other.git_map
@@ -195,7 +197,7 @@ impl ExplorerTable {
             selected_ids: None,
             theme: CustomTheme::default(),
             focused: true,
-            styling: GlobalStyling::None,
+            style: ExplorerStyle::default(),
             plugin_display: None,
             directory_history: DirectoryHistory::default(),
             repo: get_repo(starting_path),
@@ -339,7 +341,7 @@ impl ExplorerTable {
     }
 
     pub fn get_search_phrase(&self) -> Option<String> {
-        match &self.styling {
+        match &self.style.highlighting_rule() {
             GlobalStyling::HighlightSearch(query) => Some(query.clone()),
             _ => None,
         }
@@ -372,17 +374,18 @@ impl ExplorerTable {
         }
     }
     pub fn search_elements(&mut self) {
-        let element_ids = if let GlobalStyling::HighlightSearch(query) = &self.styling {
-            Some(
-                self.elements_list
-                    .iter()
-                    .filter(|x| x.filename.contains(query))
-                    .map(|x| x.id)
-                    .collect::<Vec<usize>>(),
-            )
-        } else {
-            None
-        };
+        let element_ids =
+            if let GlobalStyling::HighlightSearch(query) = &self.style.highlighting_rule() {
+                Some(
+                    self.elements_list
+                        .iter()
+                        .filter(|x| x.filename.contains(query))
+                        .map(|x| x.id)
+                        .collect::<Vec<usize>>(),
+                )
+            } else {
+                None
+            };
         self.selected_ids = element_ids;
     }
 
@@ -437,7 +440,12 @@ impl ExplorerTable {
     }
 
     pub fn clear_search_query(&mut self) {
-        self.set_styling(GlobalStyling::None)
+        self.set_highlighting_rule(GlobalStyling::None);
+    }
+
+    pub fn set_highlighting_rule(&mut self, highlighting_rule: GlobalStyling) {
+        self.style.set_highlighting_rule(highlighting_rule);
+        self.update_search_query();
     }
 
     pub fn get_selected_files(&self) -> Option<Vec<PathBuf>> {
@@ -447,11 +455,6 @@ impl ExplorerTable {
             return Some(vec![path]);
         }
         None
-    }
-
-    pub fn set_styling(&mut self, styling: GlobalStyling) {
-        self.styling = styling;
-        self.update_search_query();
     }
 
     pub fn set_plugin_display(&mut self, plugin_display: Option<String>) {
@@ -469,7 +472,7 @@ impl ExplorerTable {
         inverted_map: HashMap<usize, char>,
         element_id: usize,
     ) -> Cell<'a> {
-        let file_name_cell = Cell::from(match self.styling {
+        let file_name_cell = Cell::from(match self.style.highlighting_rule() {
             GlobalStyling::None => Line::from(filename.clone()),
             GlobalStyling::HighlightSearch(_) => {
                 highlight_search_result(filename.clone(), query, self.theme.search_result)
@@ -539,7 +542,7 @@ impl ExplorerTable {
             .collect::<Row>()
             .height(1)
             .style(self.theme.header);
-        let (query, inverted_map) = match &self.styling {
+        let (query, inverted_map) = match &self.style.highlighting_rule() {
             GlobalStyling::HighlightJump(query, map) => {
                 (query.clone(), map.iter().map(|(k, v)| (*v, *k)).collect())
             }
