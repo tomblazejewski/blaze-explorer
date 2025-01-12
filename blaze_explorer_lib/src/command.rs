@@ -951,10 +951,7 @@ mod tests {
 
     use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-    use crate::{
-        action::ExplorerAction,
-        components::explorer_manager::{self, Split},
-    };
+    use crate::action::ExplorerAction;
 
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
@@ -1073,7 +1070,30 @@ mod tests {
         app.move_directory(starting_path, None);
     }
     #[test]
-    fn test_delete() {
+    fn test_delete_folder() {
+        let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        let abs_path = path::absolute("../tests/folder_1").unwrap();
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
+                abs_path.clone(),
+            )));
+        let _ = app.handle_new_actions();
+        let mut delete_selection = DeleteSelection::new(app.get_app_context());
+        let before = delete_selection.affected_files.clone();
+
+        delete_selection.execute(&mut app);
+        thread::sleep(Duration::from_secs(5));
+        let _ = delete_selection.undo(&mut app);
+
+        let duplicate_selection = DeleteSelection::new(app.get_app_context());
+        let after = duplicate_selection.affected_files.clone();
+        assert_eq!(before, after);
+
+        app.move_directory(starting_path, None);
+    }
+    #[test]
+    fn test_delete_file() {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
         let abs_path = path::absolute("../tests/folder_1").unwrap();

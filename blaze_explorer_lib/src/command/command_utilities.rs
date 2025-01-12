@@ -21,7 +21,6 @@ pub fn move_recursively(from: &PathBuf, to: &Path) -> io::Result<()> {
     if !from.is_dir() {
         let dst_path = to.join(from.file_name().unwrap());
         fs::rename(from, &dst_path)?;
-        println!("Renamed {} to {}", from.display(), dst_path.display());
         return Ok(());
     }
     // Iterate over the directory entries
