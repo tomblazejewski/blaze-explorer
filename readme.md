@@ -7,30 +7,29 @@ Currently under development and unstable.
 
 ## Normal mode
 
-| Mappings      | Action                                                                                          |
-| ------------- | ----------------------------------------------------------------------------------------------- |
-| `j`           | Next item                                                                                       |
-| `k`           | Previous item                                                                                   |
-| `<Backspace>` | Move to parent directory                                                                        |
-| `<Enter>`     | Open selected item                                                                              |
-| `<C-o>`       | Go back in directory history                                                                    |
-| `<C-i>`       | Go forward in directory history                                                                 |
-| `dd`          | Delete selected item                                                                            |
-| `r`           | Rename selected item                                                                            |
-| `u`           | Undo last action (delete/rename)                                                                |
-| `<C-r>`       | Redo last action (delete/rename)                                                                |
-| `n`           | Next search result                                                                              |
-| `N`           | Previous search result                                                                          |
-| `<C-w>v`      | Split vertically                                                                                |
-| `<C-w>s`      | Split horizontally                                                                              |
-| `<C-h>`       | Move to left split                                                                              |
-| `<C-j>`       | Move to lower split                                                                             |
-| `<C-k>`       | Move to upper split                                                                             |
-| `<C-l>`       | Move to right split                                                                             |
-| `\`           | Enter search mode                                                                               |
-| `:`           | Enter command mode                                                                              |
-| `<space>sg`   | Search files by name (similar to [telescope](https://github.com/nvim-telescope/telescope.nvim)) |
-| `<space>on`   | Open neovim in current directory (comes back to the app after closing neovim)                   |
+| Mappings      | Action                                                                        |
+| ------------- | ----------------------------------------------------------------------------- |
+| `j`           | Next item                                                                     |
+| `k`           | Previous item                                                                 |
+| `<Backspace>` | Move to parent directory                                                      |
+| `<Enter>`     | Open selected item                                                            |
+| `<C-o>`       | Go back in directory history                                                  |
+| `<C-i>`       | Go forward in directory history                                               |
+| `dd`          | Delete selected item                                                          |
+| `r`           | Rename selected item                                                          |
+| `u`           | Undo last action (delete/rename)                                              |
+| `<C-r>`       | Redo last action (delete/rename)                                              |
+| `n`           | Next search result                                                            |
+| `N`           | Previous search result                                                        |
+| `<C-w>v`      | Split vertically                                                              |
+| `<C-w>s`      | Split horizontally                                                            |
+| `<C-h>`       | Move to left split                                                            |
+| `<C-j>`       | Move to lower split                                                           |
+| `<C-k>`       | Move to upper split                                                           |
+| `<C-l>`       | Move to right split                                                           |
+| `\`           | Enter search mode                                                             |
+| `:`           | Enter command mode                                                            |
+| `<space>on`   | Open neovim in current directory (comes back to the app after closing neovim) |
 
 ### Git integration
 
