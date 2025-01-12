@@ -1,0 +1,25 @@
+[package]
+authors = ["tomblazejewski <tomi.blazejewski@gmail.com>"]
+version = "0.6.0"
+edition = "2024"
+name = "blaze_explorer_lib"
+
+[dependencies]
+chrono = "0.4.38"
+color-eyre = "0.6.3"
+directories = "5.0.1"
+git2 = "0.19.0"
+itertools = "0.13.0"
+lazy_static = "1.5.0"
+libloading = "0.8.6"
+mockall = "0.13.0"
+open = "5.3.0"
+ratatui = "0.27.0"
+rust_search = "2.1.0"
+serde = {version="1.0.210", features = ["derive"]}
+serde_derive = "1.0.210"
+serde_json = "1.0.128"
+tracing = "0.1.40"
+tracing-error = "0.2.0"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tui-textbox = "0.3.0"
