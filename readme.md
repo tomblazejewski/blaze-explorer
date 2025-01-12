@@ -65,8 +65,8 @@ One can use the terminal commands, such as `git status`, similar to neovim, by p
   - [ ] Implement shortcuts for commiting/pushing/checking out individual/ groups of files
   - [ ] Preview file changes with a shortcut
 - [ ] Plugin management
-  - [ ] Manage the non-core features through the Plugin trait
-  - [ ] Allow attaching certain plugins upon launching the app
+  - [x] Manage the non-core features through the Plugin trait
+  - [x] Allow attaching certain plugins upon launching the app
 - [ ] Keymap system
   - [ ] Enable motions/multipliers for commands (e.g. 3dd)
   - [ ] Allow managing/adding keymaps through an accessible interface (lua script/toml file)
