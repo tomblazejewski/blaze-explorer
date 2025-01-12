@@ -53,9 +53,9 @@ use color_eyre::eyre::Result;
 pub use construct_plugin;
 pub use create_plugin_action;
 use ratatui::{
+    Frame,
     crossterm::event::{KeyCode, KeyEvent},
     layout::Rect,
-    Frame,
 };
 
 use crate::{
@@ -64,7 +64,7 @@ use crate::{
     mode::Mode,
 };
 
-use super::{plugin_commands::PluginPushSearchChar, plugin_popup::PluginPopUp, Plugin};
+use super::{Plugin, plugin_commands::PluginPushSearchChar, plugin_popup::PluginPopUp};
 
 pub enum PluginFetchResult {
     Err(Option<Action>),

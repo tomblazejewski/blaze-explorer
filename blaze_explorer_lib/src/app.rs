@@ -364,7 +364,7 @@ impl App {
             let _ = self
                 .command_line
                 .draw(frame, *areas.get("command_line").unwrap());
-            if let Some(ref mut popup) = &mut self.popup {
+            if let &mut Some(ref mut popup) = &mut self.popup {
                 popup.draw(frame, frame.size());
             }
         })?;

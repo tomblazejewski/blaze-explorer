@@ -61,9 +61,9 @@ pub fn calculate_distance(x_0: f32, y_0: f32, x_1: f32, y_1: f32) -> f32 {
 
 #[macro_export]
 macro_rules! delegate_to_focused {
-    ($self:ident, $method:ident $(, $args:expr )* ) => {
+    ($self:ident, $method:ident $(, $args:expr_2021 )* ) => {
         match &mut $self.explorers.get_mut(&$self.focused_id).unwrap().split {
-            Split::Single(ref mut table) => {
+            &mut Split::Single(ref mut table) => {
                 table.$method($($args),*)
             }
             _ => panic!("Impossible!"),

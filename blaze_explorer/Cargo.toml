@@ -2,7 +2,7 @@
 authors = ["tomblazejewski <tomi.blazejewski@gmail.com>"]
 name = "blaze_explorer"
 version = "0.6.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 chrono = "0.4.38"

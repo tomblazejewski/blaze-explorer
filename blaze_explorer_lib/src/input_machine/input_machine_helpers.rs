@@ -112,10 +112,10 @@ mod tests {
         );
         let mut expected_map = HashMap::new();
         expected_map.insert(
-            (
-                Mode::Normal,
-                vec![KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL)],
-            ),
+            (Mode::Normal, vec![KeyEvent::new(
+                KeyCode::Char('a'),
+                KeyModifiers::CONTROL,
+            )]),
             "OpenSFS".to_string(),
         );
         assert_eq!(telescope_bindings, expected_map);
