@@ -319,7 +319,7 @@ pub fn visual_key_map() -> KeyMapNode<Action> {
         Action::ExplorerAct(ExplorerAction::SelectDown),
     );
     root.add_sequence(
-        vec![KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE)],
+        vec![KeyEvent::new(KeyCode::Char('e'), KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::ToggleMark),
     );
     root
