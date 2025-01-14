@@ -1,7 +1,8 @@
-use ratatui::style::{Color, Style};
+use ratatui::style::{Color, Style, palette::tailwind};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CustomTheme {
+    pub row: Style,
     pub search_result: Style,
     pub selected_row: Style,
     pub selected_row_telescope: Style,
@@ -16,6 +17,7 @@ pub struct CustomTheme {
 impl Default for CustomTheme {
     fn default() -> Self {
         Self {
+            row: Style::new().bg(tailwind::BLACK).fg(tailwind::WHITE),
             search_result: Style::default().bg(Color::Rgb(114, 135, 253)), //catpuccin lavender
             selected_row: Style::default().bg(Color::Rgb(49, 50, 68)),
             selected_row_telescope: Style::default()

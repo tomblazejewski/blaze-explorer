@@ -528,15 +528,13 @@ impl ExplorerTable {
             last_modified_cell,
         ]);
 
-        let mut style = Style::new()
-            .bg(match &self.marked_ids {
-                Some(selected_ids) => match selected_ids.contains(&element.id) {
-                    true => tailwind::BLACK,
-                    false => tailwind::BLACK,
-                },
-                None => tailwind::BLACK,
-            })
-            .fg(tailwind::WHITE);
+        let mut style = match &self.marked_ids {
+            Some(selected_ids) => match selected_ids.contains(&element.id) {
+                true => self.theme.marked_row,
+                false => self.theme.row,
+            },
+            None => self.theme.row,
+        };
         if let Some(map) = &self.git_map {
             if let Some(status) = map.get(&element.filename) {
                 style = assign_git_styling(style, *status);
