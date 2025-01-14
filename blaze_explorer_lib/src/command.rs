@@ -943,6 +943,22 @@ impl Command for UndoDirectory {
     }
 }
 
+#[derive(Clone, PartialEq, Debug)]
+pub struct ToggleMark {}
+
+impl ToggleMark {
+    pub fn new(mut _ctx: AppContext) -> Self {
+        Self {}
+    }
+}
+
+impl Command for ToggleMark {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.explorer_manager.toggle_mark();
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::{collections::VecDeque, env, path, thread, time::Duration};

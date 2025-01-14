@@ -2,7 +2,7 @@ use crate::{
     command::{
         DeleteSplit, DisplayMessage, ExecuteFunction, FocusDown, FocusLeft, FocusRight, FocusUp,
         JumpToId, OpenNeovimHere, ParseCommand, ParseKeyStrokes, RedoDirectory, SplitHorizontally,
-        SplitVertically, TerminalCommand, UndoDirectory, UpdatePlugin, UpdatePopup,
+        SplitVertically, TerminalCommand, ToggleMark, UndoDirectory, UpdatePlugin, UpdatePopup,
     },
     plugin::{plugin_action::PluginAction, plugin_popup::PluginPopUp},
 };
@@ -36,6 +36,7 @@ pub enum ExplorerAction {
     FocusRight,
     DeleteSplit,
     JumpToId(usize),
+    ToggleMark,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -123,6 +124,7 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::ExplorerAct(ExplorerAction::FocusRight) => Box::new(FocusRight::new(ctx)),
         Action::ExplorerAct(ExplorerAction::DeleteSplit) => Box::new(DeleteSplit::new(ctx)),
         Action::ExplorerAct(ExplorerAction::JumpToId(id)) => Box::new(JumpToId::new(ctx, id)),
+        Action::ExplorerAct(ExplorerAction::ToggleMark) => Box::new(ToggleMark::new(ctx)),
         Action::AppAct(AppAction::Quit) => Box::new(Quit::new()),
         Action::AppAct(AppAction::SwitchMode(mode)) => Box::new(SwitchMode::new(ctx, mode)),
         Action::AppAct(AppAction::ConfirmSearchQuery) => Box::new(ConfirmSearchQuery::new()),

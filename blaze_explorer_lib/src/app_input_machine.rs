@@ -318,5 +318,9 @@ pub fn visual_key_map() -> KeyMapNode<Action> {
         vec![KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::SelectDown),
     );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE)],
+        Action::ExplorerAct(ExplorerAction::ToggleMark),
+    );
     root
 }
