@@ -310,5 +310,13 @@ pub fn visual_key_map() -> KeyMapNode<Action> {
         vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
         Action::AppAct(AppAction::SwitchMode(Mode::Normal)),
     );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE)],
+        Action::ExplorerAct(ExplorerAction::SelectUp),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)],
+        Action::ExplorerAct(ExplorerAction::SelectDown),
+    );
     root
 }
