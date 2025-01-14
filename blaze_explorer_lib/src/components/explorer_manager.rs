@@ -360,6 +360,14 @@ impl ExplorerManager {
         delegate_to_focused!(self, refresh_contents);
     }
 
+    pub fn toggle_mark(&mut self) {
+        delegate_to_focused!(self, toggle_mark);
+    }
+
+    pub fn get_marked_ids(&mut self) -> Option<Vec<usize>> {
+        delegate_to_focused!(self, get_marked_ids)
+    }
+
     pub fn find_elements(&self, query: &str) -> Vec<FileData> {
         match &self.explorers.get(&self.focused_id).unwrap().split {
             Split::Single(table) => table.find_elements(query),

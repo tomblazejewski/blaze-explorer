@@ -10,6 +10,7 @@ pub struct CustomTheme {
     pub unfocused_border: Style,
     pub highlight_query: Style,
     pub highlight_jump_char: Style,
+    pub marked_row: Style,
 }
 
 impl Default for CustomTheme {
@@ -27,6 +28,7 @@ impl Default for CustomTheme {
             unfocused_border: Style::new().fg(Color::Rgb(49, 50, 68)),
             highlight_query: Style::new().fg(Color::Rgb(128, 0, 128)),
             highlight_jump_char: Style::new().fg(Color::Rgb(255, 255, 0)),
+            marked_row: Style::new().bg(Color::Rgb(100, 149, 237)),
         }
     }
 }

@@ -114,7 +114,7 @@ pub struct ExplorerTable {
     current_path: PathBuf,
     elements_list: Vec<FileData>,
     mode: Mode,
-    selected_ids: Option<Vec<usize>>,
+    marked_ids: Option<Vec<usize>>,
     theme: CustomTheme,
     focused: bool,
     style: ExplorerStyle,
@@ -136,7 +136,7 @@ impl Clone for ExplorerTable {
             current_path: self.current_path.clone(),
             elements_list: self.elements_list.clone(),
             mode: self.mode.clone(),
-            selected_ids: self.selected_ids.clone(),
+            marked_ids: self.marked_ids.clone(),
             theme: self.theme.clone(),
             focused: self.focused,
             style: self.style.clone(),
@@ -159,7 +159,7 @@ impl Debug for ExplorerTable {
             .field("current_path", &self.current_path)
             .field("elements_list", &self.elements_list)
             .field("mode", &self.mode)
-            .field("selected_ids", &self.selected_ids)
+            .field("selected_ids", &self.marked_ids)
             .field("theme", &self.theme)
             .field("focused", &self.focused)
             .field("style", &self.style)
@@ -176,7 +176,7 @@ impl PartialEq for ExplorerTable {
             && self.current_path == other.current_path
             && self.elements_list == other.elements_list
             && self.mode == other.mode
-            && self.selected_ids == other.selected_ids
+            && self.marked_ids == other.marked_ids
             && self.theme == other.theme
             && self.focused == other.focused
             && self.style == other.style
@@ -194,7 +194,7 @@ impl ExplorerTable {
             current_path: starting_path.clone(),
             elements_list: Vec::new(),
             mode: Mode::Normal,
-            selected_ids: None,
+            marked_ids: None,
             theme: CustomTheme::default(),
             focused: true,
             style: ExplorerStyle::default(),
@@ -348,7 +348,7 @@ impl ExplorerTable {
     }
 
     pub fn next_search_result(&mut self) {
-        if let Some(selected_ids) = &self.selected_ids {
+        if let Some(selected_ids) = &self.marked_ids {
             if selected_ids.len() < 2 {
                 return;
             }
@@ -386,7 +386,7 @@ impl ExplorerTable {
             } else {
                 None
             };
-        self.selected_ids = element_ids;
+        self.marked_ids = element_ids;
     }
 
     pub fn find_elements(&self, query: &str) -> Vec<FileData> {
@@ -437,6 +437,24 @@ impl ExplorerTable {
         } else {
             None
         }
+    }
+
+    pub fn toggle_mark(&mut self) {
+        if let Some(selected) = self.state.selected() {
+            if let Some(selected_ids) = &mut self.marked_ids {
+                if selected_ids.contains(&selected) {
+                    selected_ids.retain(|x| x != &selected);
+                } else {
+                    selected_ids.push(selected);
+                }
+            } else {
+                self.marked_ids = Some(vec![selected]);
+            }
+        }
+    }
+
+    pub fn get_marked_ids(&self) -> Option<Vec<usize>> {
+        self.marked_ids.clone()
     }
 
     pub fn clear_search_query(&mut self) {
@@ -511,7 +529,7 @@ impl ExplorerTable {
         ]);
 
         let mut style = Style::new()
-            .bg(match &self.selected_ids {
+            .bg(match &self.marked_ids {
                 Some(selected_ids) => match selected_ids.contains(&element.id) {
                     true => tailwind::BLACK,
                     false => tailwind::BLACK,
@@ -636,6 +654,8 @@ impl ExplorerTable {
 
 #[cfg(test)]
 mod tests {
+    use crate::app::App;
+
     use super::*;
 
     #[test]
@@ -654,5 +674,18 @@ mod tests {
             String::from("3"),
         ];
         assert_eq!(result, expected_result);
+    }
+
+    #[test]
+    fn test_toggle_mark() {
+        let mut app = App::new().unwrap();
+        app.update_path("./".into(), None);
+        app.explorer_manager.refresh_contents();
+        app.explorer_manager.toggle_mark();
+        let marked_ids = app.explorer_manager.get_marked_ids();
+        assert_eq!(marked_ids, Some(vec![0]));
+        app.explorer_manager.toggle_mark();
+        let marked_ids = app.explorer_manager.get_marked_ids();
+        assert_eq!(marked_ids, Some(vec![]));
     }
 }
