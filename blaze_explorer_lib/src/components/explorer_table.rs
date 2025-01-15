@@ -528,12 +528,15 @@ impl ExplorerTable {
             last_modified_cell,
         ]);
 
-        let mut style = match &self.marked_ids {
-            Some(selected_ids) => match selected_ids.contains(&element.id) {
-                true => self.theme.marked_row,
-                false => self.theme.row,
-            },
-            None => self.theme.row,
+        let marked_ids = &self.marked_ids.clone().unwrap_or_default();
+        let mut style = match (
+            marked_ids.contains(&element.id),
+            Some(&element.id) == self.state.selected().as_ref(),
+        ) {
+            (true, true) => self.theme.marked_selected_row,
+            (true, false) => self.theme.marked_row,
+            (false, true) => self.theme.selected_row,
+            (false, false) => self.theme.row,
         };
         if let Some(map) = &self.git_map {
             if let Some(status) = map.get(&element.filename) {
@@ -592,7 +595,6 @@ impl ExplorerTable {
             // .style(self.theme.selected_frame)
             .style(style)
             .block(Block::new().borders(Borders::ALL))
-            .highlight_style(self.theme.selected_row)
             .header(header);
 
         // get paragraph block
