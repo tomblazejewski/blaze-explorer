@@ -244,6 +244,7 @@ impl App {
         self.explorer_manager.switch_mode(Mode::Normal);
         self.command_line.unfocus();
         self.explorer_manager.focus();
+        self.explorer_manager.reset_marked_rows();
     }
 
     pub fn enter_command_mode(&mut self) {

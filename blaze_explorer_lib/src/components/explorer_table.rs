@@ -453,6 +453,10 @@ impl ExplorerTable {
         }
     }
 
+    pub fn reset_marked_rows(&mut self) {
+        self.marked_ids = None
+    }
+
     pub fn get_marked_ids(&self) -> Option<Vec<usize>> {
         self.marked_ids.clone()
     }
@@ -687,5 +691,18 @@ mod tests {
         app.explorer_manager.toggle_mark();
         let marked_ids = app.explorer_manager.get_marked_ids();
         assert_eq!(marked_ids, Some(vec![]));
+    }
+
+    #[test]
+    fn test_reset_marked_rows() {
+        let mut app = App::new().unwrap();
+        app.update_path("./".into(), None);
+        app.explorer_manager.refresh_contents();
+        app.explorer_manager.toggle_mark();
+        let marked_ids = app.explorer_manager.get_marked_ids();
+        assert_eq!(marked_ids, Some(vec![0]));
+        app.explorer_manager.reset_marked_rows();
+        let marked_ids = app.explorer_manager.get_marked_ids();
+        assert_eq!(marked_ids, None);
     }
 }
