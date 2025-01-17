@@ -11,18 +11,14 @@ use directories::ProjectDirs;
 /// * `from` - The directory to me moved
 /// * `to` - The directory where `from` is to be moved
 pub fn move_recursively(from: &PathBuf, to: &Path) -> io::Result<()> {
-    // Create the destination directory, if it's a folder
-    let is_folder_path = !to.file_name().unwrap().to_str().unwrap().contains(".");
-    if is_folder_path {
-        fs::create_dir_all(to)?;
-    }
-
     //if file, rename
     if !from.is_dir() {
-        let dst_path = to.join(from.file_name().unwrap());
+        let dst_path = to;
         fs::rename(from, &dst_path)?;
         return Ok(());
     }
+    // Create the destination directory, if it's a folder
+    fs::create_dir_all(to)?;
     // Iterate over the directory entries
     for entry in fs::read_dir(from)? {
         let entry = entry?;
