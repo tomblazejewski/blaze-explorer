@@ -111,3 +111,4 @@ Building of the projects needs to be done in a specific order:
 - [ ] Terminal commands
   - [ ] Allow autocompletion of commands
   - [ ] Show history of commands
+- [x] Add a visual mode
