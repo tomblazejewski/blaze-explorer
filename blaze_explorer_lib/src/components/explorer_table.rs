@@ -332,6 +332,21 @@ impl ExplorerTable {
         }
     }
 
+    pub fn get_affected_paths(&self) -> Option<Vec<PathBuf>> {
+        match self.mode {
+            Mode::Normal => self.select_directory().map(|x| vec![x]),
+            Mode::Visual => self.get_marked_ids().as_ref().map(|ids| {
+                ids.iter()
+                    .map(|x| {
+                        self.current_path
+                            .join(self.elements_list[*x].filename.clone())
+                    })
+                    .collect()
+            }),
+            _ => panic!("Impossible call in this mode"),
+        }
+    }
+
     pub fn jump_to_id(&mut self, id: usize) {
         self.state.select(Some(id));
     }
@@ -658,6 +673,8 @@ impl ExplorerTable {
 
 #[cfg(test)]
 mod tests {
+    use std::env;
+
     use crate::app::App;
 
     use super::*;
@@ -704,5 +721,22 @@ mod tests {
         app.explorer_manager.reset_marked_rows();
         let marked_ids = app.explorer_manager.get_marked_ids();
         assert_eq!(marked_ids, None);
+    }
+
+    #[test]
+    fn test_get_affected_directories() {
+        let mut app = App::new().unwrap();
+        let current_path = env::current_dir().unwrap();
+        let test_path = current_path.parent().unwrap().join("tests");
+        app.update_path(test_path.clone(), Some("folder_1".to_string()));
+        app.explorer_manager.refresh_contents();
+        let affected_directories = app.explorer_manager.get_affected_paths();
+        assert_eq!(affected_directories, Some(vec![test_path.join("folder_1")]));
+        app.enter_visual_mode();
+        app.explorer_manager.toggle_mark();
+        app.explorer_manager.next();
+        app.explorer_manager.toggle_mark();
+        let affected_directories = app.explorer_manager.get_affected_paths();
+        assert_eq!(affected_directories.unwrap().len(), 2);
     }
 }

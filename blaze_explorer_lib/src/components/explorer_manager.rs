@@ -368,6 +368,10 @@ impl ExplorerManager {
         delegate_to_focused!(self, get_marked_ids)
     }
 
+    pub fn get_affected_paths(&mut self) -> Option<Vec<PathBuf>> {
+        delegate_to_focused!(self, get_affected_paths)
+    }
+
     pub fn reset_marked_rows(&mut self) {
         delegate_to_focused!(self, reset_marked_rows);
     }
