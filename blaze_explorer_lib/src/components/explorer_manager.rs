@@ -2,9 +2,9 @@ use core::panic;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use ratatui::Frame;
 use ratatui::crossterm::event::KeyEvent;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::Frame;
 
 use super::explorer_table::{ExplorerTable, FileData, GlobalStyling};
 use crate::explorer_helpers::{
@@ -174,12 +174,6 @@ impl ExplorerManager {
                 }
             })
             .collect();
-        // for (key, value) in draw_map.iter() {
-        //     let table = self.explorers.get_mut(key).unwrap();
-        //     if let Split::Single(table) = &mut table.split {
-        //         let _ = table.draw(frame, *value);
-        //     }
-        // }
     }
     pub fn get_drawable(
         &self,
@@ -366,6 +360,22 @@ impl ExplorerManager {
         delegate_to_focused!(self, refresh_contents);
     }
 
+    pub fn toggle_mark(&mut self) {
+        delegate_to_focused!(self, toggle_mark);
+    }
+
+    pub fn get_marked_ids(&mut self) -> Option<Vec<usize>> {
+        delegate_to_focused!(self, get_marked_ids)
+    }
+
+    pub fn get_affected_paths(&mut self) -> Option<Vec<PathBuf>> {
+        delegate_to_focused!(self, get_affected_paths)
+    }
+
+    pub fn reset_marked_rows(&mut self) {
+        delegate_to_focused!(self, reset_marked_rows);
+    }
+
     pub fn find_elements(&self, query: &str) -> Vec<FileData> {
         match &self.explorers.get(&self.focused_id).unwrap().split {
             Split::Single(table) => table.find_elements(query),
@@ -373,8 +383,8 @@ impl ExplorerManager {
         }
     }
 
-    pub fn set_styling(&mut self, styling: GlobalStyling) {
-        delegate_to_focused!(self, set_styling, styling);
+    pub fn set_highlighting_rule(&mut self, highlighting_rule: GlobalStyling) {
+        delegate_to_focused!(self, set_highlighting_rule, highlighting_rule);
     }
     pub fn set_plugin_display(&mut self, plugin_display: Option<String>) {
         delegate_to_focused!(self, set_plugin_display, plugin_display);

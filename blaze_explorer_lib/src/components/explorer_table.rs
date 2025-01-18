@@ -1,4 +1,6 @@
-use chrono::{offset::Utc, DateTime};
+pub mod explorer_styling;
+use chrono::{DateTime, offset::Utc};
+use explorer_styling::ExplorerStyle;
 use git2::{Repository, Status, StatusOptions};
 use layout::Alignment;
 use std::collections::HashMap;
@@ -11,10 +13,10 @@ use std::{
 
 use color_eyre::eyre::Result;
 use ratatui::{
-    prelude::*,
-    style::{palette::tailwind, Style},
-    widgets::*,
     Frame,
+    prelude::*,
+    style::{Style, palette::tailwind},
+    widgets::*,
 };
 
 use crate::explorer_helpers::{highlight_search_result, jump_highlight};
@@ -112,10 +114,10 @@ pub struct ExplorerTable {
     current_path: PathBuf,
     elements_list: Vec<FileData>,
     mode: Mode,
-    selected_ids: Option<Vec<usize>>,
+    marked_ids: Option<Vec<usize>>,
     theme: CustomTheme,
     focused: bool,
-    styling: GlobalStyling,
+    style: ExplorerStyle,
     plugin_display: Option<String>,
     directory_history: DirectoryHistory,
     repo: Option<Repository>,
@@ -134,10 +136,10 @@ impl Clone for ExplorerTable {
             current_path: self.current_path.clone(),
             elements_list: self.elements_list.clone(),
             mode: self.mode.clone(),
-            selected_ids: self.selected_ids.clone(),
+            marked_ids: self.marked_ids.clone(),
             theme: self.theme.clone(),
             focused: self.focused,
-            styling: self.styling.clone(),
+            style: self.style.clone(),
             plugin_display: self.plugin_display.clone(),
             directory_history: self.directory_history.clone(),
             repo: get_repo(self.current_path.clone()),
@@ -157,10 +159,10 @@ impl Debug for ExplorerTable {
             .field("current_path", &self.current_path)
             .field("elements_list", &self.elements_list)
             .field("mode", &self.mode)
-            .field("selected_ids", &self.selected_ids)
+            .field("selected_ids", &self.marked_ids)
             .field("theme", &self.theme)
             .field("focused", &self.focused)
-            .field("styling", &self.styling)
+            .field("style", &self.style)
             .field("plugin_display", &self.plugin_display)
             .field("directory_history", &self.directory_history)
             .field("repo", &repo_display)
@@ -174,10 +176,10 @@ impl PartialEq for ExplorerTable {
             && self.current_path == other.current_path
             && self.elements_list == other.elements_list
             && self.mode == other.mode
-            && self.selected_ids == other.selected_ids
+            && self.marked_ids == other.marked_ids
             && self.theme == other.theme
             && self.focused == other.focused
-            && self.styling == other.styling
+            && self.style == other.style
             && self.plugin_display == other.plugin_display
             && self.directory_history == other.directory_history
             && self.git_map == other.git_map
@@ -192,10 +194,10 @@ impl ExplorerTable {
             current_path: starting_path.clone(),
             elements_list: Vec::new(),
             mode: Mode::Normal,
-            selected_ids: None,
+            marked_ids: None,
             theme: CustomTheme::default(),
             focused: true,
-            styling: GlobalStyling::None,
+            style: ExplorerStyle::default(),
             plugin_display: None,
             directory_history: DirectoryHistory::default(),
             repo: get_repo(starting_path),
@@ -330,6 +332,21 @@ impl ExplorerTable {
         }
     }
 
+    pub fn get_affected_paths(&self) -> Option<Vec<PathBuf>> {
+        match self.mode {
+            Mode::Normal => self.select_directory().map(|x| vec![x]),
+            Mode::Visual => self.get_marked_ids().as_ref().map(|ids| {
+                ids.iter()
+                    .map(|x| {
+                        self.current_path
+                            .join(self.elements_list[*x].filename.clone())
+                    })
+                    .collect()
+            }),
+            _ => panic!("Impossible call in this mode"),
+        }
+    }
+
     pub fn jump_to_id(&mut self, id: usize) {
         self.state.select(Some(id));
     }
@@ -339,14 +356,14 @@ impl ExplorerTable {
     }
 
     pub fn get_search_phrase(&self) -> Option<String> {
-        match &self.styling {
+        match &self.style.highlighting_rule() {
             GlobalStyling::HighlightSearch(query) => Some(query.clone()),
             _ => None,
         }
     }
 
     pub fn next_search_result(&mut self) {
-        if let Some(selected_ids) = &self.selected_ids {
+        if let Some(selected_ids) = &self.marked_ids {
             if selected_ids.len() < 2 {
                 return;
             }
@@ -372,18 +389,19 @@ impl ExplorerTable {
         }
     }
     pub fn search_elements(&mut self) {
-        let element_ids = if let GlobalStyling::HighlightSearch(query) = &self.styling {
-            Some(
-                self.elements_list
-                    .iter()
-                    .filter(|x| x.filename.contains(query))
-                    .map(|x| x.id)
-                    .collect::<Vec<usize>>(),
-            )
-        } else {
-            None
-        };
-        self.selected_ids = element_ids;
+        let element_ids =
+            if let GlobalStyling::HighlightSearch(query) = &self.style.highlighting_rule() {
+                Some(
+                    self.elements_list
+                        .iter()
+                        .filter(|x| x.filename.contains(query))
+                        .map(|x| x.id)
+                        .collect::<Vec<usize>>(),
+                )
+            } else {
+                None
+            };
+        self.marked_ids = element_ids;
     }
 
     pub fn find_elements(&self, query: &str) -> Vec<FileData> {
@@ -436,8 +454,35 @@ impl ExplorerTable {
         }
     }
 
+    pub fn toggle_mark(&mut self) {
+        if let Some(selected) = self.state.selected() {
+            if let Some(selected_ids) = &mut self.marked_ids {
+                if selected_ids.contains(&selected) {
+                    selected_ids.retain(|x| x != &selected);
+                } else {
+                    selected_ids.push(selected);
+                }
+            } else {
+                self.marked_ids = Some(vec![selected]);
+            }
+        }
+    }
+
+    pub fn reset_marked_rows(&mut self) {
+        self.marked_ids = None
+    }
+
+    pub fn get_marked_ids(&self) -> Option<Vec<usize>> {
+        self.marked_ids.clone()
+    }
+
     pub fn clear_search_query(&mut self) {
-        self.set_styling(GlobalStyling::None)
+        self.set_highlighting_rule(GlobalStyling::None);
+    }
+
+    pub fn set_highlighting_rule(&mut self, highlighting_rule: GlobalStyling) {
+        self.style.set_highlighting_rule(highlighting_rule);
+        self.update_search_query();
     }
 
     pub fn get_selected_files(&self) -> Option<Vec<PathBuf>> {
@@ -447,11 +492,6 @@ impl ExplorerTable {
             return Some(vec![path]);
         }
         None
-    }
-
-    pub fn set_styling(&mut self, styling: GlobalStyling) {
-        self.styling = styling;
-        self.update_search_query();
     }
 
     pub fn set_plugin_display(&mut self, plugin_display: Option<String>) {
@@ -469,7 +509,7 @@ impl ExplorerTable {
         inverted_map: HashMap<usize, char>,
         element_id: usize,
     ) -> Cell<'a> {
-        let file_name_cell = Cell::from(match self.styling {
+        let file_name_cell = Cell::from(match self.style.highlighting_rule() {
             GlobalStyling::None => Line::from(filename.clone()),
             GlobalStyling::HighlightSearch(_) => {
                 highlight_search_result(filename.clone(), query, self.theme.search_result)
@@ -507,15 +547,16 @@ impl ExplorerTable {
             last_modified_cell,
         ]);
 
-        let mut style = Style::new()
-            .bg(match &self.selected_ids {
-                Some(selected_ids) => match selected_ids.contains(&element.id) {
-                    true => tailwind::BLACK,
-                    false => tailwind::BLACK,
-                },
-                None => tailwind::BLACK,
-            })
-            .fg(tailwind::WHITE);
+        let marked_ids = &self.marked_ids.clone().unwrap_or_default();
+        let mut style = match (
+            marked_ids.contains(&element.id),
+            Some(&element.id) == self.state.selected().as_ref(),
+        ) {
+            (true, true) => self.theme.marked_selected_row,
+            (true, false) => self.theme.marked_row,
+            (false, true) => self.theme.selected_row,
+            (false, false) => self.theme.row,
+        };
         if let Some(map) = &self.git_map {
             if let Some(status) = map.get(&element.filename) {
                 style = assign_git_styling(style, *status);
@@ -539,7 +580,7 @@ impl ExplorerTable {
             .collect::<Row>()
             .height(1)
             .style(self.theme.header);
-        let (query, inverted_map) = match &self.styling {
+        let (query, inverted_map) = match &self.style.highlighting_rule() {
             GlobalStyling::HighlightJump(query, map) => {
                 (query.clone(), map.iter().map(|(k, v)| (*v, *k)).collect())
             }
@@ -573,7 +614,6 @@ impl ExplorerTable {
             // .style(self.theme.selected_frame)
             .style(style)
             .block(Block::new().borders(Borders::ALL))
-            .highlight_style(self.theme.selected_row)
             .header(header);
 
         // get paragraph block
@@ -633,6 +673,10 @@ impl ExplorerTable {
 
 #[cfg(test)]
 mod tests {
+    use std::env;
+
+    use crate::app::App;
+
     use super::*;
 
     #[test]
@@ -651,5 +695,48 @@ mod tests {
             String::from("3"),
         ];
         assert_eq!(result, expected_result);
+    }
+
+    #[test]
+    fn test_toggle_mark() {
+        let mut app = App::new().unwrap();
+        app.update_path("./".into(), None);
+        app.explorer_manager.refresh_contents();
+        app.explorer_manager.toggle_mark();
+        let marked_ids = app.explorer_manager.get_marked_ids();
+        assert_eq!(marked_ids, Some(vec![0]));
+        app.explorer_manager.toggle_mark();
+        let marked_ids = app.explorer_manager.get_marked_ids();
+        assert_eq!(marked_ids, Some(vec![]));
+    }
+
+    #[test]
+    fn test_reset_marked_rows() {
+        let mut app = App::new().unwrap();
+        app.update_path("./".into(), None);
+        app.explorer_manager.refresh_contents();
+        app.explorer_manager.toggle_mark();
+        let marked_ids = app.explorer_manager.get_marked_ids();
+        assert_eq!(marked_ids, Some(vec![0]));
+        app.explorer_manager.reset_marked_rows();
+        let marked_ids = app.explorer_manager.get_marked_ids();
+        assert_eq!(marked_ids, None);
+    }
+
+    #[test]
+    fn test_get_affected_directories() {
+        let mut app = App::new().unwrap();
+        let current_path = env::current_dir().unwrap();
+        let test_path = current_path.parent().unwrap().join("tests");
+        app.update_path(test_path.clone(), Some("folder_1".to_string()));
+        app.explorer_manager.refresh_contents();
+        let affected_directories = app.explorer_manager.get_affected_paths();
+        assert_eq!(affected_directories, Some(vec![test_path.join("folder_1")]));
+        app.enter_visual_mode();
+        app.explorer_manager.toggle_mark();
+        app.explorer_manager.next();
+        app.explorer_manager.toggle_mark();
+        let affected_directories = app.explorer_manager.get_affected_paths();
+        assert_eq!(affected_directories.unwrap().len(), 2);
     }
 }

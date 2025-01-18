@@ -170,7 +170,8 @@ impl ResetStyling {
 
 impl Command for ResetStyling {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.explorer_manager.set_styling(GlobalStyling::None);
+        app.explorer_manager
+            .set_highlighting_rule(GlobalStyling::None);
         None
     }
 }
@@ -214,7 +215,7 @@ impl UpdateSearchQuery {
 impl Command for UpdateSearchQuery {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         app.explorer_manager
-            .set_styling(GlobalStyling::HighlightSearch(self.query.clone()));
+            .set_highlighting_rule(GlobalStyling::HighlightSearch(self.query.clone()));
         None
     }
 }
@@ -312,6 +313,7 @@ impl Command for SwitchMode {
             Mode::Command => app.enter_command_mode(),
             Mode::Search => app.enter_search_mode(),
             Mode::PopUp => app.enter_popup_mode(),
+            Mode::Visual => app.enter_visual_mode(),
         }
         None
     }
@@ -547,7 +549,8 @@ impl UpdateStyling {
 }
 impl Command for UpdateStyling {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        app.explorer_manager.set_styling(self.styling.clone());
+        app.explorer_manager
+            .set_highlighting_rule(self.styling.clone());
         None
     }
 }
@@ -575,7 +578,7 @@ pub struct DeleteSelection {
 /// Command used to delete files. Considers all selected items at the time of creating the struct.
 impl DeleteSelection {
     pub fn new(mut ctx: AppContext) -> Self {
-        let affected_files = ctx.explorer_manager.get_selected_files();
+        let affected_files = ctx.explorer_manager.get_affected_paths();
         Self {
             affected_files,
             backup_path: None,
@@ -603,7 +606,7 @@ impl Command for DeleteSelection {
                 })
                 .collect::<Vec<()>>();
         };
-        None
+        Some(Action::AppAct(AppAction::SwitchMode(Mode::Normal)))
     }
 
     fn undo(&mut self, _app: &mut App) -> Option<Action> {
@@ -940,6 +943,22 @@ impl Command for UndoDirectory {
     }
 }
 
+#[derive(Clone, PartialEq, Debug)]
+pub struct ToggleMark {}
+
+impl ToggleMark {
+    pub fn new(mut _ctx: AppContext) -> Self {
+        Self {}
+    }
+}
+
+impl Command for ToggleMark {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        app.explorer_manager.toggle_mark();
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::{collections::VecDeque, env, path, thread, time::Duration};
@@ -1255,5 +1274,23 @@ mod tests {
             app.explorer_manager.select_directory().unwrap(),
             apparent_current_path
         );
+    }
+
+    #[test]
+    fn test_switch_to_visual() {
+        let mut app = App::new().unwrap();
+        let mut command = SwitchMode::new(app.get_app_context(), Mode::Visual);
+        command.execute(&mut app);
+        assert_eq!(app.mode, Mode::Visual);
+    }
+    #[test]
+    fn test_switch_to_visual_and_back() {
+        let mut app = App::new().unwrap();
+        let mut command = SwitchMode::new(app.get_app_context(), Mode::Visual);
+        command.execute(&mut app);
+        assert_eq!(app.mode, Mode::Visual);
+        app.handle_key_event(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+        app.handle_new_actions();
+        assert_eq!(app.mode, Mode::Normal);
     }
 }

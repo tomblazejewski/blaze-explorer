@@ -55,6 +55,7 @@ impl AppInputMachine<Action> {
         keymap_nodes.insert(Mode::Search, search_key_map());
         keymap_nodes.insert(Mode::Command, command_key_map());
         keymap_nodes.insert(Mode::PopUp, KeyMapNode::new());
+        keymap_nodes.insert(Mode::Visual, visual_key_map());
 
         let mut default_actions = HashMap::new();
         default_actions.insert(
@@ -62,6 +63,7 @@ impl AppInputMachine<Action> {
             Box::new(get_none_action as fn(KeyEvent) -> Option<Action>),
         );
         default_actions.insert(Mode::PopUp, Box::new(get_none_action));
+        default_actions.insert(Mode::Visual, Box::new(get_none_action));
         default_actions.insert(Mode::Search, Box::new(get_default_search_command_action));
         default_actions.insert(Mode::Command, Box::new(get_default_search_command_action));
 
@@ -150,6 +152,10 @@ pub fn default_key_map() -> KeyMapNode<Action> {
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Char(':'), KeyModifiers::SHIFT)],
         Action::AppAct(AppAction::SwitchMode(Mode::Command)),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('v'), KeyModifiers::NONE)],
+        Action::AppAct(AppAction::SwitchMode(Mode::Visual)),
     );
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
@@ -295,6 +301,30 @@ pub fn command_key_map() -> KeyMapNode<Action> {
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
         Action::AppAct(AppAction::ConfirmCommand),
+    );
+    root
+}
+pub fn visual_key_map() -> KeyMapNode<Action> {
+    let mut root = KeyMapNode::new();
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
+        Action::AppAct(AppAction::SwitchMode(Mode::Normal)),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE)],
+        Action::ExplorerAct(ExplorerAction::SelectUp),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)],
+        Action::ExplorerAct(ExplorerAction::SelectDown),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('e'), KeyModifiers::NONE)],
+        Action::ExplorerAct(ExplorerAction::ToggleMark),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE)],
+        Action::AppAct(AppAction::Delete),
     );
     root
 }
