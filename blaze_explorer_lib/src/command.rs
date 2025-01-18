@@ -578,7 +578,7 @@ pub struct DeleteSelection {
 /// Command used to delete files. Considers all selected items at the time of creating the struct.
 impl DeleteSelection {
     pub fn new(mut ctx: AppContext) -> Self {
-        let affected_files = ctx.explorer_manager.get_selected_files();
+        let affected_files = ctx.explorer_manager.get_affected_paths();
         Self {
             affected_files,
             backup_path: None,
@@ -606,7 +606,7 @@ impl Command for DeleteSelection {
                 })
                 .collect::<Vec<()>>();
         };
-        None
+        Some(Action::AppAct(AppAction::SwitchMode(Mode::Normal)))
     }
 
     fn undo(&mut self, _app: &mut App) -> Option<Action> {

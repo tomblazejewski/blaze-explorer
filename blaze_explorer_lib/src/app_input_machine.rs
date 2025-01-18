@@ -322,5 +322,9 @@ pub fn visual_key_map() -> KeyMapNode<Action> {
         vec![KeyEvent::new(KeyCode::Char('e'), KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::ToggleMark),
     );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE)],
+        Action::AppAct(AppAction::Delete),
+    );
     root
 }
