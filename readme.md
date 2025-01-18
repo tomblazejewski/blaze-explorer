@@ -29,7 +29,18 @@ Currently under development and unstable.
 | `<C-l>`       | Move to right split                                                           |
 | `\`           | Enter search mode                                                             |
 | `:`           | Enter command mode                                                            |
+| `v`           | Enter visual mode                                                             |
 | `<space>on`   | Open neovim in current directory (comes back to the app after closing neovim) |
+
+## Visual mode
+
+| Mappings | Action                                |
+| -------- | ------------------------------------- |
+| `j`      | Next item                             |
+| `k`      | Previous item                         |
+| `<Esc>`  | Exit visual mode and unmark all items |
+| `e`      | Toggle mark selected item             |
+| `d`      | Delete marked items                   |
 
 ### Git integration
 
