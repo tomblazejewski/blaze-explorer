@@ -1,3 +1,9 @@
+use clipboard_win::Getter;
+use clipboard_win::Setter;
+use clipboard_win::formats::FileList;
+use clipboard_win::get_clipboard;
+
+use clipboard_win::Clipboard;
 use std::{
     fs, io,
     path::{Path, PathBuf},
@@ -115,6 +121,29 @@ pub fn rename_recursively(first_path: PathBuf, second_path: PathBuf) -> io::Resu
 pub fn remove_if_folder(path: PathBuf) -> io::Result<()> {
     if path.is_dir() {
         fs::remove_dir_all(path)?
+    }
+    Ok(())
+}
+
+pub fn copy_to_clipboard(file_paths: Vec<&str>) -> Result<(), clipboard_win::ErrorCode> {
+    let _clip = Clipboard::new_attempts(10).expect("Open clipboard");
+    match FileList.write_clipboard(&file_paths) {
+        Ok(_) => {}
+        Err(e) => return Err(e),
+    }
+    let _ = FileList.write_clipboard(&file_paths);
+    Ok(())
+}
+pub fn read_from_clipboard() -> Result<Vec<String>, clipboard_win::ErrorCode> {
+    let _clip = Clipboard::new_attempts(10).expect("Open clipboard");
+    get_clipboard(FileList)
+}
+
+pub fn move_from_clipboard(file_paths: Vec<String>, destination_path: PathBuf) -> io::Result<()> {
+    for path in file_paths {
+        let path = PathBuf::from(path);
+        let target_path = destination_path.join(path.file_name().unwrap());
+        fs::copy(path, target_path)?;
     }
     Ok(())
 }

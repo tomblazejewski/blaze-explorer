@@ -2,7 +2,8 @@ pub mod command_helpers;
 pub mod command_utilities;
 pub mod key_press;
 use command_utilities::{
-    get_backup_dir, move_path, remove_if_folder, remove_with_backup, rename_recursively,
+    copy_to_clipboard, get_backup_dir, move_from_clipboard, move_path, read_from_clipboard,
+    remove_if_folder, remove_with_backup, rename_recursively,
 };
 use key_press::decode_expression;
 
@@ -959,6 +960,65 @@ impl Command for ToggleMark {
     }
 }
 
+#[derive(Clone, PartialEq, Debug)]
+pub struct CopyToClipboard {
+    affected_files: Option<Vec<PathBuf>>,
+}
+
+impl CopyToClipboard {
+    pub fn new(mut ctx: AppContext) -> Self {
+        let affected_files = ctx.explorer_manager.get_affected_paths();
+        Self { affected_files }
+    }
+}
+
+impl Command for CopyToClipboard {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        match &self.affected_files {
+            Some(affected_files) => {
+                match copy_to_clipboard(
+                    affected_files.iter().map(|x| x.to_str().unwrap()).collect(),
+                ) {
+                    Ok(()) => None,
+                    Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                        "Error while copying: {:?}",
+                        e
+                    )))),
+                }
+            }
+            None => None,
+        }
+    }
+}
+#[derive(Clone, PartialEq, Debug)]
+pub struct PasteFromClipboard {
+    current_directory: PathBuf,
+}
+
+impl PasteFromClipboard {
+    pub fn new(mut ctx: AppContext) -> Self {
+        let current_directory = ctx.explorer_manager.get_current_path();
+        Self { current_directory }
+    }
+}
+
+impl Command for PasteFromClipboard {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        match read_from_clipboard() {
+            Ok(files) => match move_from_clipboard(files, self.current_directory.clone()) {
+                Ok(()) => None,
+                Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                    "Error while pasting: {:?}",
+                    e
+                )))),
+            },
+            Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                "Error while pasting: {:?}",
+                e
+            )))),
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use std::{collections::VecDeque, env, path, thread, time::Duration};
@@ -1292,5 +1352,30 @@ mod tests {
         app.handle_key_event(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
         app.handle_new_actions();
         assert_eq!(app.mode, Mode::Normal);
+    }
+
+    #[test]
+    fn test_write_read_clipboard() {
+        let mut app = App::new().unwrap();
+        let current_path = env::current_dir().unwrap();
+        let test_path = current_path.parent().unwrap().join("tests");
+        app.update_path(test_path.clone(), Some("sheet.csv".to_string()));
+        let mut copy_selection = CopyToClipboard::new(app.get_app_context());
+        copy_selection.execute(&mut app);
+        let folder_1 = test_path.join("folder_1");
+        app.update_path(folder_1.clone(), None);
+        let mut paste_selection = PasteFromClipboard::new(app.get_app_context());
+        paste_selection.execute(&mut app);
+        let expected_path = folder_1.join("sheet.csv");
+        app.explorer_manager.refresh_contents();
+        app.explorer_manager.next();
+        assert_eq!(
+            app.explorer_manager.select_directory().unwrap(),
+            expected_path
+        );
+        let mut del_action = DeleteSelection::new(app.get_app_context());
+        del_action.execute(&mut app);
+        app.explorer_manager.refresh_contents();
+        app.move_directory(current_path, None);
     }
 }
