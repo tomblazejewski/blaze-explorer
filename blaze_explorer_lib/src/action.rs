@@ -1,8 +1,9 @@
 use crate::{
     command::{
-        DeleteSplit, DisplayMessage, ExecuteFunction, FocusDown, FocusLeft, FocusRight, FocusUp,
-        JumpToId, OpenNeovimHere, ParseCommand, ParseKeyStrokes, RedoDirectory, SplitHorizontally,
-        SplitVertically, TerminalCommand, ToggleMark, UndoDirectory, UpdatePlugin, UpdatePopup,
+        CopyToClipboard, DeleteSplit, DisplayMessage, ExecuteFunction, FocusDown, FocusLeft,
+        FocusRight, FocusUp, JumpToId, OpenNeovimHere, ParseCommand, ParseKeyStrokes,
+        PasteFromClipboard, RedoDirectory, SplitHorizontally, SplitVertically, TerminalCommand,
+        ToggleMark, UndoDirectory, UpdatePlugin, UpdatePopup,
     },
     plugin::{plugin_action::PluginAction, plugin_popup::PluginPopUp},
 };
@@ -48,6 +49,8 @@ pub enum AppAction {
     OpenPopup(Box<dyn PluginPopUp>),
     ShowInFolder(PathBuf),
     Delete,
+    Copy,
+    Paste,
     OpenNeovimHere,
     DisplayMessage(String),
     TerminalCommand(String),
@@ -137,6 +140,8 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         }
         Action::AppAct(AppAction::ShowInFolder(path)) => Box::new(ShowInFolder::new(ctx, path)),
         Action::AppAct(AppAction::Delete) => Box::new(DeleteSelection::new(ctx)),
+        Action::AppAct(AppAction::Copy) => Box::new(CopyToClipboard::new(ctx)),
+        Action::AppAct(AppAction::Paste) => Box::new(PasteFromClipboard::new(ctx)),
         Action::AppAct(AppAction::OpenNeovimHere) => Box::new(OpenNeovimHere::new(ctx)),
         Action::AppAct(AppAction::DisplayMessage(msg)) => Box::new(DisplayMessage::new(msg)),
         Action::AppAct(AppAction::TerminalCommand(cmd)) => Box::new(TerminalCommand::new(ctx, cmd)),

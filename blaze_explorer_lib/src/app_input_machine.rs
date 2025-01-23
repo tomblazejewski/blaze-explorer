@@ -173,6 +173,17 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         Action::AppAct(AppAction::Delete),
     );
     root.add_sequence(
+        vec![
+            KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE),
+        ],
+        Action::AppAct(AppAction::Copy),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('p'), KeyModifiers::NONE)],
+        Action::AppAct(AppAction::Paste),
+    );
+    root.add_sequence(
         vec![KeyEvent::new(KeyCode::Char('u'), KeyModifiers::NONE)],
         Action::CommandAct(CommandAction::Undo),
     );
@@ -325,6 +336,14 @@ pub fn visual_key_map() -> KeyMapNode<Action> {
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE)],
         Action::AppAct(AppAction::Delete),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE)],
+        Action::AppAct(AppAction::Copy),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('p'), KeyModifiers::NONE)],
+        Action::AppAct(AppAction::Paste),
     );
     root
 }
