@@ -987,7 +987,8 @@ impl Command for CopyToClipboard {
                 }
             }
             None => None,
-        }
+        };
+        Some(Action::AppAct(AppAction::SwitchMode(Mode::Normal)))
     }
 }
 #[derive(Clone, PartialEq, Debug)]

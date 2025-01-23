@@ -611,9 +611,7 @@ impl ExplorerTable {
             false => self.theme.unfocused_border,
         };
         let t = Table::new(rows, widths)
-            // .style(self.theme.selected_frame)
-            .style(style)
-            .block(Block::new().borders(Borders::ALL))
+            .block(Block::new().borders(Borders::ALL).style(style))
             .header(header);
 
         // get paragraph block
