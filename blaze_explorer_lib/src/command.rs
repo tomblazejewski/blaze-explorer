@@ -1378,4 +1378,27 @@ mod tests {
         app.explorer_manager.refresh_contents();
         app.move_directory(current_path, None);
     }
+
+    #[test]
+    fn test_write_delete_read_clipboard() {
+        let mut app = App::new().unwrap();
+        let current_path = env::current_dir().unwrap();
+        let test_path = current_path.parent().unwrap().join("tests");
+        app.update_path(test_path.clone(), Some("sheet.csv".to_string()));
+        let mut copy_selection = CopyToClipboard::new(app.get_app_context());
+        let mut delete_selection = DeleteSelection::new(app.get_app_context());
+        copy_selection.execute(&mut app);
+        delete_selection.execute(&mut app);
+        let folder_1 = test_path.join("folder_1");
+        app.update_path(folder_1.clone(), None);
+        let mut paste_selection = PasteFromClipboard::new(app.get_app_context());
+        let paste_action = paste_selection.execute(&mut app);
+        match paste_action {
+            Some(Action::AppAct(AppAction::DisplayMessage(_))) => {}
+            _ => panic!("Expected a display action"),
+        };
+        app.update_path(test_path.clone(), Some("sheet.csv".to_string()));
+        delete_selection.undo(&mut app);
+        app.move_directory(current_path, None);
+    }
 }
