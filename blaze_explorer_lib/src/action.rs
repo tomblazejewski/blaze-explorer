@@ -49,8 +49,6 @@ pub enum AppAction {
     OpenPopup(Box<dyn PluginPopUp>),
     ShowInFolder(PathBuf),
     Delete,
-    Copy,
-    Paste,
     OpenNeovimHere,
     DisplayMessage(String),
     TerminalCommand(String),
@@ -59,6 +57,8 @@ pub enum AppAction {
     ParseKeyStrokes(String),
     ParseCommand(String),
     ExecuteFunction(Box<fn(&mut App) -> Option<Action>>),
+    Copy,
+    Paste,
 }
 
 #[derive(Clone, Debug, PartialEq)]

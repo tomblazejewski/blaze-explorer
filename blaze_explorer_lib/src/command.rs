@@ -1020,6 +1020,7 @@ impl Command for PasteFromClipboard {
         }
     }
 }
+
 #[cfg(test)]
 mod tests {
     use std::{collections::VecDeque, env, path, thread, time::Duration};
