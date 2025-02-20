@@ -1,5 +1,6 @@
 use clipboard_win::Getter;
 use clipboard_win::Setter;
+use clipboard_win::empty;
 use clipboard_win::formats::FileList;
 use clipboard_win::get_clipboard;
 
@@ -127,12 +128,11 @@ pub fn remove_if_folder(path: PathBuf) -> io::Result<()> {
 
 pub fn copy_to_clipboard(file_paths: Vec<&str>) -> Result<(), clipboard_win::ErrorCode> {
     let _clip = Clipboard::new_attempts(10).expect("Open clipboard");
+    empty()?;
     match FileList.write_clipboard(&file_paths) {
-        Ok(_) => {}
-        Err(e) => return Err(e),
+        Ok(_) => Ok(()),
+        Err(e) => Err(e),
     }
-    let _ = FileList.write_clipboard(&file_paths);
-    Ok(())
 }
 pub fn read_from_clipboard() -> Result<Vec<String>, clipboard_win::ErrorCode> {
     let _clip = Clipboard::new_attempts(10).expect("Open clipboard");
