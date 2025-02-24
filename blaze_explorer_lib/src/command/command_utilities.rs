@@ -134,9 +134,14 @@ pub fn copy_to_clipboard(file_paths: Vec<&str>) -> Result<(), clipboard_win::Err
         Err(e) => Err(e),
     }
 }
-pub fn read_from_clipboard() -> Result<Vec<String>, clipboard_win::ErrorCode> {
+pub fn read_from_clipboard() -> Result<Vec<PathBuf>, clipboard_win::ErrorCode> {
     let _clip = Clipboard::new_attempts(10).expect("Open clipboard");
-    get_clipboard(FileList)
+    let str_files = get_clipboard(FileList)?;
+    let paths = str_files
+        .iter()
+        .map(|str_path| PathBuf::from(str_path))
+        .collect::<Vec<PathBuf>>();
+    Ok(paths)
 }
 
 pub fn move_from_clipboard(file_paths: Vec<String>, destination_path: PathBuf) -> io::Result<()> {
@@ -144,6 +149,26 @@ pub fn move_from_clipboard(file_paths: Vec<String>, destination_path: PathBuf) -
         let path = PathBuf::from(path);
         let target_path = destination_path.join(path.file_name().unwrap());
         fs::copy(path, target_path)?;
+    }
+    Ok(())
+}
+fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
+    fs::create_dir_all(&dst)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        if ty.is_dir() {
+            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        } else {
+            fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        }
+    }
+    Ok(())
+}
+
+pub fn copy_to_backup(files: Vec<PathBuf>, backup_path: PathBuf) -> Result<()> {
+    for path in files {
+        copy_dir_all(path, &backup_path)?
     }
     Ok(())
 }
