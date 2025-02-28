@@ -2,7 +2,8 @@ pub mod command_helpers;
 pub mod command_utilities;
 pub mod key_press;
 use command_utilities::{
-    copy_to_backup, copy_to_clipboard, get_backup_dir, move_from_clipboard, move_path, read_from_clipboard, remove_if_folder, remove_with_backup, rename_recursively
+    copy_to_backup, copy_to_clipboard, get_backup_dir, move_from_clipboard, move_path,
+    read_from_clipboard, remove_if_folder, remove_with_backup, rename_recursively,
 };
 use key_press::decode_expression;
 
@@ -1011,41 +1012,39 @@ impl Command for PasteFromClipboard {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
         // If this is executed for the first time, get file list from the clipboard. If
         // this is redone, file list is already attached to the struct.
-        match &self.source_files {
+        if self.source_files.is_none() {
+            let files = match read_from_clipboard() {
+                Ok(files) => files,
+                Err(e) => {
+                    return Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                        "Error while pasting: {:?}",
+                        e
+                    ))));
+                }
+            };
+            // Backup the files and save to source files
+            let backup_dir = get_backup_dir();
+            copy_to_backup(files.clone(), backup_dir);
+            self.source_files = Some(files);
+        };
+        let files = match &self.source_files {
             None => {
                 //pasting for the first time
-                let files = match read_from_clipboard(){
-                    Ok(files)=> files,
-                    Err(e)=>return Some(Action::AppAct(AppAction::DisplayMessage(format!(
-                    "Error while pasting: {:?}",
-                    e
-                ))))
-                };
-                //backup the files and save to source files
-                let backup_dir = get_backup_dir();
-                copy_to_backup(files, backup_dir);
-                let source_dirs = files.iter().map(|x| x.to_path_buf()).collect();
-
-
-
-            },
-            Some(files) => {
-                Ok(files.to_owned()),
+                return Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                    "Unexpected error occurred - could not retrieve copied files from clipboard"
+                ))));
             }
+
+            Some(files) => files.clone(),
         };
-        match files {
-            Ok(files) => match move_from_clipboard(files, self.current_directory.clone()) {
-                Ok(()) => None,
-                Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
-                    "Error while pasting: {:?}",
-                    e
-                )))),
-            },
+        match move_from_clipboard(files, self.current_directory.clone()) {
+            Ok(()) => None,
             Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
                 "Error while pasting: {:?}",
                 e
             )))),
-        }
+        };
+        None
     }
 }
 
