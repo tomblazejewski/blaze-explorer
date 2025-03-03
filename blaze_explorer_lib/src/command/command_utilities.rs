@@ -1,14 +1,10 @@
-use clipboard_win::Getter;
 use clipboard_win::Setter;
 use clipboard_win::empty;
 use clipboard_win::formats::FileList;
 use clipboard_win::get_clipboard;
-use tempdir::TempDir;
 
 use clipboard_win::Clipboard;
 use std::fs::create_dir_all;
-use std::thread;
-use std::time::Duration;
 use std::{
     fs, io,
     path::{Path, PathBuf},
@@ -16,6 +12,9 @@ use std::{
 
 use chrono::offset;
 use directories::ProjectDirs;
+
+///A collection of functions, mostly to do with file/directory manipulation.
+///
 
 /// Move a directory recursively.
 /// # Arguments
@@ -196,8 +195,8 @@ pub fn copy_to_backup(
 }
 
 mod tests {
-    use color_eyre::owo_colors::OwoColorize;
     use fs::create_dir_all;
+    use tempdir::TempDir;
 
     use super::*;
     use std::{
