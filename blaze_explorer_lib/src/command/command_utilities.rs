@@ -6,6 +6,9 @@ use clipboard_win::get_clipboard;
 use tempdir::TempDir;
 
 use clipboard_win::Clipboard;
+use std::fs::create_dir_all;
+use std::thread;
+use std::time::Duration;
 use std::{
     fs, io,
     path::{Path, PathBuf},
@@ -152,7 +155,12 @@ pub fn move_from_clipboard(file_paths: Vec<PathBuf>, destination_path: PathBuf) 
     }
     Ok(())
 }
-fn copy_dir_all(src: PathBuf, dst: impl AsRef<Path>) -> io::Result<PathBuf> {
+fn copy_dir_all(
+    src: PathBuf,
+    dst: impl AsRef<Path>,
+    paths_list: &mut Vec<PathBuf>,
+) -> io::Result<()> {
+    create_dir_all(&dst)?;
     let file_name = src.file_name().ok_or(io::Error::new(
         io::ErrorKind::NotFound,
         "Could not get the file name",
@@ -160,15 +168,17 @@ fn copy_dir_all(src: PathBuf, dst: impl AsRef<Path>) -> io::Result<PathBuf> {
     let resulting_path = dst.as_ref().join(file_name);
     if src.is_file() {
         fs::copy(src, resulting_path.clone())?;
-        return Ok(resulting_path);
+        paths_list.push(resulting_path);
+        return Ok(());
     };
-    fs::create_dir_all(&dst)?;
+    //if src is a folder
+    let new_path = dst.as_ref().join(file_name);
+    fs::create_dir_all(&new_path)?;
     for entry in fs::read_dir(src)? {
         let entry = entry?;
-        let new_path = dst.as_ref().join(entry.file_name());
-        copy_dir_all(entry.path(), new_path)?;
+        copy_dir_all(entry.path(), &new_path, paths_list)?;
     }
-    Ok(resulting_path)
+    Ok(())
 }
 
 /// Copy all the directories to a specified backup_path
@@ -177,34 +187,64 @@ pub fn copy_to_backup(
     files: Vec<PathBuf>,
     backup_path: PathBuf,
 ) -> Result<Vec<PathBuf>, io::Error> {
-    let file_paths = files
+    let mut path_list = Vec::new();
+    files
         .iter()
-        .map(|path| copy_dir_all(path.to_owned(), backup_path.clone()))
+        .map(|path| copy_dir_all(path.to_owned(), backup_path.clone(), &mut path_list))
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(file_paths)
+    Ok(path_list)
 }
 
 mod tests {
+    use color_eyre::owo_colors::OwoColorize;
+    use fs::create_dir_all;
+
     use super::*;
-    use std::{fs::File, io::Write};
+    use std::{
+        fs::File,
+        io::Write,
+        thread::{self, Thread},
+        time::Duration,
+    };
     #[test]
     fn test_copy_dir_all() -> io::Result<()> {
         let backup_dir = TempDir::new("backup_dir").unwrap();
         let original_dir = TempDir::new("original_directory").unwrap();
-        let folder_1 = TempDir::new("backup_dir/folder_1").unwrap();
-        let folder_2 = TempDir::new("backup_dir/folder_1/folder_2").unwrap();
+        let folder_1 = original_dir.path().join("folder_1");
+        let folder_2 = folder_1.join("folder_2");
+        create_dir_all(folder_2.clone())?;
         let file_list = vec![
             original_dir.path().join("file1.txt"),
             original_dir.path().join("file2.txt"),
-            folder_1.path().join("file2.txt"),
-            folder_2.path().join("file3.txt"),
+            folder_1.join("file2.txt"),
+            folder_2.join("file3.txt"),
         ];
+        for file in &file_list {
+            let mut f = File::create(file)?;
+            f.write_all(b"Hello, world!")?;
+            f.sync_all()?;
+        }
+        let folder_in_backup = backup_dir
+            .path()
+            .join(original_dir.as_ref().file_name().unwrap());
         let expected_file_list = vec![
-            backup_dir.path().join("file1.txt"),
-            backup_dir.path().join("file2.txt"),
-            backup_dir.path().join("folder_1/file2.txt"),
-            backup_dir.path().join("folder_1/folder_2/file3.txt"),
+            folder_in_backup.join("file1.txt"),
+            folder_in_backup.join("file2.txt"),
+            folder_in_backup.join("folder_1/file2.txt"),
+            folder_in_backup.join("folder_1/folder_2/file3.txt"),
         ];
+        let mut resulting_file_list = Vec::new();
+        copy_dir_all(
+            original_dir.path().to_path_buf(),
+            &backup_dir,
+            &mut resulting_file_list,
+        )
+        .unwrap();
+        assert_eq!(resulting_file_list, expected_file_list);
+        //assert files exist
+        for file in resulting_file_list.iter() {
+            assert!(file.exists());
+        }
         Ok(())
     }
     #[test]
