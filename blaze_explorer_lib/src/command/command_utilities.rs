@@ -143,7 +143,7 @@ pub fn read_from_clipboard() -> Result<Vec<PathBuf>, clipboard_win::ErrorCode> {
     let str_files = get_clipboard(FileList)?;
     let paths = str_files
         .iter()
-        .map(|str_path| PathBuf::from(str_path))
+        .map(PathBuf::from)
         .collect::<Vec<PathBuf>>();
     Ok(paths)
 }
@@ -206,6 +206,33 @@ mod tests {
         thread::{self, Thread},
         time::Duration,
     };
+    #[test]
+    fn test_copy_and_read_clipboard() -> io::Result<()> {
+        let original_dir = TempDir::new("original_directory").unwrap();
+        let folder_1 = original_dir.path().join("folder_1");
+        let folder_2 = folder_1.join("folder_2");
+        create_dir_all(folder_2.clone())?;
+        let file_list = vec![
+            original_dir.path().join("file1.txt"),
+            original_dir.path().join("file2.txt"),
+            folder_1.join("file2.txt"),
+            folder_2.join("file3.txt"),
+        ];
+        for file in &file_list {
+            let mut f = File::create(file)?;
+            f.write_all(b"Hello, world!")?;
+            f.sync_all()?;
+        }
+        let str_path_list = file_list
+            .iter()
+            .map(|f| f.to_str().unwrap())
+            .collect::<Vec<_>>();
+        copy_to_clipboard(str_path_list).unwrap();
+        let resulting_paths = read_from_clipboard().unwrap();
+        assert_eq!(file_list, resulting_paths);
+        Ok(())
+    }
+
     #[test]
     fn test_copy_dir_all() -> io::Result<()> {
         let backup_dir = TempDir::new("backup_dir").unwrap();
