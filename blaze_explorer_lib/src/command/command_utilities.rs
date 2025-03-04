@@ -14,7 +14,8 @@ use chrono::offset;
 use directories::ProjectDirs;
 
 ///A collection of functions, mostly to do with file/directory manipulation.
-///
+/// copy_dir_all - copies recursively the contents of the src directory to a destination folder
+/// copy_to_backup - backs up files from one directory in a specified backup folder
 
 /// Move a directory recursively.
 /// # Arguments
@@ -24,7 +25,7 @@ pub fn move_recursively(from: &PathBuf, to: &Path) -> io::Result<()> {
     //if file, rename
     if !from.is_dir() {
         let dst_path = to;
-        fs::rename(from, &dst_path)?;
+        fs::rename(from, dst_path)?;
         return Ok(());
     }
     // Create the destination directory, if it's a folder
@@ -88,16 +89,14 @@ pub fn get_backup_dir() -> PathBuf {
 /// * `to` - The new path the `from` should take
 pub fn rename_recursively(first_path: PathBuf, second_path: PathBuf) -> io::Result<()> {
     // Create the destination directory, if it's a folder
-    let is_folder_path = !second_path
-        .file_name()
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .contains(".");
+    let is_folder_path = first_path.is_dir();
+    println!("{:?} is a dir: {:?}", first_path, first_path.is_dir());
     if is_folder_path {
         fs::create_dir_all(second_path.clone())?;
         //loop over the directories in the folder
+        println!("Entries: {:?}", fs::read_dir(&first_path).unwrap());
         for entry in fs::read_dir(first_path)? {
+            println!("Entry: {:?}", entry);
             let entry = entry?;
             let file_type = entry.file_type()?;
 
@@ -107,15 +106,19 @@ pub fn rename_recursively(first_path: PathBuf, second_path: PathBuf) -> io::Resu
             let dst_path = second_path.join(entry.file_name());
 
             // If the entry is a directory, call the function recursively
+            println!("File type {:?}", file_type);
             if file_type.is_dir() {
-                move_recursively(&src_path, &dst_path)?;
+                println!("Recurring");
+                rename_recursively(src_path, dst_path)?;
             } else {
                 // If it's a file, copy it
+                println!("Renaming from {:?}, to {:?}", src_path, dst_path);
                 fs::rename(&src_path, &dst_path)?;
             }
         }
     } else {
         //rename immediately
+        println!("Renaming immediately?");
         fs::rename(first_path.clone(), second_path.clone())?;
         return Ok(());
     }
@@ -199,12 +202,49 @@ mod tests {
     use tempdir::TempDir;
 
     use super::*;
-    use std::{
-        fs::File,
-        io::Write,
-        thread::{self, Thread},
-        time::Duration,
-    };
+    use std::{fs::File, io::Write, thread, time::Duration};
+    #[test]
+    fn test_rename_recursively() -> io::Result<()> {
+        let original_dir = TempDir::new("original_directory").unwrap();
+        let folder_1 = original_dir.path().join("folder_1");
+        let folder_2 = folder_1.join("folder_2");
+        create_dir_all(folder_2.clone())?;
+        let file_list = vec![
+            original_dir.path().join("file1.txt"),
+            original_dir.path().join("file2.txt"),
+            folder_1.join("file2.txt"),
+            folder_2.join("file3.txt"),
+        ];
+        for file in &file_list {
+            let mut f = File::create(file)?;
+            f.write_all(b"Hello, world!")?;
+            f.sync_all()?;
+        }
+        let target_dir = TempDir::new("target_directory").unwrap();
+        let target_folder_1 = target_dir.path().join("folder_1");
+        let target_folder_2 = folder_1.join("folder_2");
+        let expected_file_list = vec![
+            target_dir.path().join("file1.txt"),
+            target_dir.path().join("file2.txt"),
+            target_folder_1.join("file2.txt"),
+            target_folder_2.join("file3.txt"),
+        ];
+        rename_recursively(
+            original_dir.path().to_path_buf(),
+            target_dir.path().to_path_buf(),
+        )
+        .unwrap();
+        println!("{:?}", expected_file_list);
+        for file in file_list.iter() {
+            assert!(!file.exists());
+        }
+        for file in expected_file_list.iter() {
+            println!("{:?}", file);
+            assert!(file.exists());
+        }
+
+        Ok(())
+    }
     #[test]
     fn test_copy_and_read_clipboard() -> io::Result<()> {
         let original_dir = TempDir::new("original_directory").unwrap();
