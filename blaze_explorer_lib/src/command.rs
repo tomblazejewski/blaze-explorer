@@ -1,5 +1,6 @@
 pub mod command_helpers;
 pub mod command_utilities;
+pub mod command_utils;
 pub mod key_press;
 use command_utilities::{
     copy_to_backup, copy_to_clipboard, get_backup_dir, move_from_clipboard, move_path,
