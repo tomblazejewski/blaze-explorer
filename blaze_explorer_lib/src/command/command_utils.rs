@@ -6,7 +6,7 @@ use directories::ProjectDirs;
 
 ///Obtain the backup directory name to be used for storing the data. This is based on the time of
 ///calling the func.
-pub fn get_backup_dir() -> PathBuf {
+pub fn get_backup_dir(create: bool) -> PathBuf {
     let mut backup_name = format!(
         "backup_{}",
         offset::Local::now().format("%d_%h_%Y_%H_%M_%S_%3f")
@@ -15,11 +15,13 @@ pub fn get_backup_dir() -> PathBuf {
     let proj_dir = ProjectDirs::from("", "", "blaze_explorer").unwrap();
     let path = proj_dir.cache_dir().join(backup_name);
     //create this directory
-    let _ = fs::create_dir(&path);
+    if create {
+        let _ = fs::create_dir_all(&path);
+    }
     path
 }
 
-pub fn join_paths(path_list: Vec<PathBuf>, new_base: PathBuf) -> Vec<PathBuf> {
+pub fn join_paths(path_list: Vec<PathBuf>, new_base: &PathBuf) -> Vec<PathBuf> {
     path_list
         .iter()
         .map(|path| {
@@ -31,13 +33,14 @@ pub fn join_paths(path_list: Vec<PathBuf>, new_base: PathBuf) -> Vec<PathBuf> {
 
 pub fn move_recursively(
     files_to_move: Vec<PathBuf>,
-    destination_path: PathBuf,
+    destination_path: &PathBuf,
 ) -> io::Result<Vec<PathBuf>> {
     let options = fs_extra::dir::CopyOptions::new();
     fs_extra::move_items(&files_to_move, &destination_path, &options)
         .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
     Ok(join_paths(files_to_move, destination_path))
 }
+
 mod tests {
     use std::{
         fs::{File, create_dir_all},
@@ -49,8 +52,10 @@ mod tests {
     use super::*;
     #[test]
     fn test_get_backup_dir() {
-        let backup_dir = get_backup_dir();
+        let backup_dir = get_backup_dir(true);
         assert!(backup_dir.exists());
+        let backup_dir = get_backup_dir(false);
+        assert!(!backup_dir.exists());
     }
 
     #[test]
@@ -77,7 +82,7 @@ mod tests {
             target_dir.path().join("file3.txt"),
         ];
         let resulting_file_list =
-            move_recursively(file_list, target_dir.path().to_path_buf()).unwrap();
+            move_recursively(file_list, &target_dir.path().to_path_buf()).unwrap();
         assert_eq!(resulting_file_list, expected_file_list);
         for file in resulting_file_list.iter() {
             assert!(file.exists());
@@ -107,7 +112,7 @@ mod tests {
             target_dir.path().join("file2.txt"),
             target_dir.path().join("file3.txt"),
         ];
-        let resulting_file_list = join_paths(file_list, target_dir.path().to_path_buf());
+        let resulting_file_list = join_paths(file_list, &target_dir.path().to_path_buf());
         assert_eq!(resulting_file_list, expected_file_list);
         Ok(())
     }

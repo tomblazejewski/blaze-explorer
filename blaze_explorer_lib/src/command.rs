@@ -3,9 +3,10 @@ pub mod command_utilities;
 pub mod command_utils;
 pub mod key_press;
 use command_utilities::{
-    copy_to_backup, copy_to_clipboard, get_backup_dir, move_from_clipboard, move_path,
-    read_from_clipboard, remove_if_folder, remove_with_backup, rename_recursively,
+    copy_to_backup, copy_to_clipboard, move_from_clipboard, read_from_clipboard, remove_if_folder,
+    rename_recursively,
 };
+use command_utils::get_backup_dir;
 use key_press::decode_expression;
 
 use crate::action::{AppAction, ExplorerAction};
@@ -15,11 +16,10 @@ use crate::components::explorer_table::GlobalStyling;
 use crate::plugin::plugin_popup::PluginPopUp;
 use crate::{action::Action, line_entry::LineEntry};
 use std::any::Any;
-use std::fmt;
 use std::fmt::Debug;
-use std::path::Path;
 use std::process::Command as ProcessCommand;
 use std::{collections::HashMap, path::PathBuf};
+use std::{fmt, fs, io};
 
 use crate::{app::App, app_context::AppContext, mode::Mode};
 
@@ -574,7 +574,7 @@ impl Command for Noop {
 
 #[derive(Clone, PartialEq)]
 pub struct DeleteSelection {
-    affected_files: Option<Vec<PathBuf>>,
+    pub affected_files: Option<Vec<PathBuf>>,
     backup_path: Option<HashMap<PathBuf, PathBuf>>,
 }
 
@@ -589,25 +589,27 @@ impl DeleteSelection {
     }
 }
 impl Command for DeleteSelection {
+    /// Assign a backup path for each individual entry selected
+    /// Move each of the entries to their designated backup path
     fn execute(&mut self, _app: &mut App) -> Option<Action> {
         if let Some(contents) = &self.affected_files {
             match &self.backup_path {
                 None => {
                     let contents_map = contents
                         .iter()
-                        .map(|f| (f.to_owned(), get_backup_dir()))
+                        .map(|f| (f.to_owned(), get_backup_dir(false)))
                         .collect::<HashMap<PathBuf, PathBuf>>();
                     self.backup_path = Some(contents_map);
                 }
                 Some(_contents) => {}
             }
-            let _ = contents
+            let result = contents
                 .iter()
                 .map(|f| {
                     let backup_path = self.backup_path.as_ref().unwrap().get(f).unwrap();
-                    remove_with_backup(f, backup_path)
+                    fs::rename(f, backup_path)
                 })
-                .collect::<Vec<()>>();
+                .collect::<Vec<io::Result<()>>>();
         };
         Some(Action::AppAct(AppAction::SwitchMode(Mode::Normal)))
     }
@@ -616,8 +618,8 @@ impl Command for DeleteSelection {
         if let Some(contents) = &self.backup_path {
             let _ = contents
                 .iter()
-                .map(|(original_path, backup_path)| move_path(backup_path, original_path))
-                .collect::<Result<Vec<()>, std::io::Error>>();
+                .map(|(original_path, backup_path)| fs::rename(backup_path, original_path))
+                .collect::<Vec<io::Result<()>>>();
             return None;
         };
         None
@@ -1024,7 +1026,7 @@ impl Command for PasteFromClipboard {
                 }
             };
             // Backup the files and save to source files
-            let backup_dir = get_backup_dir();
+            let backup_dir = get_backup_dir(false);
             copy_to_backup(files.clone(), backup_dir);
             self.source_files = Some(files);
         };
@@ -1051,11 +1053,19 @@ impl Command for PasteFromClipboard {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::VecDeque, env, path, thread, time::Duration};
+    use std::io::{Result, Write};
+    use std::{
+        collections::VecDeque,
+        env,
+        fs::{File, create_dir_all},
+        path, thread,
+        time::Duration,
+    };
 
     use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    use tempdir::TempDir;
 
-    use crate::action::ExplorerAction;
+    use crate::{action::ExplorerAction, testing_utils::create_testing_folder};
 
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
@@ -1430,5 +1440,41 @@ mod tests {
         app.update_path(test_path.clone(), Some("sheet.csv".to_string()));
         delete_selection.undo(&mut app);
         app.move_directory(current_path, None);
+    }
+
+    #[test]
+    fn test_delete_command_new() {
+        let mut app = App::new().unwrap();
+        let testing_folder = create_testing_folder().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        //enter the temp_dir path
+
+        app.action_list
+            .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
+                testing_folder.root_dir.path().to_path_buf(),
+            )));
+        let _ = app.handle_new_actions();
+        let mut delete_selection = DeleteSelection::new(app.get_app_context());
+        //set files to delete
+        let to_delete = vec![
+            testing_folder.file_list[0].clone(),
+            testing_folder.file_list[2].clone(),
+        ];
+        for path in to_delete.iter() {
+            assert!(path.exists());
+        }
+        //assert these files exist
+        delete_selection.affected_files = Some(to_delete.clone());
+        delete_selection.execute(&mut app);
+        //assert these files do not exist
+        for path in to_delete.iter() {
+            assert!(!path.exists());
+        }
+        let _ = delete_selection.undo(&mut app);
+        //assert the files exist again
+        for path in to_delete.iter() {
+            assert!(path.exists());
+        }
+        app.move_directory(starting_path, None);
     }
 }
