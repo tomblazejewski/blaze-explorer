@@ -21,14 +21,13 @@ impl TestingFolder {
 }
 
 /// Create a testing folder with the following structure:
-/// ```
+///
 ///original_directory/
 ///├─ folder_1/
 ///│  ├─ folder_2/
 ///│  │  ├─ file_3.txt
 ///├─ file_1.txt
 ///├─ file_2.txt
-///```
 /// The files can be accessed via `TestingFolder.file_list`
 pub fn create_testing_folder() -> Result<TestingFolder> {
     let original_dir = TempDir::new("original_directory").unwrap();

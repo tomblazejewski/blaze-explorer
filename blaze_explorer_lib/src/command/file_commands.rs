@@ -290,6 +290,7 @@ mod tests {
         // Write a file to clipboard, move to another directory and paste it. Ensure the
         // new file was found in the new directory.
         let mut app = App::new().unwrap();
+        let current_path = env::current_dir().unwrap();
         let testing_folder = create_testing_folder().unwrap();
         let file_to_copy = testing_folder.file_list[0].clone();
         app.update_path(
@@ -315,6 +316,7 @@ mod tests {
         //Ensure undoing removes the file
         let _ = paste_selection.undo(&mut app);
         assert!(!folder_2.join(file_to_copy.file_name().unwrap()).exists());
+        app.move_directory(current_path, None);
     }
 
     #[test]
