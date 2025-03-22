@@ -1,4 +1,5 @@
 use fs_extra;
+use rand::distr::{Alphanumeric, SampleString};
 use std::{fs, io, path::PathBuf};
 
 use chrono::offset;
@@ -9,7 +10,7 @@ use directories::ProjectDirs;
 pub fn get_backup_dir(create: bool) -> PathBuf {
     let mut backup_name = format!(
         "backup_{}",
-        offset::Local::now().format("%d_%h_%Y_%H_%M_%S_%3f")
+        Alphanumeric.sample_string(&mut rand::thread_rng(), 16)
     );
     backup_name += ".blzbkp";
     let proj_dir = ProjectDirs::from("", "", "blaze_explorer").unwrap();

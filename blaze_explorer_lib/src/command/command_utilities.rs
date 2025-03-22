@@ -90,13 +90,10 @@ pub fn get_backup_dir() -> PathBuf {
 pub fn rename_recursively(first_path: PathBuf, second_path: PathBuf) -> io::Result<()> {
     // Create the destination directory, if it's a folder
     let is_folder_path = first_path.is_dir();
-    println!("{:?} is a dir: {:?}", first_path, first_path.is_dir());
     if is_folder_path {
         fs::create_dir_all(second_path.clone())?;
         //loop over the directories in the folder
-        println!("Entries: {:?}", fs::read_dir(&first_path).unwrap());
         for entry in fs::read_dir(first_path)? {
-            println!("Entry: {:?}", entry);
             let entry = entry?;
             let file_type = entry.file_type()?;
 
@@ -106,19 +103,15 @@ pub fn rename_recursively(first_path: PathBuf, second_path: PathBuf) -> io::Resu
             let dst_path = second_path.join(entry.file_name());
 
             // If the entry is a directory, call the function recursively
-            println!("File type {:?}", file_type);
             if file_type.is_dir() {
-                println!("Recurring");
                 rename_recursively(src_path, dst_path)?;
             } else {
                 // If it's a file, copy it
-                println!("Renaming from {:?}, to {:?}", src_path, dst_path);
                 fs::rename(&src_path, &dst_path)?;
             }
         }
     } else {
         //rename immediately
-        println!("Renaming immediately?");
         fs::rename(first_path.clone(), second_path.clone())?;
         return Ok(());
     }
@@ -234,12 +227,10 @@ mod tests {
             target_dir.path().to_path_buf(),
         )
         .unwrap();
-        println!("{:?}", expected_file_list);
         for file in file_list.iter() {
             assert!(!file.exists());
         }
         for file in expected_file_list.iter() {
-            println!("{:?}", file);
             assert!(file.exists());
         }
 

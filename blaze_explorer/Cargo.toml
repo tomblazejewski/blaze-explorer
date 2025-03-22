@@ -26,3 +26,4 @@ tui-textbox = "0.3.0"
 blaze_explorer_lib = { path = "../blaze_explorer_lib" }
 tempdir = "0.3.7"
 fs_extra = "1.3.0"
+rand = "0.9.0"
