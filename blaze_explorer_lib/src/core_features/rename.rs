@@ -3,16 +3,16 @@ use std::{collections::HashMap, path::PathBuf};
 
 use color_eyre::eyre::Result;
 use ratatui::{
+    Frame,
     crossterm::event::KeyEvent,
     layout::{Constraint, Rect},
     widgets::{Block, Borders, Clear, Paragraph},
-    Frame,
 };
 
 use crate::{
     action::Action,
     app::App,
-    command::RenameActive,
+    command::file_commands::RenameActive,
     create_plugin_action,
     input_machine::input_machine_helpers::convert_str_to_events,
     line_entry::LineEntry,
