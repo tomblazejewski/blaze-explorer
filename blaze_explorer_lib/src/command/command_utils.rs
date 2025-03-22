@@ -1,8 +1,13 @@
+use clipboard_win::Setter;
+use clipboard_win::empty;
+use clipboard_win::formats::FileList;
+use clipboard_win::get_clipboard;
 use fs_extra;
 use rand::distr::{Alphanumeric, SampleString};
-use std::{fs, io, path::PathBuf};
+use std::{collections::HashMap, fs, io, path::PathBuf};
 
-use chrono::offset;
+use clipboard_win::Clipboard;
+
 use directories::ProjectDirs;
 
 ///Obtain the backup directory name to be used for storing the data. This is based on the time of
@@ -22,6 +27,12 @@ pub fn get_backup_dir(create: bool) -> PathBuf {
     path
 }
 
+pub fn create_backup_map(files: Vec<PathBuf>) -> HashMap<PathBuf, PathBuf> {
+    files
+        .into_iter()
+        .map(|file_path| (file_path, get_backup_dir(false)))
+        .collect::<HashMap<PathBuf, PathBuf>>()
+}
 pub fn join_paths(path_list: Vec<PathBuf>, new_base: &PathBuf) -> Vec<PathBuf> {
     path_list
         .iter()
@@ -40,6 +51,25 @@ pub fn move_recursively(
     fs_extra::move_items(&files_to_move, &destination_path, &options)
         .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
     Ok(join_paths(files_to_move, destination_path))
+}
+
+pub fn copy_to_clipboard(file_paths: Vec<&str>) -> Result<(), clipboard_win::ErrorCode> {
+    let _clip = Clipboard::new_attempts(10).expect("Open clipboard");
+    empty()?;
+    match FileList.write_clipboard(&file_paths) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn read_from_clipboard() -> Result<Vec<PathBuf>, clipboard_win::ErrorCode> {
+    let _clip = Clipboard::new_attempts(10).expect("Open clipboard");
+    let str_files = get_clipboard(FileList)?;
+    let paths = str_files
+        .iter()
+        .map(PathBuf::from)
+        .collect::<Vec<PathBuf>>();
+    Ok(paths)
 }
 
 mod tests {
@@ -115,6 +145,32 @@ mod tests {
         ];
         let resulting_file_list = join_paths(file_list, &target_dir.path().to_path_buf());
         assert_eq!(resulting_file_list, expected_file_list);
+        Ok(())
+    }
+    #[test]
+    fn test_copy_and_read_clipboard() -> io::Result<()> {
+        let original_dir = TempDir::new("original_directory").unwrap();
+        let folder_1 = original_dir.path().join("folder_1");
+        let folder_2 = folder_1.join("folder_2");
+        create_dir_all(folder_2.clone())?;
+        let file_list = vec![
+            original_dir.path().join("file1.txt"),
+            original_dir.path().join("file2.txt"),
+            folder_1.join("file2.txt"),
+            folder_2.join("file3.txt"),
+        ];
+        for file in &file_list {
+            let mut f = File::create(file)?;
+            f.write_all(b"Hello, world!")?;
+            f.sync_all()?;
+        }
+        let str_path_list = file_list
+            .iter()
+            .map(|f| f.to_str().unwrap())
+            .collect::<Vec<_>>();
+        copy_to_clipboard(str_path_list).unwrap();
+        let resulting_paths = read_from_clipboard().unwrap();
+        assert_eq!(file_list, resulting_paths);
         Ok(())
     }
 }

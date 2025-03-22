@@ -1,10 +1,7 @@
-use super::command_utilities::{
-    copy_to_backup, copy_to_clipboard, move_from_clipboard, read_from_clipboard, remove_if_folder,
-    rename_recursively,
-};
+use super::command_utils::{copy_to_clipboard, read_from_clipboard};
 use crate::command::Command;
 
-use super::command_utils::get_backup_dir;
+use super::command_utils::{create_backup_map, get_backup_dir, join_paths};
 
 use crate::action::{Action, AppAction};
 use std::fmt::Debug;
@@ -101,24 +98,8 @@ impl RenameActive {
 
 impl Command for RenameActive {
     fn execute(&mut self, _app: &mut App) -> Option<Action> {
-        match rename_recursively(self.first_path.clone(), self.second_path.clone()) {
-            Ok(_) => {
-                //attempt to remove the old path
-                match remove_if_folder(self.first_path.clone()) {
-                    Ok(_) => {
-                        self.reversible = true;
-                        None
-                    }
-                    Err(e) => {
-                        remove_if_folder(self.second_path.clone()).unwrap();
-                        Some(Action::AppAct(AppAction::DisplayMessage(format!(
-                            "Failed to remove the original path {}: {}",
-                            self.first_path.display(),
-                            e
-                        ))))
-                    }
-                }
-            }
+        match fs::rename(self.first_path.clone(), self.second_path.clone()) {
+            Ok(_) => None,
             Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
                 "Failed to rename {}: {}",
                 self.first_path.display(),
@@ -128,21 +109,11 @@ impl Command for RenameActive {
     }
 
     fn undo(&mut self, _app: &mut App) -> Option<Action> {
-        match rename_recursively(self.second_path.clone(), self.first_path.clone()) {
-            Ok(_) => match remove_if_folder(self.second_path.clone()) {
-                Ok(_) => None,
-                Err(e) => {
-                    remove_if_folder(self.first_path.clone()).unwrap();
-                    Some(Action::AppAct(AppAction::DisplayMessage(format!(
-                        "Failed to remove the original path {}: {}",
-                        self.second_path.display(),
-                        e
-                    ))))
-                }
-            },
+        match fs::rename(self.second_path.clone(), self.first_path.clone()) {
+            Ok(_) => None,
             Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
                 "Failed to rename {}: {}",
-                self.first_path.display(),
+                self.second_path.display(),
                 e
             )))),
         }
@@ -186,56 +157,95 @@ impl Command for CopyToClipboard {
 #[derive(Clone, PartialEq, Debug)]
 pub struct PasteFromClipboard {
     current_directory: PathBuf,
-    source_files: Option<Vec<PathBuf>>,
+    source_files_map: Option<HashMap<PathBuf, PathBuf>>,
+    reversible: bool,
 }
 
+/// Paste files from clipboard
+/// Undoing this action removes the pasted files from the given directory, while redoing the action
+/// will paste the exact same files back (even if clipboard contents have changed)
 impl PasteFromClipboard {
     pub fn new(mut ctx: AppContext) -> Self {
         let current_directory = ctx.explorer_manager.get_current_path();
         Self {
             current_directory,
-            source_files: None,
+            source_files_map: None,
+            reversible: false,
         }
     }
 }
 
 impl Command for PasteFromClipboard {
     fn execute(&mut self, app: &mut App) -> Option<Action> {
-        // If this is executed for the first time, get file list from the clipboard. If
-        // this is redone, file list is already attached to the struct.
-        if self.source_files.is_none() {
-            let files = match read_from_clipboard() {
-                Ok(files) => files,
+        // Retrieve file paths to copy
+        // There are two options:
+        // 1. Pasting for the first time - take the paths from clipboard
+        // 2. Pasting again - take the paths from [source_files] field of the struct
+
+        let copy_map = match &self.source_files_map {
+            Some(map) => map.to_owned(),
+            None => {
+                //Read from clipboard and join paths
+                let paths_to_copy = match read_from_clipboard() {
+                    Ok(paths) => paths,
+                    Err(e) => {
+                        return Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                            "Could not read from clipboard: {}",
+                            e
+                        ))));
+                    }
+                };
+                // represents the source file and target file
+                paths_to_copy
+                    .clone()
+                    .into_iter()
+                    .zip(join_paths(paths_to_copy.clone(), &self.current_directory))
+                    .collect::<HashMap<PathBuf, PathBuf>>()
+            }
+        };
+        for (source_path, target_path) in copy_map.iter() {
+            match fs::rename(source_path, target_path) {
+                Ok(_) => (),
                 Err(e) => {
                     return Some(Action::AppAct(AppAction::DisplayMessage(format!(
-                        "Error while pasting: {:?}",
+                        "Error while copying: {:?}",
                         e
                     ))));
                 }
-            };
-            // Backup the files and save to source files
-            let backup_dir = get_backup_dir(false);
-            copy_to_backup(files.clone(), backup_dir);
-            self.source_files = Some(files);
-        };
-        let files = match &self.source_files {
-            None => {
-                //pasting for the first time
-                return Some(Action::AppAct(AppAction::DisplayMessage(format!(
-                    "Unexpected error occurred - could not retrieve copied files from clipboard"
-                ))));
             }
+        }
 
-            Some(files) => files.clone(),
-        };
-        match move_from_clipboard(files, self.current_directory.clone()) {
-            Ok(()) => None,
-            Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
-                "Error while pasting: {:?}",
-                e
-            )))),
-        };
+        if self.source_files_map.is_none() {
+            let backup_path =
+                create_backup_map(copy_map.values().cloned().collect::<Vec<PathBuf>>());
+            let inverted_map = backup_path
+                .iter()
+                .map(|(k, v)| (v.to_owned(), k.to_owned()))
+                .collect::<HashMap<PathBuf, PathBuf>>();
+            self.source_files_map = Some(inverted_map);
+        }
+        self.reversible = true;
         None
+    }
+
+    fn undo(&mut self, app: &mut App) -> Option<Action> {
+        for (backup_path, target_path) in self.source_files_map.as_ref().unwrap().iter() {
+            println!("{} -> {}", target_path.display(), backup_path.display());
+            match fs::rename(target_path, backup_path) {
+                Ok(_) => (),
+                Err(e) => {
+                    return Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                        "Error while copying: {:?}",
+                        e
+                    ))));
+                }
+            }
+        }
+        None
+    }
+
+    fn is_reversible(&self) -> bool {
+        self.reversible
     }
 }
 
@@ -258,73 +268,53 @@ mod tests {
     #[test]
     fn test_rename_active() {
         let mut app = App::new().unwrap();
-        let current_path = env::current_dir().unwrap();
-        let test_path = current_path.parent().unwrap().join("tests");
-        app.update_path(test_path.clone(), Some("sheet.csv".to_string()));
-        let apparent_current_path = test_path.join("sheet.csv");
-        let mut rename_active =
-            RenameActive::new(apparent_current_path.clone(), "sheet1.csv".to_string());
+        let testing_folder = create_testing_folder().unwrap();
+        let path_to_rename = testing_folder.root_dir.path().to_path_buf();
+        let new_name = "new_folder_name".to_string();
+        let mut rename_active = RenameActive::new(path_to_rename.clone(), new_name.clone());
         rename_active.execute(&mut app);
-        let expected_path = test_path.join("sheet1.csv");
-        app.explorer_manager.refresh_contents();
-        assert_eq!(
-            app.explorer_manager.select_directory().unwrap(),
-            expected_path
-        );
+        assert!(!path_to_rename.exists());
+        for file_path in testing_folder.file_list.iter() {
+            assert!(!file_path.exists());
+        }
+        assert!(path_to_rename.parent().unwrap().join(&new_name).exists());
         rename_active.undo(&mut app);
-        app.explorer_manager.refresh_contents();
-        assert_eq!(
-            app.explorer_manager.select_directory().unwrap(),
-            apparent_current_path
-        );
+        assert!(path_to_rename.exists());
+        for file_path in testing_folder.file_list.iter() {
+            assert!(file_path.exists());
+        }
+        assert!(!path_to_rename.parent().unwrap().join(&new_name).exists());
     }
-    #[test]
-    fn test_rename_active_folder() {
-        let mut app = App::new().unwrap();
-        let current_path = env::current_dir().unwrap();
-        let test_path = current_path.parent().unwrap().join("tests");
-        app.update_path(test_path.clone(), Some("folder_1".to_string()));
-        let apparent_current_path = test_path.join("folder_1");
-        let mut rename_active =
-            RenameActive::new(apparent_current_path.clone(), "folder_2".to_string());
-        rename_active.execute(&mut app);
-        let expected_path = test_path.join("folder_2");
-        app.explorer_manager.refresh_contents();
-        assert_eq!(
-            app.explorer_manager.select_directory().unwrap(),
-            expected_path
-        );
-        rename_active.undo(&mut app);
-        app.explorer_manager.refresh_contents();
-        assert_eq!(
-            app.explorer_manager.select_directory().unwrap(),
-            apparent_current_path
-        );
-    }
-
     #[test]
     fn test_write_read_clipboard() {
+        // Write a file to clipboard, move to another directory and paste it. Ensure the
+        // new file was found in the new directory.
         let mut app = App::new().unwrap();
-        let current_path = env::current_dir().unwrap();
-        let test_path = current_path.parent().unwrap().join("tests");
-        app.update_path(test_path.clone(), Some("sheet.csv".to_string()));
+        let testing_folder = create_testing_folder().unwrap();
+        let file_to_copy = testing_folder.file_list[0].clone();
+        app.update_path(
+            file_to_copy.parent().unwrap().to_path_buf(),
+            Some(
+                file_to_copy
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+        );
         let mut copy_selection = CopyToClipboard::new(app.get_app_context());
         copy_selection.execute(&mut app);
-        let folder_1 = test_path.join("folder_1");
-        app.update_path(folder_1.clone(), None);
+        let folder_2 = testing_folder.dir_list[2].clone();
+        app.update_path(folder_2.clone(), None);
         let mut paste_selection = PasteFromClipboard::new(app.get_app_context());
-        paste_selection.execute(&mut app);
-        let expected_path = folder_1.join("sheet.csv");
-        app.explorer_manager.refresh_contents();
-        app.explorer_manager.next();
-        assert_eq!(
-            app.explorer_manager.select_directory().unwrap(),
-            expected_path
-        );
-        let mut del_action = DeleteSelection::new(app.get_app_context());
-        del_action.execute(&mut app);
-        app.explorer_manager.refresh_contents();
-        app.move_directory(current_path, None);
+        let paste_action = paste_selection.execute(&mut app);
+        assert!(paste_action.is_none(), "{:?}", paste_action);
+        assert!(folder_2.join(file_to_copy.file_name().unwrap()).exists());
+
+        //Ensure undoing removes the file
+        let _ = paste_selection.undo(&mut app);
+        assert!(!folder_2.join(file_to_copy.file_name().unwrap()).exists());
     }
 
     #[test]
@@ -351,7 +341,7 @@ mod tests {
     }
 
     #[test]
-    fn test_delete_command_new() {
+    fn test_delete_command() {
         let mut app = App::new().unwrap();
         let testing_folder = create_testing_folder().unwrap();
         let starting_path = env::current_dir().unwrap();
@@ -383,7 +373,6 @@ mod tests {
         for path in to_delete.iter() {
             assert!(path.exists(), "File {:?} does not exist", path);
         }
-        print!("Settting path to {:?}", starting_path);
         app.move_directory(starting_path, None);
     }
     #[test]

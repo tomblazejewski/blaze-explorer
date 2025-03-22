@@ -1,5 +1,4 @@
 pub mod command_helpers;
-pub mod command_utilities;
 pub mod command_utils;
 pub mod file_commands;
 pub mod key_press;
