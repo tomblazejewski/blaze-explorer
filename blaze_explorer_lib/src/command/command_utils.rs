@@ -4,6 +4,7 @@ use clipboard_win::formats::FileList;
 use clipboard_win::get_clipboard;
 use fs_extra;
 use rand::distr::{Alphanumeric, SampleString};
+use std::path::Path;
 use std::{collections::HashMap, fs, io, path::PathBuf};
 
 use clipboard_win::Clipboard;
@@ -71,14 +72,44 @@ pub fn read_from_clipboard() -> Result<Vec<PathBuf>, clipboard_win::ErrorCode> {
         .collect::<Vec<PathBuf>>();
     Ok(paths)
 }
+pub fn copy_recursively(src: &Path, dest: &Path) -> io::Result<()> {
+    if src.is_file() {
+        fs::copy(src, dest)?;
+        return Ok(());
+    }
+    if dest.starts_with(src) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Destination folder is a child of the source folder",
+        ));
+    }
+    if !dest.exists() {
+        fs::create_dir(dest)?;
+    }
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let entry_path = entry.path();
+        let dest_path = dest.join(entry.file_name());
 
+        if entry_path.is_dir() {
+            copy_recursively(&entry_path, &dest_path)?;
+        } else {
+            fs::copy(&entry_path, &dest_path)?;
+        }
+    }
+    Ok(())
+}
 mod tests {
     use std::{
         fs::{File, create_dir_all},
         io::Write,
+        thread,
+        time::Duration,
     };
 
     use tempdir::TempDir;
+
+    use crate::testing_utils::create_testing_folder;
 
     use super::*;
     #[test]
@@ -171,6 +202,28 @@ mod tests {
         copy_to_clipboard(str_path_list).unwrap();
         let resulting_paths = read_from_clipboard().unwrap();
         assert_eq!(file_list, resulting_paths);
+        Ok(())
+    }
+
+    #[test]
+    fn test_copy_recursively_subfolder() -> io::Result<()> {
+        let test_folder = create_testing_folder().unwrap();
+        let folder_to_copy = test_folder.dir_list[1].clone();
+        let location_to_paste = test_folder.dir_list[2].clone();
+        let result = copy_recursively(&folder_to_copy, &location_to_paste);
+        assert!(result.is_err());
+        Ok(())
+    }
+    #[test]
+    fn test_copy_recursively() -> io::Result<()> {
+        let test_folder = create_testing_folder().unwrap();
+        let folder_to_copy = test_folder.dir_list[2].clone();
+        let location_to_paste = test_folder.dir_list[0]
+            .clone()
+            .join(folder_to_copy.file_name().unwrap());
+        let result = copy_recursively(&folder_to_copy, &location_to_paste);
+        assert!(result.is_ok());
+        assert!(location_to_paste.exists());
         Ok(())
     }
 }

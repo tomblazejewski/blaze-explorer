@@ -1,4 +1,6 @@
-use super::command_utils::{copy_to_clipboard, read_from_clipboard};
+use tracing::info;
+
+use super::command_utils::{copy_recursively, copy_to_clipboard, read_from_clipboard};
 use crate::command::Command;
 
 use super::command_utils::{create_backup_map, get_backup_dir, join_paths};
@@ -182,8 +184,8 @@ impl Command for PasteFromClipboard {
         // 1. Pasting for the first time - take the paths from clipboard
         // 2. Pasting again - take the paths from [source_files] field of the struct
 
-        let copy_map = match &self.source_files_map {
-            Some(map) => map.to_owned(),
+        let (copy_map, should_delete) = match &self.source_files_map {
+            Some(map) => (map.to_owned(), true),
             None => {
                 //Read from clipboard and join paths
                 let paths_to_copy = match read_from_clipboard() {
@@ -196,16 +198,21 @@ impl Command for PasteFromClipboard {
                     }
                 };
                 // represents the source file and target file
-                paths_to_copy
+                let map = paths_to_copy
                     .clone()
                     .into_iter()
                     .zip(join_paths(paths_to_copy.clone(), &self.current_directory))
-                    .collect::<HashMap<PathBuf, PathBuf>>()
+                    .collect::<HashMap<PathBuf, PathBuf>>();
+                (map, false)
             }
         };
         for (source_path, target_path) in copy_map.iter() {
-            match fs::rename(source_path, target_path) {
-                Ok(_) => (),
+            match copy_recursively(source_path, target_path) {
+                Ok(_) => {
+                    if should_delete {
+                        let _ = fs::remove_dir_all(source_path);
+                    }
+                }
                 Err(e) => {
                     return Some(Action::AppAct(AppAction::DisplayMessage(format!(
                         "Error while copying: {:?}",
@@ -229,19 +236,22 @@ impl Command for PasteFromClipboard {
     }
 
     fn undo(&mut self, app: &mut App) -> Option<Action> {
+        let mut result = Ok(());
         for (backup_path, target_path) in self.source_files_map.as_ref().unwrap().iter() {
-            println!("{} -> {}", target_path.display(), backup_path.display());
             match fs::rename(target_path, backup_path) {
                 Ok(_) => (),
                 Err(e) => {
-                    return Some(Action::AppAct(AppAction::DisplayMessage(format!(
-                        "Error while copying: {:?}",
-                        e
-                    ))));
+                    result = Err(e);
                 }
             }
         }
-        None
+        match result {
+            Ok(()) => None,
+            Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                "Error while copying: {:?}",
+                e
+            )))),
+        }
     }
 
     fn is_reversible(&self) -> bool {
@@ -292,6 +302,7 @@ mod tests {
         let mut app = App::new().unwrap();
         let current_path = env::current_dir().unwrap();
         let testing_folder = create_testing_folder().unwrap();
+        //copy file1.txt
         let file_to_copy = testing_folder.file_list[0].clone();
         app.update_path(
             file_to_copy.parent().unwrap().to_path_buf(),
@@ -314,13 +325,56 @@ mod tests {
         assert!(folder_2.join(file_to_copy.file_name().unwrap()).exists());
 
         //Ensure undoing removes the file
-        let _ = paste_selection.undo(&mut app);
+        let result = paste_selection.undo(&mut app);
+        assert!(result.is_none(), "{:?}", result);
         assert!(!folder_2.join(file_to_copy.file_name().unwrap()).exists());
         app.move_directory(current_path, None);
     }
+    #[test]
+    fn test_write_read_clipboard_folder() {
+        // Write a file to clipboard, move to another directory and paste it. Ensure the
+        // new file was found in the new directory.
+        let mut app = App::new().unwrap();
+        let current_path = env::current_dir().unwrap();
+        let testing_folder = create_testing_folder().unwrap();
+        let file_to_copy = testing_folder.dir_list[2].clone();
+        app.update_path(
+            file_to_copy.parent().unwrap().to_path_buf(),
+            Some(
+                file_to_copy
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+        );
+        let mut copy_selection = CopyToClipboard::new(app.get_app_context());
+        copy_selection.execute(&mut app);
+        let folder_to_paste = testing_folder.dir_list[0].clone();
+        app.update_path(folder_to_paste.clone(), None);
+        let mut paste_selection = PasteFromClipboard::new(app.get_app_context());
+        let paste_action = paste_selection.execute(&mut app);
+        assert!(paste_action.is_none(), "{:?}", paste_action);
+        assert!(
+            folder_to_paste
+                .join(file_to_copy.file_name().unwrap())
+                .exists()
+        );
 
+        //Ensure undoing removes the file
+        let _ = paste_selection.undo(&mut app);
+        assert!(
+            !folder_to_paste
+                .join(file_to_copy.file_name().unwrap())
+                .exists()
+        );
+        app.move_directory(current_path, None);
+    }
     #[test]
     fn test_write_delete_read_clipboard() {
+        // Ensure a display action is issued when trying to paste a deleted file.
+        // TODO: remove the dependendcy on the test folder
         let mut app = App::new().unwrap();
         let current_path = env::current_dir().unwrap();
         let test_path = current_path.parent().unwrap().join("tests");

@@ -57,7 +57,6 @@ pub fn format_last_time(last_time: &Option<DateTime<Utc>>) -> String {
     }
 }
 pub fn get_file_data(path: &PathBuf) -> Vec<FileData> {
-    println!("path: {}", path.to_str().unwrap());
     let paths = fs::read_dir(path).unwrap();
     let dir_entries = paths.map(|entry| entry.unwrap());
     let data = dir_entries
