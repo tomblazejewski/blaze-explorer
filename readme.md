@@ -16,6 +16,8 @@ Currently under development and unstable.
 | `<C-o>`       | Go back in directory history                                                  |
 | `<C-i>`       | Go forward in directory history                                               |
 | `dd`          | Delete selected item                                                          |
+| `yy`          | Copy selected item to clipboard                                               |
+| `p`           | Paste from clipboard                                                          |
 | `r`           | Rename selected item                                                          |
 | `u`           | Undo last action (delete/rename)                                              |
 | `<C-r>`       | Redo last action (delete/rename)                                              |
@@ -41,6 +43,8 @@ Currently under development and unstable.
 | `<Esc>`  | Exit visual mode and unmark all items |
 | `e`      | Toggle mark selected item             |
 | `d`      | Delete marked items                   |
+| `y`      | Copy selected items to clipboard      |
+| `p`      | Paste from clipboard                  |
 
 ### Git integration
 
@@ -85,8 +89,8 @@ Building of the projects needs to be done in a specific order:
 - [ ] File manipulation abilities
   - [x] Delete
   - [ ] Cut
-  - [ ] Copy
-  - [ ] Paste
+  - [x] Copy
+  - [x] Paste
   - [ ] Enable motions of all of the above (see Keymap system)
   - [ ] Delete backup files upon leaving the app
 - [ ] Dir navigation

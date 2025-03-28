@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use tracing::info;
 
 use super::command_utils::{copy_recursively, copy_to_clipboard, read_from_clipboard};
@@ -232,7 +233,11 @@ impl Command for PasteFromClipboard {
             self.source_files_map = Some(inverted_map);
         }
         self.reversible = true;
-        None
+
+        // sort pasted file_names/dir_names alphabetically so that the action can select the first
+        // one
+        let first_file_path = copy_map.values().sorted().next().unwrap().to_owned();
+        Some(Action::AppAct(AppAction::ShowInFolder(first_file_path)))
     }
 
     fn undo(&mut self, app: &mut App) -> Option<Action> {
@@ -321,7 +326,10 @@ mod tests {
         app.update_path(folder_2.clone(), None);
         let mut paste_selection = PasteFromClipboard::new(app.get_app_context());
         let paste_action = paste_selection.execute(&mut app);
-        assert!(paste_action.is_none(), "{:?}", paste_action);
+        let expected_action = Some(Action::AppAct(AppAction::ShowInFolder(
+            folder_2.join(file_to_copy.file_name().unwrap()),
+        )));
+        assert_eq!(paste_action, expected_action);
         assert!(folder_2.join(file_to_copy.file_name().unwrap()).exists());
 
         //Ensure undoing removes the file
@@ -355,7 +363,6 @@ mod tests {
         app.update_path(folder_to_paste.clone(), None);
         let mut paste_selection = PasteFromClipboard::new(app.get_app_context());
         let paste_action = paste_selection.execute(&mut app);
-        assert!(paste_action.is_none(), "{:?}", paste_action);
         assert!(
             folder_to_paste
                 .join(file_to_copy.file_name().unwrap())
