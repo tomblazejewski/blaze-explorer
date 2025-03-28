@@ -2,10 +2,10 @@ pub mod command_helpers;
 pub mod command_utils;
 pub mod file_commands;
 pub mod key_press;
-use command_utils::get_backup_dir;
 use key_press::decode_expression;
 
-use crate::action::{AppAction, ExplorerAction};
+use crate::action::AppAction;
+use crate::action::ExplorerAction;
 use crate::app::ExitResult;
 use crate::components::explorer_manager::SplitDirection;
 use crate::components::explorer_table::GlobalStyling;

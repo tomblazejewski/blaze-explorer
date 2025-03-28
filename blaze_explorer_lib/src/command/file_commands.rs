@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use tracing::info;
 
 use super::command_utils::{copy_recursively, copy_to_clipboard, read_from_clipboard};
 use crate::command::Command;
@@ -362,7 +361,7 @@ mod tests {
         let folder_to_paste = testing_folder.dir_list[0].clone();
         app.update_path(folder_to_paste.clone(), None);
         let mut paste_selection = PasteFromClipboard::new(app.get_app_context());
-        let paste_action = paste_selection.execute(&mut app);
+        let _ = paste_selection.execute(&mut app);
         assert!(
             folder_to_paste
                 .join(file_to_copy.file_name().unwrap())

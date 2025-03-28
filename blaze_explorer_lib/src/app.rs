@@ -12,7 +12,6 @@ use ratatui::{
     crossterm::event::{self, KeyEventKind},
     prelude::CrosstermBackend,
 };
-use tracing::info;
 
 use crate::action::{AppAction, CommandAction, ExplorerAction, get_command};
 use crate::app_context::AppContext;
