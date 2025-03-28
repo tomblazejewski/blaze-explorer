@@ -3,6 +3,7 @@ use crate::{
         DeleteSplit, DisplayMessage, ExecuteFunction, FocusDown, FocusLeft, FocusRight, FocusUp,
         JumpToId, OpenNeovimHere, ParseCommand, ParseKeyStrokes, RedoDirectory, SplitHorizontally,
         SplitVertically, TerminalCommand, ToggleMark, UndoDirectory, UpdatePlugin, UpdatePopup,
+        file_commands::{CopyToClipboard, PasteFromClipboard},
     },
     plugin::{plugin_action::PluginAction, plugin_popup::PluginPopUp},
 };
@@ -11,9 +12,10 @@ use std::path::PathBuf;
 use crate::app::App;
 use crate::{
     command::{
-        ChangeDirectory, ClearSearchQuery, Command, ConfirmCommand, ConfirmSearchQuery,
-        DeleteSelection, DropKey, EraseText, InsertKey, NextSearchResult, Noop, ParentDirectory,
-        Quit, SelectDirectory, SelectDown, SelectUp, ShowInFolder, SwitchMode, UpdateSearchQuery,
+        ChangeDirectory, ClearSearchQuery, Command, ConfirmCommand, ConfirmSearchQuery, DropKey,
+        EraseText, InsertKey, NextSearchResult, Noop, ParentDirectory, Quit, SelectDirectory,
+        SelectDown, SelectUp, ShowInFolder, SwitchMode, UpdateSearchQuery,
+        file_commands::DeleteSelection,
     },
     mode::Mode,
 };
@@ -56,6 +58,8 @@ pub enum AppAction {
     ParseKeyStrokes(String),
     ParseCommand(String),
     ExecuteFunction(Box<fn(&mut App) -> Option<Action>>),
+    Copy,
+    Paste,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -137,6 +141,8 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         }
         Action::AppAct(AppAction::ShowInFolder(path)) => Box::new(ShowInFolder::new(ctx, path)),
         Action::AppAct(AppAction::Delete) => Box::new(DeleteSelection::new(ctx)),
+        Action::AppAct(AppAction::Copy) => Box::new(CopyToClipboard::new(ctx)),
+        Action::AppAct(AppAction::Paste) => Box::new(PasteFromClipboard::new(ctx)),
         Action::AppAct(AppAction::OpenNeovimHere) => Box::new(OpenNeovimHere::new(ctx)),
         Action::AppAct(AppAction::DisplayMessage(msg)) => Box::new(DisplayMessage::new(msg)),
         Action::AppAct(AppAction::TerminalCommand(cmd)) => Box::new(TerminalCommand::new(ctx, cmd)),

@@ -1,22 +1,21 @@
 pub mod command_helpers;
-pub mod command_utilities;
+pub mod command_utils;
+pub mod file_commands;
 pub mod key_press;
-use command_utilities::{
-    get_backup_dir, move_path, remove_if_folder, remove_with_backup, rename_recursively,
-};
 use key_press::decode_expression;
 
-use crate::action::{AppAction, ExplorerAction};
+use crate::action::AppAction;
+use crate::action::ExplorerAction;
 use crate::app::ExitResult;
 use crate::components::explorer_manager::SplitDirection;
 use crate::components::explorer_table::GlobalStyling;
 use crate::plugin::plugin_popup::PluginPopUp;
 use crate::{action::Action, line_entry::LineEntry};
 use std::any::Any;
-use std::fmt;
 use std::fmt::Debug;
 use std::process::Command as ProcessCommand;
 use std::{collections::HashMap, path::PathBuf};
+use std::{fmt, fs, io};
 
 use crate::{app::App, app_context::AppContext, mode::Mode};
 
@@ -568,142 +567,6 @@ impl Command for Noop {
         None
     }
 }
-
-#[derive(Clone, PartialEq)]
-pub struct DeleteSelection {
-    affected_files: Option<Vec<PathBuf>>,
-    backup_path: Option<HashMap<PathBuf, PathBuf>>,
-}
-
-/// Command used to delete files. Considers all selected items at the time of creating the struct.
-impl DeleteSelection {
-    pub fn new(mut ctx: AppContext) -> Self {
-        let affected_files = ctx.explorer_manager.get_affected_paths();
-        Self {
-            affected_files,
-            backup_path: None,
-        }
-    }
-}
-impl Command for DeleteSelection {
-    fn execute(&mut self, _app: &mut App) -> Option<Action> {
-        if let Some(contents) = &self.affected_files {
-            match &self.backup_path {
-                None => {
-                    let contents_map = contents
-                        .iter()
-                        .map(|f| (f.to_owned(), get_backup_dir()))
-                        .collect::<HashMap<PathBuf, PathBuf>>();
-                    self.backup_path = Some(contents_map);
-                }
-                Some(_contents) => {}
-            }
-            let _ = contents
-                .iter()
-                .map(|f| {
-                    let backup_path = self.backup_path.as_ref().unwrap().get(f).unwrap();
-                    remove_with_backup(f, backup_path)
-                })
-                .collect::<Vec<()>>();
-        };
-        Some(Action::AppAct(AppAction::SwitchMode(Mode::Normal)))
-    }
-
-    fn undo(&mut self, _app: &mut App) -> Option<Action> {
-        if let Some(contents) = &self.backup_path {
-            let _ = contents
-                .iter()
-                .map(|(original_path, backup_path)| move_path(backup_path, original_path))
-                .collect::<Result<Vec<()>, std::io::Error>>();
-            return None;
-        };
-        None
-    }
-    fn is_reversible(&self) -> bool {
-        true
-    }
-}
-
-impl Debug for DeleteSelection {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("DeleteSelection")
-            .field("to delete", &self.affected_files)
-            .field("backup_path", &self.backup_path)
-            .finish()
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct RenameActive {
-    pub first_path: PathBuf,
-    pub second_path: PathBuf,
-    reversible: bool,
-}
-
-/// Rename currently selected file
-impl RenameActive {
-    pub fn new(first_path: PathBuf, new_name: String) -> Self {
-        let second_path = first_path.parent().unwrap().join(new_name);
-        Self {
-            first_path,
-            second_path,
-            reversible: false,
-        }
-    }
-}
-
-impl Command for RenameActive {
-    fn execute(&mut self, _app: &mut App) -> Option<Action> {
-        match rename_recursively(self.first_path.clone(), self.second_path.clone()) {
-            Ok(_) => {
-                //attempt to remove the old path
-                match remove_if_folder(self.first_path.clone()) {
-                    Ok(_) => {
-                        self.reversible = true;
-                        None
-                    }
-                    Err(e) => {
-                        remove_if_folder(self.second_path.clone()).unwrap();
-                        Some(Action::AppAct(AppAction::DisplayMessage(format!(
-                            "Failed to remove the original path {}: {}",
-                            self.first_path.display(),
-                            e
-                        ))))
-                    }
-                }
-            }
-            Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
-                "Failed to rename {}: {}",
-                self.first_path.display(),
-                e
-            )))),
-        }
-    }
-
-    fn undo(&mut self, _app: &mut App) -> Option<Action> {
-        match rename_recursively(self.second_path.clone(), self.first_path.clone()) {
-            Ok(_) => match remove_if_folder(self.second_path.clone()) {
-                Ok(_) => None,
-                Err(e) => {
-                    remove_if_folder(self.first_path.clone()).unwrap();
-                    Some(Action::AppAct(AppAction::DisplayMessage(format!(
-                        "Failed to remove the original path {}: {}",
-                        self.second_path.display(),
-                        e
-                    ))))
-                }
-            },
-            Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
-                "Failed to rename {}: {}",
-                self.first_path.display(),
-                e
-            )))),
-        }
-    }
-    fn is_reversible(&self) -> bool {
-        self.reversible
-    }
-}
 #[derive(Clone, PartialEq, Debug)]
 pub struct TerminalCommand {
     command: String,
@@ -958,14 +821,21 @@ impl Command for ToggleMark {
         None
     }
 }
-
 #[cfg(test)]
 mod tests {
-    use std::{collections::VecDeque, env, path, thread, time::Duration};
+    use std::io::{Result, Write};
+    use std::{
+        collections::VecDeque,
+        env,
+        fs::{File, create_dir_all},
+        path, thread,
+        time::Duration,
+    };
 
     use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    use tempdir::TempDir;
 
-    use crate::action::ExplorerAction;
+    use crate::{action::ExplorerAction, testing_utils::create_testing_folder};
 
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
@@ -1084,55 +954,6 @@ mod tests {
         app.move_directory(starting_path, None);
     }
     #[test]
-    #[ignore]
-    fn test_delete_folder() {
-        let mut app = App::new().unwrap();
-        let starting_path = env::current_dir().unwrap();
-        let abs_path = path::absolute("../tests/folder_1").unwrap();
-        app.action_list
-            .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
-                abs_path.clone(),
-            )));
-        let _ = app.handle_new_actions();
-        let mut delete_selection = DeleteSelection::new(app.get_app_context());
-        let before = delete_selection.affected_files.clone();
-
-        delete_selection.execute(&mut app);
-        thread::sleep(Duration::from_secs(5));
-        let _ = delete_selection.undo(&mut app);
-
-        let duplicate_selection = DeleteSelection::new(app.get_app_context());
-        let after = duplicate_selection.affected_files.clone();
-        assert_eq!(before, after);
-
-        app.move_directory(starting_path, None);
-    }
-    #[test]
-    #[ignore]
-    fn test_delete_file() {
-        let mut app = App::new().unwrap();
-        let starting_path = env::current_dir().unwrap();
-        let abs_path = path::absolute("../tests/folder_1").unwrap();
-        app.action_list
-            .push_back(Action::ExplorerAct(ExplorerAction::ChangeDirectory(
-                abs_path.clone(),
-            )));
-        let _ = app.handle_new_actions();
-        let mut delete_selection = DeleteSelection::new(app.get_app_context());
-        let before = delete_selection.affected_files.clone();
-
-        delete_selection.execute(&mut app);
-        thread::sleep(Duration::from_secs(5));
-        let _ = delete_selection.undo(&mut app);
-
-        let duplicate_selection = DeleteSelection::new(app.get_app_context());
-        let after = duplicate_selection.affected_files.clone();
-        assert_eq!(before, after);
-
-        app.move_directory(starting_path, None);
-    }
-
-    #[test]
     fn test_parse_shell_command() {
         let command_string = "git".to_string();
         let (command, args) = parse_shell_command(command_string);
@@ -1226,53 +1047,6 @@ mod tests {
         assert_eq!(
             app.command_line.get_contents(),
             "Dummy contents".to_string()
-        );
-    }
-
-    #[test]
-    fn test_rename_active() {
-        let mut app = App::new().unwrap();
-        let current_path = env::current_dir().unwrap();
-        let test_path = current_path.parent().unwrap().join("tests");
-        app.update_path(test_path.clone(), Some("sheet.csv".to_string()));
-        let apparent_current_path = test_path.join("sheet.csv");
-        let mut rename_active =
-            RenameActive::new(apparent_current_path.clone(), "sheet1.csv".to_string());
-        rename_active.execute(&mut app);
-        let expected_path = test_path.join("sheet1.csv");
-        app.explorer_manager.refresh_contents();
-        assert_eq!(
-            app.explorer_manager.select_directory().unwrap(),
-            expected_path
-        );
-        rename_active.undo(&mut app);
-        app.explorer_manager.refresh_contents();
-        assert_eq!(
-            app.explorer_manager.select_directory().unwrap(),
-            apparent_current_path
-        );
-    }
-    #[test]
-    fn test_rename_active_folder() {
-        let mut app = App::new().unwrap();
-        let current_path = env::current_dir().unwrap();
-        let test_path = current_path.parent().unwrap().join("tests");
-        app.update_path(test_path.clone(), Some("folder_1".to_string()));
-        let apparent_current_path = test_path.join("folder_1");
-        let mut rename_active =
-            RenameActive::new(apparent_current_path.clone(), "folder_2".to_string());
-        rename_active.execute(&mut app);
-        let expected_path = test_path.join("folder_2");
-        app.explorer_manager.refresh_contents();
-        assert_eq!(
-            app.explorer_manager.select_directory().unwrap(),
-            expected_path
-        );
-        rename_active.undo(&mut app);
-        app.explorer_manager.refresh_contents();
-        assert_eq!(
-            app.explorer_manager.select_directory().unwrap(),
-            apparent_current_path
         );
     }
 

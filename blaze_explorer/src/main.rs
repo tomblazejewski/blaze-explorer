@@ -4,12 +4,13 @@ mod plugin_manifest;
 use libloading::Library;
 use plugin_manifest::fetch_plugins;
 use ratatui::crossterm::{
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use std::collections::HashMap;
 use std::fs;
 use std::process::Command;
+use std::rc::Rc;
 use std::{env::set_current_dir, io::stdout};
 use std::{error::Error, path::PathBuf};
 use tracing::info;
@@ -24,7 +25,7 @@ fn open_neovim(path: &PathBuf) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn collect_libs() -> HashMap<String, Library> {
+fn collect_libs() -> HashMap<String, Rc<Library>> {
     let mut lib_map = HashMap::new();
     let plugins_folder_location = "../blaze_plugins";
     let paths = fs::read_dir(plugins_folder_location).unwrap();
@@ -44,7 +45,7 @@ fn collect_libs() -> HashMap<String, Library> {
         match dll_path.exists() {
             true => {
                 let lib = unsafe { Library::new(dll_path.to_str().unwrap()).unwrap() };
-                lib_map.insert(lib_name, lib);
+                lib_map.insert(lib_name, Rc::new(lib));
             }
             false => {
                 info!("Plugin {} not found/not compiled", lib_name);

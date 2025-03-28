@@ -1,5 +1,5 @@
 use libloading::{Error, Library, Symbol};
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 use ratatui::crossterm::event::KeyEvent;
 
@@ -18,7 +18,7 @@ fn collect_plugin(lib: &Library, custom_bindings: Option<BindingsMap>) -> Option
     }
 }
 
-pub fn fetch_plugins(lib_map: &HashMap<String, Library>) -> HashMap<String, Box<dyn Plugin>> {
+pub fn fetch_plugins(lib_map: &HashMap<String, Rc<Library>>) -> HashMap<String, Box<dyn Plugin>> {
     let mut plugins = HashMap::new();
     for lib in lib_map.values() {
         let plugin = collect_plugin(lib, None);

@@ -19,5 +19,6 @@ pub mod logging;
 pub mod mode;
 pub mod plugin;
 pub mod query;
+pub mod testing_utils;
 pub mod themes;
 pub mod tools;
