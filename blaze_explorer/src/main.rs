@@ -70,7 +70,15 @@ fn main() -> Result<(), Box<dyn Error>> {
             stdout().execute(LeaveAlternateScreen)?;
             disable_raw_mode()?;
             match result {
-                Ok(ExitResult::Quit) => break,
+                Ok(ExitResult::Quit) => {
+                    match app.destruct() {
+                        None => {}
+                        Some(msg) => {
+                            println!("{}", msg);
+                        }
+                    }
+                    break;
+                }
                 Ok(ExitResult::OpenNeovim(path)) => {
                     open_neovim(&path)?;
                     bring_app_back(&mut app);

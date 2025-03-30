@@ -11,6 +11,10 @@ use clipboard_win::Clipboard;
 
 use directories::ProjectDirs;
 
+pub fn get_project_dir() -> ProjectDirs {
+    ProjectDirs::from("", "", "blaze_explorer").unwrap()
+}
+
 ///Obtain the backup directory name to be used for storing the data. This is based on the time of
 ///calling the func.
 pub fn get_backup_dir(create: bool) -> PathBuf {
@@ -19,7 +23,7 @@ pub fn get_backup_dir(create: bool) -> PathBuf {
         Alphanumeric.sample_string(&mut rand::thread_rng(), 16)
     );
     backup_name += ".blzbkp";
-    let proj_dir = ProjectDirs::from("", "", "blaze_explorer").unwrap();
+    let proj_dir = get_project_dir();
     let path = proj_dir.cache_dir().join(backup_name);
     //create this directory
     if create {

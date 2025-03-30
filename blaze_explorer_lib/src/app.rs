@@ -1,5 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 use std::env::set_current_dir;
+use std::fs;
 use std::io::{Stdout, stdout};
 use std::path::{self, PathBuf};
 
@@ -17,6 +18,7 @@ use crate::action::{AppAction, CommandAction, ExplorerAction, get_command};
 use crate::app_context::AppContext;
 use crate::app_input_machine::AppInputMachine;
 use crate::command::Command;
+use crate::command::command_utils::get_project_dir;
 use crate::components::command_line::CommandLine;
 use crate::components::explorer_manager::ExplorerManager;
 use crate::history_stack::directory_history::DirectoryDetails;
@@ -417,6 +419,16 @@ impl App {
             self.move_directory(new_absolute_path, Some(prev_folder_string.to_string()));
         }
     }
+
+    /// Executed only when the app really intends to quit
+    pub fn destruct(&self) -> Option<String> {
+        let project_dir = get_project_dir();
+        let cache_dir = project_dir.cache_dir();
+        match fs::remove_dir_all(cache_dir) {
+            Ok(_) => None,
+            Err(e) => Some(format!("Failed to delete cache dir: {}", e)),
+        }
+    }
 }
 
 impl Clone for App {
@@ -463,6 +475,8 @@ impl PartialEq for App {
 mod tests {
     use std::env;
 
+    use fs::create_dir_all;
+
     use super::*;
 
     #[test]
@@ -498,5 +512,16 @@ mod tests {
         app.redo_directory();
         assert_eq!(app.explorer_manager.get_current_path(), abs_path);
         app.move_directory(starting_path, None);
+    }
+
+    #[test]
+    fn test_destruct_app() {
+        let project_dir = get_project_dir();
+        let cache_dir = project_dir.cache_dir();
+        let random_file = cache_dir.join("test.txt");
+        fs::File::create(random_file).unwrap();
+        let app = App::new().unwrap();
+        let _ = app.destruct();
+        assert!(!cache_dir.exists());
     }
 }
