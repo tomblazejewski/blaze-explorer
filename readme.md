@@ -92,7 +92,7 @@ Building of the projects needs to be done in a specific order:
   - [x] Copy
   - [x] Paste
   - [ ] Enable motions of all of the above (see Keymap system)
-  - [ ] Delete backup files upon leaving the app
+  - [x] Delete backup files upon leaving the app
 - [ ] Dir navigation
   - [x] Go up and down the history of a single ExplorerTable
   - [ ] Show directory history of the currenct ExplorerTable
