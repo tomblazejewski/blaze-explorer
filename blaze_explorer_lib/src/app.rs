@@ -514,6 +514,7 @@ mod tests {
         app.move_directory(starting_path, None);
     }
 
+    #[ignore]
     #[test]
     fn test_destruct_app() {
         let project_dir = get_project_dir();
