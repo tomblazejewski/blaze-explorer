@@ -1,6 +1,5 @@
 #![crate_name = "blaze_explorer_lib"]
 #![feature(trait_upcasting)]
-#![feature(file_lock)]
 #![feature(reentrant_lock)]
 #![feature(str_split_remainder)]
 pub mod action;
