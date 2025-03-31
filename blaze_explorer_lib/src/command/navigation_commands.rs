@@ -125,6 +125,26 @@ impl Command for JumpToStart {
         None
     }
 }
+#[derive(Clone, PartialEq, Debug)]
+pub struct JumpToEnd {}
+
+impl JumpToEnd {
+    pub fn new(_ctx: AppContext) -> Self {
+        Self {}
+    }
+}
+
+impl Command for JumpToEnd {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        let count = app.explorer_manager.find_elements("").len();
+        let id = match count {
+            0 => 0,
+            _ => count - 1,
+        };
+        app.explorer_manager.jump_to_id(id);
+        None
+    }
+}
 mod tests {
     use std::{env, fs::create_dir_all, path};
 
@@ -238,6 +258,29 @@ mod tests {
         app.move_directory(empty_folder_path, None);
 
         jump_to_start.execute(&mut app);
+
+        assert_eq!(app.explorer_manager.get_selected(), Some(0));
+        app.move_directory(starting_path, None);
+    }
+
+    #[test]
+    fn test_jump_to_end() {
+        let testing_folder = create_testing_folder().unwrap();
+        let mut app = App::new().unwrap();
+        let starting_path = env::current_dir().unwrap();
+        let root_path = testing_folder.root_dir.path().to_path_buf();
+        app.move_directory(root_path.clone(), Some("file_2.txt".to_string()));
+        let mut jump_to_end = super::JumpToEnd::new(app.get_app_context());
+
+        jump_to_end.execute(&mut app);
+        let expected_id = 2usize;
+        assert_eq!(app.explorer_manager.get_selected(), Some(expected_id));
+
+        let empty_folder_path = root_path.clone().join("empty_folder");
+        create_dir_all(empty_folder_path.clone()).unwrap();
+        app.move_directory(empty_folder_path, None);
+
+        jump_to_end.execute(&mut app);
 
         assert_eq!(app.explorer_manager.get_selected(), Some(0));
         app.move_directory(starting_path, None);
