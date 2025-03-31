@@ -126,7 +126,7 @@ impl Command for JumpToStart {
     }
 }
 mod tests {
-    use std::{env, path};
+    use std::{env, fs::create_dir_all, path};
 
     use crate::{
         action::{Action, ExplorerAction},
@@ -227,10 +227,18 @@ mod tests {
         let mut app = App::new().unwrap();
         let starting_path = env::current_dir().unwrap();
         let root_path = testing_folder.root_dir.path().to_path_buf();
-        app.move_directory(root_path, Some("file_2.txt".to_string()));
+        app.move_directory(root_path.clone(), Some("file_2.txt".to_string()));
         let mut jump_to_start = JumpToStart::new(app.get_app_context());
 
         jump_to_start.execute(&mut app);
+        assert_eq!(app.explorer_manager.get_selected(), Some(0));
+
+        let empty_folder_path = root_path.clone().join("empty_folder");
+        create_dir_all(empty_folder_path.clone()).unwrap();
+        app.move_directory(empty_folder_path, None);
+
+        jump_to_start.execute(&mut app);
+
         assert_eq!(app.explorer_manager.get_selected(), Some(0));
         app.move_directory(starting_path, None);
     }
