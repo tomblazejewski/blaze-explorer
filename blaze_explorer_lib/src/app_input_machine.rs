@@ -138,6 +138,17 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         Action::ExplorerAct(ExplorerAction::SelectDown),
     );
     root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('G'), KeyModifiers::NONE)],
+        Action::ExplorerAct(ExplorerAction::JumpToEnd),
+    );
+    root.add_sequence(
+        vec![
+            KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
+        ],
+        Action::ExplorerAct(ExplorerAction::JumpToStart),
+    );
+    root.add_sequence(
         vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::ParentDirectory),
     );

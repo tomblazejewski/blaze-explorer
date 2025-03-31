@@ -5,7 +5,8 @@ use crate::{
         SplitVertically, TerminalCommand, ToggleMark, UndoDirectory, UpdatePlugin, UpdatePopup,
         file_commands::{CopyToClipboard, PasteFromClipboard},
         navigation_commands::{
-            ChangeDirectory, JumpToId, ParentDirectory, SelectDirectory, SelectDown, SelectUp,
+            ChangeDirectory, JumpToEnd, JumpToId, JumpToStart, ParentDirectory, SelectDirectory,
+            SelectDown, SelectUp,
         },
     },
     plugin::{plugin_action::PluginAction, plugin_popup::PluginPopUp},
@@ -26,8 +27,10 @@ use crate::{
 pub enum ExplorerAction {
     ChangeDirectory(PathBuf),
     ParentDirectory,
+    JumpToStart,
     SelectUp,
     SelectDown,
+    JumpToEnd,
     SelectDirectory,
     UpdateSearchQuery(String),
     ClearSearchQuery,
@@ -108,6 +111,8 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
             Box::new(ChangeDirectory::new(ctx, path))
         }
         Action::ExplorerAct(ExplorerAction::ParentDirectory) => Box::new(ParentDirectory::new(ctx)),
+        Action::ExplorerAct(ExplorerAction::JumpToStart) => Box::new(JumpToStart::new(ctx)),
+        Action::ExplorerAct(ExplorerAction::JumpToEnd) => Box::new(JumpToEnd::new(ctx)),
         Action::ExplorerAct(ExplorerAction::SelectUp) => Box::new(SelectUp::new(ctx)),
         Action::ExplorerAct(ExplorerAction::SelectDown) => Box::new(SelectDown::new(ctx)),
         Action::ExplorerAct(ExplorerAction::SelectDirectory) => Box::new(SelectDirectory::new(ctx)),
