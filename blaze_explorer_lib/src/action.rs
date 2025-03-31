@@ -1,9 +1,12 @@
 use crate::{
     command::{
         DeleteSplit, DisplayMessage, ExecuteFunction, FocusDown, FocusLeft, FocusRight, FocusUp,
-        JumpToId, OpenNeovimHere, ParseCommand, ParseKeyStrokes, RedoDirectory, SplitHorizontally,
+        OpenNeovimHere, ParseCommand, ParseKeyStrokes, RedoDirectory, SplitHorizontally,
         SplitVertically, TerminalCommand, ToggleMark, UndoDirectory, UpdatePlugin, UpdatePopup,
         file_commands::{CopyToClipboard, PasteFromClipboard},
+        navigation_commands::{
+            ChangeDirectory, JumpToId, ParentDirectory, SelectDirectory, SelectDown, SelectUp,
+        },
     },
     plugin::{plugin_action::PluginAction, plugin_popup::PluginPopUp},
 };
@@ -12,9 +15,8 @@ use std::path::PathBuf;
 use crate::app::App;
 use crate::{
     command::{
-        ChangeDirectory, ClearSearchQuery, Command, ConfirmCommand, ConfirmSearchQuery, DropKey,
-        EraseText, InsertKey, NextSearchResult, Noop, ParentDirectory, Quit, SelectDirectory,
-        SelectDown, SelectUp, ShowInFolder, SwitchMode, UpdateSearchQuery,
+        ClearSearchQuery, Command, ConfirmCommand, ConfirmSearchQuery, DropKey, EraseText,
+        InsertKey, NextSearchResult, Noop, Quit, ShowInFolder, SwitchMode, UpdateSearchQuery,
         file_commands::DeleteSelection,
     },
     mode::Mode,
