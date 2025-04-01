@@ -17,6 +17,7 @@ pub mod input_machine;
 pub mod line_entry;
 pub mod logging;
 pub mod mode;
+pub mod motion;
 pub mod plugin;
 pub mod query;
 pub mod testing_utils;
