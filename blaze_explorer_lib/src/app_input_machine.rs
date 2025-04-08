@@ -5,7 +5,10 @@ use std::collections::HashMap;
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::{
-    action::{Action, AppAction, CommandAction, ExplorerAction, TextAction},
+    action::{
+        Action, AppAction, CommandAction, ExplorerAction, TextAction,
+        action_builder::{self, ActionBuilder, ActionType},
+    },
     core_features::rename::open_rename_popup,
     custom_action,
     function_helpers::{pull_current_branch, push_current_branch},
@@ -32,7 +35,7 @@ pub struct AppInputMachine<T> {
     default_actions: DefaultActionMap,
 }
 
-impl InputMachine for AppInputMachine<Action> {
+impl InputMachine for AppInputMachine<ActionType> {
     fn process_keys(
         &mut self,
         mode: &Mode,
@@ -48,7 +51,7 @@ impl InputMachine for AppInputMachine<Action> {
     }
 }
 
-impl AppInputMachine<Action> {
+impl AppInputMachine<ActionType> {
     pub fn new() -> Self {
         let mut keymap_nodes = HashMap::new();
         keymap_nodes.insert(Mode::Normal, default_key_map());
@@ -94,7 +97,7 @@ impl AppInputMachine<Action> {
         self.keymap_nodes
             .get_mut(&mode)
             .unwrap()
-            .add_sequence(sequence, action);
+            .add_simple_action(sequence, action);
     }
 
     pub fn attach_from_hashmap(&mut self, keymap: HashMap<(Mode, Vec<KeyEvent>), Action>) {
@@ -104,7 +107,7 @@ impl AppInputMachine<Action> {
     }
 }
 pub fn process_app_keys(
-    keymap: &KeyMapNode<Action>,
+    keymap: &KeyMapNode<ActionType>,
     current_sequence: &mut Vec<KeyEvent>,
     input_key: KeyEvent,
 ) -> KeyProcessingResult<Action> {
@@ -112,8 +115,9 @@ pub fn process_app_keys(
     match keymap.get_node(current_sequence) {
         Some(node) => match &node.action {
             None => KeyProcessingResult::Incomplete, // More keys can follow
-            Some(action) => {
+            Some(action_builder) => {
                 current_sequence.clear();
+                let action = action_builder.resolve_action(current_sequence.clone());
                 KeyProcessingResult::Complete(action.clone()) // Final action reached
             }
         },
@@ -123,86 +127,86 @@ pub fn process_app_keys(
         }
     }
 }
-pub fn default_key_map() -> KeyMapNode<Action> {
+pub fn default_key_map() -> KeyMapNode<ActionType> {
     let mut root = KeyMapNode::new();
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('n'), KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::NextSearchResult),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::SelectUp),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::SelectDown),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('G'), KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::JumpToEnd),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![
             KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
         ],
         Action::ExplorerAct(ExplorerAction::JumpToStart),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::ParentDirectory),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::SelectDirectory),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE)],
         Action::AppAct(AppAction::SwitchMode(Mode::Search)),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char(':'), KeyModifiers::SHIFT)],
         Action::AppAct(AppAction::SwitchMode(Mode::Command)),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('v'), KeyModifiers::NONE)],
         Action::AppAct(AppAction::SwitchMode(Mode::Visual)),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::ClearSearchQuery),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)],
         custom_action!(open_rename_popup),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![
             KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),
         ],
         Action::AppAct(AppAction::Delete),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![
             KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE),
         ],
         Action::AppAct(AppAction::Copy),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('p'), KeyModifiers::NONE)],
         Action::AppAct(AppAction::Paste),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('u'), KeyModifiers::NONE)],
         Action::CommandAct(CommandAction::Undo),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('r'), KeyModifiers::CONTROL)],
         Action::CommandAct(CommandAction::Redo),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![
             KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('o'), KeyModifiers::NONE),
@@ -210,45 +214,45 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         ],
         Action::AppAct(AppAction::OpenNeovimHere),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![
             KeyEvent::new(KeyCode::Char('w'), KeyModifiers::CONTROL),
             KeyEvent::new(KeyCode::Char('v'), KeyModifiers::NONE),
         ],
         Action::ExplorerAct(ExplorerAction::SplitVertically),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![
             KeyEvent::new(KeyCode::Char('w'), KeyModifiers::CONTROL),
             KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE),
         ],
         Action::ExplorerAct(ExplorerAction::SplitHorizontally),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('h'), KeyModifiers::CONTROL)],
         Action::ExplorerAct(ExplorerAction::FocusLeft),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('j'), KeyModifiers::CONTROL)],
         Action::ExplorerAct(ExplorerAction::FocusDown),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('k'), KeyModifiers::CONTROL)],
         Action::ExplorerAct(ExplorerAction::FocusUp),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('l'), KeyModifiers::CONTROL)],
         Action::ExplorerAct(ExplorerAction::FocusRight),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('o'), KeyModifiers::CONTROL)],
         Action::AppAct(AppAction::UndoDirectory),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('i'), KeyModifiers::CONTROL)],
         Action::AppAct(AppAction::RedoDirectory),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![
             KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE),
@@ -258,7 +262,7 @@ pub fn default_key_map() -> KeyMapNode<Action> {
             r#":!git commit -am ""#.to_string(),
         )),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![
             KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE),
@@ -266,7 +270,7 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         ],
         Action::AppAct(AppAction::ParseCommand("!git status".to_string())),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![
             KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE),
@@ -274,7 +278,7 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         ],
         Action::AppAct(AppAction::ExecuteFunction(Box::new(push_current_branch))),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![
             KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE),
@@ -286,73 +290,73 @@ pub fn default_key_map() -> KeyMapNode<Action> {
     root
 }
 
-pub fn search_key_map() -> KeyMapNode<Action> {
+pub fn search_key_map() -> KeyMapNode<ActionType> {
     let mut root = KeyMapNode::new();
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
         Action::AppAct(AppAction::SwitchMode(Mode::Normal)),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL)],
         Action::TextAct(TextAction::EraseText),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
         Action::TextAct(TextAction::DropKey),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
         Action::AppAct(AppAction::ConfirmSearchQuery),
     );
     root
 }
-pub fn command_key_map() -> KeyMapNode<Action> {
+pub fn command_key_map() -> KeyMapNode<ActionType> {
     let mut root = KeyMapNode::new();
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
         Action::AppAct(AppAction::SwitchMode(Mode::Normal)),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL)],
         Action::TextAct(TextAction::EraseText),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)],
         Action::TextAct(TextAction::DropKey),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)],
         Action::AppAct(AppAction::ConfirmCommand),
     );
     root
 }
-pub fn visual_key_map() -> KeyMapNode<Action> {
+pub fn visual_key_map() -> KeyMapNode<ActionType> {
     let mut root = KeyMapNode::new();
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)],
         Action::AppAct(AppAction::SwitchMode(Mode::Normal)),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::SelectUp),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::SelectDown),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('e'), KeyModifiers::NONE)],
         Action::ExplorerAct(ExplorerAction::ToggleMark),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE)],
         Action::AppAct(AppAction::Delete),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE)],
         Action::AppAct(AppAction::Copy),
     );
-    root.add_sequence(
+    root.add_simple_action(
         vec![KeyEvent::new(KeyCode::Char('p'), KeyModifiers::NONE)],
         Action::AppAct(AppAction::Paste),
     );

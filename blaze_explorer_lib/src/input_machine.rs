@@ -6,7 +6,13 @@ use std::collections::HashMap;
 
 use ratatui::crossterm::event::KeyEvent;
 
-use crate::{action::Action, mode::Mode};
+use crate::{
+    action::{
+        Action,
+        action_builder::{self, ActionType},
+    },
+    mode::Mode,
+};
 
 pub trait InputMachine {
     fn process_keys(
@@ -25,7 +31,7 @@ pub struct KeyMapNode<T> {
     children: HashMap<KeyEvent, KeyMapNode<T>>,
 }
 
-impl<T> KeyMapNode<T> {
+impl KeyMapNode<ActionType> {
     pub fn new() -> Self {
         KeyMapNode {
             action: None,
@@ -33,18 +39,19 @@ impl<T> KeyMapNode<T> {
         }
     }
 
-    pub fn add_sequence(&mut self, sequence: Vec<KeyEvent>, action: T) {
+    pub fn add_simple_action(&mut self, sequence: Vec<KeyEvent>, action: Action) {
         let mut current_node = self;
+        let action_builder = ActionType::SimpleAction(action.clone());
         for key in sequence {
             current_node = current_node
                 .children
                 .entry(key)
                 .or_insert_with(KeyMapNode::new);
         }
-        current_node.action = Some(action);
+        current_node.action = Some(action_builder);
     }
 
-    pub fn get_node(&self, sequence: &[KeyEvent]) -> Option<&KeyMapNode<T>> {
+    pub fn get_node(&self, sequence: &[KeyEvent]) -> Option<&KeyMapNode<ActionType>> {
         let mut current_node = self;
         for key in sequence {
             match current_node.children.get(key) {
@@ -62,17 +69,18 @@ pub enum KeyProcessingResult<T> {
     Invalid,     // Sequence is invalid
 }
 
-pub fn process_keys<T: Clone>(
-    keymap: &KeyMapNode<T>,
+pub fn process_keys(
+    keymap: &KeyMapNode<ActionType>,
     current_sequence: &mut Vec<KeyEvent>,
     input_key: KeyEvent,
-) -> KeyProcessingResult<T> {
+) -> KeyProcessingResult<Action> {
     current_sequence.push(input_key);
     match keymap.get_node(current_sequence) {
         Some(node) => match &node.action {
             None => KeyProcessingResult::Incomplete, // More keys can follow
             Some(action) => {
                 current_sequence.clear();
+                let action = action.resolve_action(current_sequence.clone());
                 KeyProcessingResult::Complete(action.clone()) // Final action reached
             }
         },
@@ -95,32 +103,32 @@ mod tests {
     #[test]
     fn test_keymaps_work() {
         let mut root = KeyMapNode::new();
-        root.add_sequence(
+        root.add_simple_action(
             vec![KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE)],
             Action::AppAct(AppAction::Quit),
         );
-        root.add_sequence(
+        root.add_simple_action(
             vec![
                 KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE),
                 KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
             ],
             Action::ExplorerAct(ExplorerAction::SelectDown),
         );
-        root.add_sequence(
+        root.add_simple_action(
             vec![
                 KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE),
                 KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE),
             ],
             Action::ExplorerAct(ExplorerAction::SelectDown),
         );
-        root.add_sequence(
+        root.add_simple_action(
             vec![
                 KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
                 KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
             ],
             Action::AppAct(AppAction::Delete),
         );
-        root.add_sequence(
+        root.add_simple_action(
             vec![
                 KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
                 KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE),

@@ -14,6 +14,7 @@ use ratatui::{
     prelude::CrosstermBackend,
 };
 
+use crate::action::action_builder::ActionType;
 use crate::action::{AppAction, CommandAction, ExplorerAction, get_command};
 use crate::app_context::AppContext;
 use crate::app_input_machine::AppInputMachine;
@@ -62,7 +63,7 @@ pub struct App {
     pub explorer_manager: ExplorerManager,
     pub command_line: CommandLine,
     pub current_sequence: Vec<KeyEvent>,
-    pub input_machine: AppInputMachine<Action>,
+    pub input_machine: AppInputMachine<ActionType>,
     pub popup: Option<Box<dyn PluginPopUp>>,
     pub command_history: HashMap<PathBuf, CommandHistory>,
     pub command_input: Option<String>,
