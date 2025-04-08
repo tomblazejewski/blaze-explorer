@@ -1,3 +1,4 @@
+pub mod action_builder;
 use crate::{
     command::{
         DeleteSplit, DisplayMessage, ExecuteFunction, FocusDown, FocusLeft, FocusRight, FocusUp,
