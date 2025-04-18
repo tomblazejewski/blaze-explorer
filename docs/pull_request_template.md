@@ -21,3 +21,4 @@ This merge introduces...
 - [ ] Updated the `README.md` roadmap
 - [ ] Removed unnecessary debug outputs
 - [ ] Updated version number
+- [ ] Added docs to new functions
