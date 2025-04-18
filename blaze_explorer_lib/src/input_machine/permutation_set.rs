@@ -1,4 +1,5 @@
 use std::ops::BitOr;
+/// Enumeration of possible permutation sets to use when creating a permutated keymap
 #[derive(Clone, Debug)]
 pub enum PermutationSet {
     LowerAlpha,
@@ -8,6 +9,12 @@ pub enum PermutationSet {
 }
 
 impl PermutationSet {
+    /// Obtain the list of all possible elements based on the permutation set
+    /// ```
+    /// use blaze_explorer_lib::input_machine::permutation_set::PermutationSet;
+    /// let set = PermutationSet::Digits;
+    /// assert!(set.elements() == vec!['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
+    /// ```
     pub fn elements(&self) -> Vec<char> {
         match self {
             PermutationSet::LowerAlpha => ('a'..='z').collect(),
