@@ -269,17 +269,7 @@ impl Command for PasteFromClipboard {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::{Result, Write};
-    use std::{
-        collections::VecDeque,
-        env,
-        fs::{File, create_dir_all},
-        path, thread,
-        time::Duration,
-    };
-
-    use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-    use tempdir::TempDir;
+    use std::env;
 
     use crate::{action::ExplorerAction, testing_utils::create_testing_folder};
     #[test]

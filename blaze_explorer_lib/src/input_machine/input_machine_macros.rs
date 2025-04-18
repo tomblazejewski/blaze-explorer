@@ -1,5 +1,4 @@
 use crate::input_machine::input_machine_helpers::{convert_str_to_events, parse_key_sequence};
-use itertools::Itertools;
 #[macro_export]
 macro_rules! insert_binding {
     ($map:expr, $mode:expr, $binding:expr, $functionality:expr) => {{

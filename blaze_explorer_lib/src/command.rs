@@ -5,7 +5,6 @@ pub mod key_press;
 pub mod navigation_commands;
 use key_press::decode_expression;
 
-use crate::action::AppAction;
 use crate::action::ExplorerAction;
 use crate::app::ExitResult;
 use crate::components::explorer_manager::SplitDirection;
@@ -14,9 +13,8 @@ use crate::plugin::plugin_popup::PluginPopUp;
 use crate::{action::Action, line_entry::LineEntry};
 use std::any::Any;
 use std::fmt::Debug;
+use std::path::PathBuf;
 use std::process::Command as ProcessCommand;
-use std::{collections::HashMap, path::PathBuf};
-use std::{fmt, fs, io};
 
 use crate::{app::App, app_context::AppContext, mode::Mode};
 
@@ -719,21 +717,13 @@ impl Command for ToggleMark {
 #[cfg(test)]
 mod tests {
     use std::io::{Result, Write};
-    use std::{
-        collections::VecDeque,
-        env,
-        fs::{File, create_dir_all},
-        path, thread,
-        time::Duration,
-    };
+    use std::{collections::VecDeque, env, path};
 
     use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-    use tempdir::TempDir;
 
+    use crate::action::ExplorerAction;
     use crate::command::navigation_commands::JumpToId;
-    use crate::{action::ExplorerAction, testing_utils::create_testing_folder};
 
-    // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
 
     #[test]
