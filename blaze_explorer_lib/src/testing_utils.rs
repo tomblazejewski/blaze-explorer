@@ -51,3 +51,54 @@ pub fn create_testing_folder() -> Result<TestingFolder> {
         dir_list,
     ))
 }
+
+pub fn create_custom_testing_folder(paths: Vec<&str>) -> Result<TestingFolder> {
+    let original_dir = TempDir::new("original_directory").unwrap();
+    let mut file_list = Vec::new();
+    let mut dir_list = vec![original_dir.path().to_path_buf()];
+
+    for path_str in paths {
+        let full_path = original_dir.path().join(path_str);
+        if path_str.ends_with('/') {
+            // It's a directory
+            create_dir_all(&full_path)?;
+            dir_list.push(full_path);
+        } else {
+            // It's a file — ensure parent directories exist
+            if let Some(parent) = full_path.parent() {
+                create_dir_all(parent)?;
+                if !dir_list.contains(&parent.to_path_buf()) {
+                    dir_list.push(parent.to_path_buf());
+                }
+            }
+            let mut file = File::create(&full_path)?;
+            file.write_all(b"Hello, world!")?;
+            file.sync_all()?;
+            file_list.push(full_path);
+        }
+    }
+
+    Ok(TestingFolder::new(original_dir, file_list, dir_list))
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_create_custom_testing_folder() {
+        let paths_list = vec![
+            "file_1.txt",
+            "folder_1/folder_2/file_3.txt",
+            "folder_2/",
+            "aaa.csv",
+            "bbb.xlsx",
+            "folder_5/ccc.jpg",
+        ];
+        let testing_folder = create_custom_testing_folder(paths_list.clone()).unwrap();
+        let root_dir = testing_folder.root_dir.path();
+        let paths_to_check = paths_list
+            .iter()
+            .map(|x| root_dir.join(x))
+            .collect::<Vec<PathBuf>>();
+        assert!(paths_to_check.iter().all(|x| x.exists()));
+    }
+}

@@ -1,12 +1,5 @@
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-#[macro_export]
-macro_rules! insert_binding {
-    ($map:expr, $mode:expr, $binding:expr, $functionality:expr) => {{
-        let events = convert_str_to_events($binding);
-        $map.insert(($mode, events), $functionality.to_string());
-    }};
-}
 pub fn convert_str_to_events(input: &str) -> Vec<KeyEvent> {
     let mut events = Vec::new();
     let mut chars = input.chars().peekable();
@@ -36,7 +29,7 @@ pub fn convert_str_to_events(input: &str) -> Vec<KeyEvent> {
     events
 }
 
-fn parse_key_sequence(sequence: &str) -> Option<(KeyCode, KeyModifiers)> {
+pub fn parse_key_sequence(sequence: &str) -> Option<(KeyCode, KeyModifiers)> {
     let mut modifiers = KeyModifiers::NONE;
 
     match sequence {
@@ -63,6 +56,7 @@ fn parse_key_sequence(sequence: &str) -> Option<(KeyCode, KeyModifiers)> {
         }
     }
 }
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
@@ -97,27 +91,5 @@ mod tests {
             KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE),
         ];
         assert_eq!(events_complex, expected_events_complex);
-    }
-
-    #[test]
-    fn test_insert_binding() {
-        let mut telescope_bindings = HashMap::new();
-        let binding_str = "<C-a>";
-        let functionality_str = "OpenSFS";
-        insert_binding!(
-            telescope_bindings,
-            Mode::Normal,
-            binding_str,
-            functionality_str
-        );
-        let mut expected_map = HashMap::new();
-        expected_map.insert(
-            (Mode::Normal, vec![KeyEvent::new(
-                KeyCode::Char('a'),
-                KeyModifiers::CONTROL,
-            )]),
-            "OpenSFS".to_string(),
-        );
-        assert_eq!(telescope_bindings, expected_map);
     }
 }
