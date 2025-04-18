@@ -52,6 +52,8 @@ pub fn create_testing_folder() -> Result<TestingFolder> {
     ))
 }
 
+/// Create a temporary folder with the structure described by the argument [paths]
+/// The folder is destroyed when the TestingFolder is dropped
 pub fn create_custom_testing_folder(paths: Vec<&str>) -> Result<TestingFolder> {
     let original_dir = TempDir::new("original_directory").unwrap();
     let mut file_list = Vec::new();

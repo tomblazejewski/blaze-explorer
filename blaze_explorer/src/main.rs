@@ -56,6 +56,7 @@ fn collect_libs() -> HashMap<String, Rc<Library>> {
     lib_map
 }
 
+/// Create a folder dedicated for app cache
 fn create_cache_dir() -> Result<PathBuf, Box<dyn Error>> {
     let project_dir = get_project_dir();
     let cache_dir = project_dir.cache_dir();
