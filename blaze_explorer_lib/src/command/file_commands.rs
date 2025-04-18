@@ -101,7 +101,10 @@ impl RenameActive {
 impl Command for RenameActive {
     fn execute(&mut self, _app: &mut App) -> Option<Action> {
         match fs::rename(self.first_path.clone(), self.second_path.clone()) {
-            Ok(_) => None,
+            Ok(_) => {
+                self.reversible = true;
+                None
+            }
             Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
                 "Failed to rename {}: {}",
                 self.first_path.display(),
@@ -266,17 +269,7 @@ impl Command for PasteFromClipboard {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::{Result, Write};
-    use std::{
-        collections::VecDeque,
-        env,
-        fs::{File, create_dir_all},
-        path, thread,
-        time::Duration,
-    };
-
-    use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-    use tempdir::TempDir;
+    use std::env;
 
     use crate::{action::ExplorerAction, testing_utils::create_testing_folder};
     #[test]
@@ -292,6 +285,7 @@ mod tests {
             assert!(!file_path.exists());
         }
         assert!(path_to_rename.parent().unwrap().join(&new_name).exists());
+        assert!(rename_active.is_reversible());
         rename_active.undo(&mut app);
         assert!(path_to_rename.exists());
         for file_path in testing_folder.file_list.iter() {

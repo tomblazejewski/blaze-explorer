@@ -11,6 +11,8 @@ Currently under development and unstable.
 | ------------- | ----------------------------------------------------------------------------- |
 | `j`           | Next item                                                                     |
 | `k`           | Previous item                                                                 |
+| `gg`          | First item                                                                    |
+| `G`           | Last item                                                                     |
 | `<Backspace>` | Move to parent directory                                                      |
 | `<Enter>`     | Open selected item                                                            |
 | `<C-o>`       | Go back in directory history                                                  |

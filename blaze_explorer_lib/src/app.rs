@@ -475,8 +475,6 @@ impl PartialEq for App {
 mod tests {
     use std::env;
 
-    use fs::create_dir_all;
-
     use super::*;
 
     #[test]
