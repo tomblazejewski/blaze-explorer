@@ -7,6 +7,7 @@ use super::command_utils::{create_backup_map, get_backup_dir, join_paths};
 
 use crate::action::{Action, AppAction};
 use std::fmt::Debug;
+use std::fs::File;
 use std::io;
 use std::{collections::HashMap, path::PathBuf};
 use std::{fmt, fs};
@@ -266,12 +267,84 @@ impl Command for PasteFromClipboard {
     }
 }
 
+#[derive(Clone, PartialEq, Debug)]
+pub struct AddDir {
+    new_dir: PathBuf,
+    is_folder: bool,
+    reversible: bool,
+}
+
+impl AddDir {
+    pub fn new(mut ctx: AppContext, mut name: String) -> Self {
+        let current_dir = ctx.explorer_manager.get_current_path();
+        let mut is_folder = false;
+        if name.ends_with('\\') || name.ends_with('/') {
+            //remove the last char
+            name = name[0..name.len() - 1].to_string();
+            is_folder = true;
+        }
+        Self {
+            new_dir: current_dir.join(name),
+            is_folder,
+            reversible: false,
+        }
+    }
+}
+
+impl Command for AddDir {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
+        match self.is_folder {
+            true => match fs::create_dir(&self.new_dir) {
+                Ok(()) => {
+                    self.reversible = true;
+                    None
+                }
+                Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                    "Error while creating directory: {:?}",
+                    e
+                )))),
+            },
+            false => match File::create(&self.new_dir) {
+                Ok(file) => {
+                    self.reversible = true;
+                    None
+                }
+                Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                    "Error while creating directory: {:?}",
+                    e
+                )))),
+            },
+        }
+    }
+
+    fn undo(&mut self, _app: &mut App) -> Option<Action> {
+        match self.is_folder {
+            true => match fs::remove_dir_all(&self.new_dir) {
+                Ok(()) => None,
+                Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                    "Error while removing directory: {:?}",
+                    e
+                )))),
+            },
+            false => match fs::remove_file(&self.new_dir) {
+                Ok(()) => None,
+                Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                    "Error while removing directory: {:?}",
+                    e
+                )))),
+            },
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::env;
 
-    use crate::{action::ExplorerAction, testing_utils::create_testing_folder};
+    use crate::{
+        action::ExplorerAction,
+        testing_utils::{create_custom_testing_folder, create_testing_folder},
+    };
     #[test]
     fn test_rename_active() {
         let mut app = App::new().unwrap();
@@ -430,5 +503,42 @@ mod tests {
             assert!(path.exists(), "File {:?} does not exist", path);
         }
         app.move_directory(starting_path, None);
+    }
+
+    #[test]
+    fn test_add_dir() {
+        let temp_dir = create_custom_testing_folder(Vec::new()).unwrap();
+        let root_dir = temp_dir.root_dir.path().to_path_buf();
+        let mut app = App::new().unwrap();
+        app.explorer_manager.update_path(root_dir.clone(), None);
+        let mut add_dir = AddDir::new(app.get_app_context(), "new_dir/".to_string());
+        let result = add_dir.execute(&mut app);
+        assert!(result.is_none());
+        let new_dir = root_dir.join("new_dir");
+        assert!(new_dir.exists());
+        assert!(new_dir.is_dir());
+
+        let _ = add_dir.undo(&mut app);
+        assert!(!new_dir.exists());
+
+        //test creating twice
+        let result = add_dir.execute(&mut app);
+        assert!(result.is_none());
+        let new_dir = root_dir.join("new_dir");
+        assert!(new_dir.exists());
+        assert!(new_dir.is_dir());
+
+        let result_repeat = add_dir.execute(&mut app);
+        assert!(result_repeat.is_some());
+
+        let mut add_dir = AddDir::new(app.get_app_context(), "text_file.txt".to_string());
+
+        add_dir.execute(&mut app);
+        let new_file = root_dir.join("text_file.txt");
+        assert!(new_file.exists());
+        assert!(new_file.is_file());
+
+        let _ = add_dir.undo(&mut app);
+        assert!(!new_file.exists());
     }
 }
