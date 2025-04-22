@@ -275,8 +275,7 @@ pub struct AddDir {
 }
 
 impl AddDir {
-    pub fn new(mut ctx: AppContext, mut name: String) -> Self {
-        let current_dir = ctx.explorer_manager.get_current_path();
+    pub fn new(current_dir: PathBuf, mut name: String) -> Self {
         let mut is_folder = false;
         if name.ends_with('\\') || name.ends_with('/') {
             //remove the last char
@@ -511,7 +510,7 @@ mod tests {
         let root_dir = temp_dir.root_dir.path().to_path_buf();
         let mut app = App::new().unwrap();
         app.explorer_manager.update_path(root_dir.clone(), None);
-        let mut add_dir = AddDir::new(app.get_app_context(), "new_dir/".to_string());
+        let mut add_dir = AddDir::new(root_dir.clone(), "new_dir/".to_string());
         let result = add_dir.execute(&mut app);
         assert!(result.is_none());
         let new_dir = root_dir.join("new_dir");
@@ -531,7 +530,7 @@ mod tests {
         let result_repeat = add_dir.execute(&mut app);
         assert!(result_repeat.is_some());
 
-        let mut add_dir = AddDir::new(app.get_app_context(), "text_file.txt".to_string());
+        let mut add_dir = AddDir::new(root_dir.clone(), "text_file.txt".to_string());
 
         add_dir.execute(&mut app);
         let new_file = root_dir.join("text_file.txt");
