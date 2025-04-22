@@ -26,13 +26,7 @@ use crate::{
 };
 pub fn open_add_popup(app: &mut App) -> Option<Action> {
     let mut ctx = app.get_app_context();
-    let dir = match ctx.explorer_manager.select_directory() {
-        Some(dir) => dir.clone(),
-        //Unable to set the selected to None
-        None => {
-            panic!("Could not get the starting directory from the explorer manager")
-        }
-    };
+    let dir = ctx.explorer_manager.get_current_path();
     let popup = Box::new(AddPopUp::new(dir));
     app.attach_popup(popup);
 

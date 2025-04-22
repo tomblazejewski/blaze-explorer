@@ -334,6 +334,9 @@ impl Command for AddDir {
             },
         }
     }
+    fn is_reversible(&self) -> bool {
+        self.reversible
+    }
 }
 #[cfg(test)]
 mod tests {
@@ -511,11 +514,13 @@ mod tests {
         let mut app = App::new().unwrap();
         app.explorer_manager.update_path(root_dir.clone(), None);
         let mut add_dir = AddDir::new(root_dir.clone(), "new_dir/".to_string());
+        assert!(!add_dir.is_reversible());
         let result = add_dir.execute(&mut app);
         assert!(result.is_none());
         let new_dir = root_dir.join("new_dir");
         assert!(new_dir.exists());
         assert!(new_dir.is_dir());
+        assert!(add_dir.is_reversible());
 
         let _ = add_dir.undo(&mut app);
         assert!(!new_dir.exists());
@@ -532,10 +537,12 @@ mod tests {
 
         let mut add_dir = AddDir::new(root_dir.clone(), "text_file.txt".to_string());
 
+        assert!(!add_dir.is_reversible());
         add_dir.execute(&mut app);
         let new_file = root_dir.join("text_file.txt");
         assert!(new_file.exists());
         assert!(new_file.is_file());
+        assert!(add_dir.is_reversible());
 
         let _ = add_dir.undo(&mut app);
         assert!(!new_file.exists());
