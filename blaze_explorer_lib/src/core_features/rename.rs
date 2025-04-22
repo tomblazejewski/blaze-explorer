@@ -162,16 +162,17 @@ impl PluginPopUp for RenamePopUp {
 mod tests {
     use std::env;
 
+    use crate::testing_utils::create_custom_testing_folder;
+
     use super::*;
     #[test]
     fn test_open_rename_popup() {
         let mut app = App::new().unwrap();
-        let current_path = env::current_dir().unwrap();
-        let test_path = current_path.join("../tests");
-        app.update_path(test_path.clone(), Some("folder_1".to_string()));
+        let test_folder = create_custom_testing_folder(vec!["folder_1/"]).unwrap();
+        let root_dir = test_folder.root_dir.path().to_path_buf();
+        app.update_path(root_dir.clone(), Some("folder_1".to_string()));
         open_rename_popup(&mut app);
-        let expected_dir = test_path.join("folder_1");
-        let expected_popup: Box<dyn PluginPopUp> = Box::new(RenamePopUp::new(expected_dir));
+        let expected_popup: Box<dyn PluginPopUp> = Box::new(RenamePopUp::new(root_dir.clone()));
         let actual_popup = app.popup.unwrap();
         assert!(expected_popup == actual_popup.clone());
     }
