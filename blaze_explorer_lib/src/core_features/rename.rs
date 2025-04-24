@@ -172,7 +172,8 @@ mod tests {
         let root_dir = test_folder.root_dir.path().to_path_buf();
         app.update_path(root_dir.clone(), Some("folder_1".to_string()));
         open_rename_popup(&mut app);
-        let expected_popup: Box<dyn PluginPopUp> = Box::new(RenamePopUp::new(root_dir.clone()));
+        let expected_dir = root_dir.join("folder_1");
+        let expected_popup: Box<dyn PluginPopUp> = Box::new(RenamePopUp::new(expected_dir));
         let actual_popup = app.popup.unwrap();
         assert!(expected_popup == actual_popup.clone());
     }
