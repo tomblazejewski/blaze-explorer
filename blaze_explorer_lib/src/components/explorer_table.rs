@@ -1,4 +1,5 @@
 pub mod explorer_styling;
+pub mod explorer_utils;
 use chrono::{DateTime, offset::Utc};
 use explorer_styling::ExplorerStyle;
 use git2::{Repository, Status, StatusOptions};
