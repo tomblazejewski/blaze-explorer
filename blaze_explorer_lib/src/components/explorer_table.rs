@@ -2,6 +2,7 @@ pub mod explorer_styling;
 pub mod explorer_utils;
 use chrono::{DateTime, offset::Utc};
 use explorer_styling::ExplorerStyle;
+use explorer_utils::FileConfig;
 use git2::{Repository, Status, StatusOptions};
 use layout::Alignment;
 use std::collections::HashMap;
@@ -566,7 +567,7 @@ impl ExplorerTable {
         row.style(style)
     }
 
-    pub fn draw(&mut self, frame: &mut Frame, area: Rect, string_sequence: String) -> Result<()> {
+    pub fn draw(&mut self, frame: &mut Frame, area: Rect, file_config: &FileConfig) -> Result<()> {
         // get table block
         self.refresh_contents();
         let widths = [
@@ -627,6 +628,10 @@ impl ExplorerTable {
                 .fg(tailwind::BLACK),
         );
         let path_span = Span::from(self.current_path.to_str().unwrap());
+        let star_span = Span::from(match file_config.favourites.contains(&self.current_path) {
+            true => "★",
+            false => "☆",
+        });
         let plugin_span = match &self.plugin_display {
             Some(plugin) => Span::styled(
                 plugin,
@@ -637,7 +642,8 @@ impl ExplorerTable {
             None => Span::from(String::from("")),
         };
 
-        let sequence_line = Line::from(string_sequence).alignment(Alignment::Right);
+        let sequence_line =
+            Line::from(file_config.string_sequence.to_owned()).alignment(Alignment::Right);
 
         let status_line = match self.focused {
             true => Line::from(vec![mode_span, plugin_span, path_span]),
@@ -647,10 +653,15 @@ impl ExplorerTable {
         let status_bar = match self.focused {
             true => Table::new(
                 vec![Row::new(vec![
+                    Cell::from(star_span),
                     Cell::from(Text::from(status_line)),
                     Cell::from(Text::from(sequence_line)),
                 ])],
-                vec![Constraint::Fill(1), Constraint::Length(10)],
+                vec![
+                    Constraint::Length(10),
+                    Constraint::Fill(1),
+                    Constraint::Length(10),
+                ],
             ),
             false => Table::new(
                 vec![Row::new(vec![Cell::from(Text::from(status_line))])],

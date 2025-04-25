@@ -6,6 +6,7 @@ use ratatui::Frame;
 use ratatui::crossterm::event::KeyEvent;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 
+use super::explorer_table::explorer_utils::FileConfig;
 use super::explorer_table::{ExplorerTable, FileData, GlobalStyling};
 use crate::explorer_helpers::{
     calculate_distance, convert_sequence_to_string, delegate_to_focused,
@@ -162,6 +163,7 @@ impl ExplorerManager {
 
     pub fn draw(&mut self, frame: &mut Frame, area: Rect, sequence: Vec<KeyEvent>) {
         let string_seq = convert_sequence_to_string(sequence);
+        let file_config = FileConfig::new(vec![], string_seq.clone());
         let mut draw_map: HashMap<usize, Rect> = HashMap::new();
         self.get_drawable(frame, area, 0, &mut draw_map);
         self.last_layout = draw_map.clone();
@@ -170,7 +172,7 @@ impl ExplorerManager {
             .map(|(key, value)| {
                 let table = self.explorers.get_mut(key).unwrap();
                 if let Split::Single(table) = &mut table.split {
-                    let _ = table.draw(frame, *value, string_seq.clone());
+                    let _ = table.draw(frame, *value, &file_config);
                 }
             })
             .collect();
