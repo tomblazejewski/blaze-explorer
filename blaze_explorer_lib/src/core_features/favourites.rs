@@ -6,13 +6,13 @@ use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::Path;
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-struct Config {
-    favourites: Vec<String>,
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct Config {
+    pub favourites: Vec<PathBuf>,
 }
 
 impl Config {
-    fn new(favourites: Vec<String>) -> Self {
+    pub fn new(favourites: Vec<PathBuf>) -> Self {
         Config { favourites }
     }
     fn load_from_file<P: AsRef<Path>>(path: P) -> std::io::Result<Self> {
@@ -34,14 +34,14 @@ impl Config {
         Ok(())
     }
 
-    fn add_favourite(&mut self, path: String) {
+    fn add_favourite(&mut self, path: PathBuf) {
         if !self.favourites.contains(&path) {
             self.favourites.push(path);
         }
     }
 
-    fn remove_favourite(&mut self, path: &str) {
-        self.favourites.retain(|f| f != path);
+    fn remove_favourite(&mut self, path: PathBuf) {
+        self.favourites.retain(|f| *f != path);
     }
 }
 
@@ -59,7 +59,7 @@ mod tests {
 
     #[test]
     fn test_config_load_write() {
-        let config = Config::new(vec!["test".to_string(), "test2".to_string()]);
+        let config = Config::new(vec!["test1".into(), "test2".into()]);
         let test_dir = create_custom_testing_folder(vec![]).unwrap();
         let root = test_dir.root_dir.path();
         let config_path = root.join("config.json");
@@ -71,17 +71,17 @@ mod tests {
 
     #[test]
     fn test_add_favourite() {
-        let mut config = Config::new(vec!["test".to_string(), "test2".to_string()]);
-        config.add_favourite("test3".to_string());
+        let mut config = Config::new(vec!["test".into(), "test2".into()]);
+        config.add_favourite("test3".into());
         assert_eq!(config.favourites.len(), 3);
-        assert!(config.favourites.contains(&"test3".to_string()));
+        assert!(config.favourites.contains(&"test3".into()));
     }
 
     #[test]
     fn test_remove_favourite() {
-        let mut config = Config::new(vec!["test".to_string(), "test2".to_string()]);
-        config.remove_favourite("test");
+        let mut config = Config::new(vec!["test".into(), "test2".into()]);
+        config.remove_favourite("test".into());
         assert_eq!(config.favourites.len(), 1);
-        assert!(!config.favourites.contains(&"test".to_string()));
+        assert!(!config.favourites.contains(&"test".into()));
     }
 }

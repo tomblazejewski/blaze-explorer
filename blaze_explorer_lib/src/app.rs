@@ -21,6 +21,9 @@ use crate::command::Command;
 use crate::command::command_utils::get_project_dir;
 use crate::components::command_line::CommandLine;
 use crate::components::explorer_manager::ExplorerManager;
+use crate::components::explorer_table::explorer_utils::FileConfig;
+use crate::core_features::favourites::Config;
+use crate::explorer_helpers::convert_sequence_to_string;
 use crate::history_stack::directory_history::DirectoryDetails;
 use crate::history_stack::{HistoryStack, command_history::CommandHistory};
 use crate::input_machine::{InputMachine, KeyProcessingResult};
@@ -70,6 +73,7 @@ pub struct App {
     pub current_path: PathBuf,
     pub key_queue: VecDeque<KeyEvent>,
     pub plugins: HashMap<String, Box<dyn Plugin>>,
+    pub config: Config,
 }
 impl App {
     pub fn new() -> Result<Self> {
@@ -89,6 +93,7 @@ impl App {
             current_path: PathBuf::new(),
             key_queue: VecDeque::new(),
             plugins: HashMap::new(),
+            config: Config::default(),
         })
     }
 
@@ -361,14 +366,22 @@ impl App {
         self.update_path(path, selected);
     }
 
+    pub fn get_file_config(&self) -> FileConfig {
+        FileConfig::new(
+            self.config.favourites.clone(),
+            convert_sequence_to_string(self.current_sequence.clone()),
+        )
+    }
+
     pub fn render(&mut self) -> Result<()> {
         self.terminal.draw(|frame| {
-            let areas = get_component_areas(frame);
-            self.explorer_manager.draw(
-                frame,
-                *areas.get("explorer_table").unwrap(),
-                self.current_sequence.clone(),
+            let file_config = FileConfig::new(
+                self.config.favourites.clone(),
+                convert_sequence_to_string(self.current_sequence.clone()),
             );
+            let areas = get_component_areas(frame);
+            self.explorer_manager
+                .draw(frame, *areas.get("explorer_table").unwrap(), &file_config);
             let _ = self
                 .command_line
                 .draw(frame, *areas.get("command_line").unwrap());
@@ -449,6 +462,7 @@ impl Clone for App {
             current_path: self.current_path.clone(),
             key_queue: self.key_queue.clone(),
             plugins: self.plugins.clone(),
+            config: self.config.clone(),
         }
     }
 }
@@ -474,6 +488,8 @@ impl PartialEq for App {
 #[cfg(test)]
 mod tests {
     use std::env;
+
+    use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
     use super::*;
 
@@ -522,5 +538,18 @@ mod tests {
         let app = App::new().unwrap();
         let _ = app.destruct();
         assert!(!cache_dir.exists());
+    }
+
+    #[test]
+    fn test_get_file_config() {
+        let mut app = App::new().unwrap();
+        app.config = Config::new(vec![PathBuf::from("test.txt")]);
+        app.current_sequence = vec![
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE),
+        ];
+        let file_config = app.get_file_config();
+        assert_eq!(file_config.favourites, app.config.favourites);
+        assert_eq!(file_config.string_sequence, "<cr>a".to_string());
     }
 }

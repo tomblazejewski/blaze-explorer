@@ -161,9 +161,7 @@ impl ExplorerManager {
         false
     }
 
-    pub fn draw(&mut self, frame: &mut Frame, area: Rect, sequence: Vec<KeyEvent>) {
-        let string_seq = convert_sequence_to_string(sequence);
-        let file_config = FileConfig::new(vec![], string_seq.clone());
+    pub fn draw(&mut self, frame: &mut Frame, area: Rect, file_config: &FileConfig) {
         let mut draw_map: HashMap<usize, Rect> = HashMap::new();
         self.get_drawable(frame, area, 0, &mut draw_map);
         self.last_layout = draw_map.clone();
