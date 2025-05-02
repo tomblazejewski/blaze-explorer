@@ -15,7 +15,7 @@ impl Config {
     pub fn new(favourites: Vec<PathBuf>) -> Self {
         Config { favourites }
     }
-    fn load_from_file<P: AsRef<Path>>(path: P) -> std::io::Result<Self> {
+    pub fn load_from_file<P: AsRef<Path>>(path: P) -> std::io::Result<Self> {
         let mut file = File::open(path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -23,7 +23,7 @@ impl Config {
         Ok(config)
     }
 
-    fn save_to_file<P: AsRef<Path>>(&self, path: P) -> std::io::Result<()> {
+    pub fn save_to_file<P: AsRef<Path>>(&self, path: P) -> std::io::Result<()> {
         let json = serde_json::to_string_pretty(self)?;
         let mut file = OpenOptions::new()
             .create(true)
@@ -34,14 +34,22 @@ impl Config {
         Ok(())
     }
 
-    fn add_favourite(&mut self, path: PathBuf) {
+    pub fn add_favourite(&mut self, path: PathBuf) {
         if !self.favourites.contains(&path) {
             self.favourites.push(path);
         }
     }
 
-    fn remove_favourite(&mut self, path: PathBuf) {
+    pub fn remove_favourite(&mut self, path: PathBuf) {
         self.favourites.retain(|f| *f != path);
+    }
+
+    pub fn toggle_favourite(&mut self, path: PathBuf) {
+        if self.favourites.contains(&path) {
+            self.remove_favourite(path);
+        } else {
+            self.add_favourite(path);
+        }
     }
 }
 

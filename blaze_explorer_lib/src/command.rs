@@ -1,5 +1,6 @@
 pub mod command_helpers;
 pub mod command_utils;
+pub mod explorer_commands;
 pub mod file_commands;
 pub mod key_press;
 pub mod navigation_commands;
