@@ -148,10 +148,12 @@ impl CopyRenameActive {
 }
 
 impl Command for CopyRenameActive {
-    fn execute(&mut self, _app: &mut App) -> Option<Action> {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
         match copy_recursively(&self.first_path, &self.second_path) {
             Ok(_) => {
                 self.reversible = true;
+                app.explorer_manager
+                    .show_in_folder(self.second_path.clone());
                 None
             }
             Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
@@ -163,7 +165,11 @@ impl Command for CopyRenameActive {
     }
 
     fn undo(&mut self, _app: &mut App) -> Option<Action> {
-        match fs::remove_dir_all(self.second_path.clone()) {
+        let func = match self.second_path.is_dir() {
+            true => fs::remove_dir_all,
+            false => fs::remove_file,
+        };
+        match func(self.second_path.clone()) {
             Ok(_) => None,
             Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
                 "Failed to remove the copy {}: {}",
