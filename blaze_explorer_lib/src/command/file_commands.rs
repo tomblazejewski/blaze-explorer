@@ -296,6 +296,7 @@ impl Command for AddDir {
             true => match fs::create_dir(&self.new_dir) {
                 Ok(()) => {
                     self.reversible = true;
+                    app.explorer_manager.show_in_folder(self.new_dir.clone());
                     None
                 }
                 Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
@@ -306,6 +307,7 @@ impl Command for AddDir {
             false => match File::create(&self.new_dir) {
                 Ok(file) => {
                     self.reversible = true;
+                    app.explorer_manager.show_in_folder(self.new_dir.clone());
                     None
                 }
                 Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
@@ -511,12 +513,16 @@ mod tests {
     fn test_add_dir() {
         let temp_dir = create_custom_testing_folder(Vec::new()).unwrap();
         let root_dir = temp_dir.root_dir.path().to_path_buf();
+        let new_dir = root_dir.join("new_dir");
         let mut app = App::new().unwrap();
         app.explorer_manager.update_path(root_dir.clone(), None);
         let mut add_dir = AddDir::new(root_dir.clone(), "new_dir/".to_string());
         assert!(!add_dir.is_reversible());
+
         let result = add_dir.execute(&mut app);
         assert!(result.is_none());
+        let selected_directory = app.explorer_manager.select_directory().unwrap();
+        assert_eq!(selected_directory, new_dir);
         let new_dir = root_dir.join("new_dir");
         assert!(new_dir.exists());
         assert!(new_dir.is_dir());
@@ -536,10 +542,14 @@ mod tests {
         assert!(result_repeat.is_some());
 
         let mut add_dir = AddDir::new(root_dir.clone(), "text_file.txt".to_string());
+        let new_dir = root_dir.join("text_file.txt");
 
         assert!(!add_dir.is_reversible());
-        add_dir.execute(&mut app);
+        let result = add_dir.execute(&mut app);
+        assert!(result.is_none());
         let new_file = root_dir.join("text_file.txt");
+        let selected_directory = app.explorer_manager.select_directory().unwrap();
+        assert_eq!(selected_directory, new_dir);
         assert!(new_file.exists());
         assert!(new_file.is_file());
         assert!(add_dir.is_reversible());

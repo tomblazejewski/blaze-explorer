@@ -139,7 +139,6 @@ impl PluginPopUp for AddPopUp {
 
 #[cfg(test)]
 mod tests {
-    use std::env;
 
     use crate::testing_utils::create_custom_testing_folder;
 

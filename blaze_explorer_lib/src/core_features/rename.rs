@@ -13,10 +13,7 @@ use crate::{
     create_plugin_action,
     input_machine::input_machine_helpers::convert_str_to_events,
     mode::Mode,
-    plugin::{
-        plugin_commands::{PluginConfirmResult, PluginDropSearchChar, PluginQuit},
-        plugin_popup::PluginPopUp,
-    },
+    plugin::plugin_commands::{PluginConfirmResult, PluginDropSearchChar, PluginQuit},
     query::Query,
 };
 pub fn open_rename_popup(app: &mut App) -> Option<Action> {
@@ -95,7 +92,7 @@ impl Popupbehaviour for RenameBehaviour {
 #[cfg(test)]
 mod tests {
 
-    use crate::testing_utils::create_custom_testing_folder;
+    use crate::{plugin::plugin_popup::PluginPopUp, testing_utils::create_custom_testing_folder};
 
     use super::*;
 

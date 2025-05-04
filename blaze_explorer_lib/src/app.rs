@@ -294,6 +294,7 @@ impl App {
         if let Some(mut c) = command {
             c.undo(self);
         }
+        //FIXME: this should capture the action returned from the command
     }
     fn redo(&mut self) {
         let path = self.explorer_manager.get_current_path();
@@ -302,6 +303,7 @@ impl App {
         if let Some(mut c) = command {
             c.execute(self);
         }
+        //FIXME: this should capture the action returned from the command
     }
 
     pub fn run_command(&mut self, mut command: Box<dyn Command>) {
