@@ -1,5 +1,5 @@
 use crate::plugin::{
-    base_popup::{BasePopUp, GenericPopUp, Popupbehaviour},
+    base_popup::{BasePopUp, GenericPopUp, Popupbehaviour, get_default_popup_keymap},
     plugin_action::PluginAction,
 };
 use std::{collections::HashMap, path::PathBuf};
@@ -34,7 +34,7 @@ pub fn open_rename_popup(app: &mut App) -> Option<Action> {
         .map_or("".to_string(), |e| format!(".{}", e.to_str().unwrap()));
 
     let query = Query::new_with_contents("".to_string(), initial_name.clone(), extension.clone());
-    let keymap = get_rename_popup_keymap();
+    let keymap = get_default_popup_keymap();
 
     let base = BasePopUp {
         should_quit: false,
@@ -50,23 +50,6 @@ pub fn open_rename_popup(app: &mut App) -> Option<Action> {
 
     app.attach_popup(Box::new(GenericPopUp { base, behaviour }));
     None
-}
-
-fn get_rename_popup_keymap() -> HashMap<(Mode, Vec<KeyEvent>), Action> {
-    let mut keymap = HashMap::new();
-    keymap.insert(
-        (Mode::PopUp, convert_str_to_events("<Esc>")),
-        create_plugin_action!(PluginQuit),
-    );
-    keymap.insert(
-        (Mode::PopUp, convert_str_to_events("<BS>")),
-        create_plugin_action!(PluginDropSearchChar),
-    );
-    keymap.insert(
-        (Mode::PopUp, convert_str_to_events("<CR>")),
-        create_plugin_action!(PluginConfirmResult),
-    );
-    keymap
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -92,7 +75,10 @@ impl Popupbehaviour for RenameBehaviour {
 #[cfg(test)]
 mod tests {
 
-    use crate::{plugin::plugin_popup::PluginPopUp, testing_utils::create_custom_testing_folder};
+    use crate::{
+        plugin::{base_popup::get_default_popup_keymap, plugin_popup::PluginPopUp},
+        testing_utils::create_custom_testing_folder,
+    };
 
     use super::*;
 
@@ -106,7 +92,7 @@ mod tests {
         let action = open_rename_popup(&mut app);
 
         let query = Query::new_with_contents("".into(), "file".into(), ".txt".into());
-        let keymap = get_rename_popup_keymap();
+        let keymap = get_default_popup_keymap();
         let behaviour = RenameBehaviour {
             initial_path: initial_path.clone(),
             initial_name: "file".into(),

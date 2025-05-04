@@ -8,9 +8,35 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
-use crate::{action::Action, line_entry::LineEntry, mode::Mode, query::Query, tools::center_rect};
+use crate::{
+    action::Action, create_plugin_action,
+    input_machine::input_machine_helpers::convert_str_to_events, line_entry::LineEntry, mode::Mode,
+    query::Query, tools::center_rect,
+};
 
-use super::{plugin_helpers::get_push_on_char_action, plugin_popup::PluginPopUp};
+use super::{
+    plugin_action::PluginAction,
+    plugin_commands::{PluginConfirmResult, PluginDropSearchChar, PluginQuit},
+    plugin_helpers::get_push_on_char_action,
+    plugin_popup::PluginPopUp,
+};
+
+pub fn get_default_popup_keymap() -> HashMap<(Mode, Vec<KeyEvent>), Action> {
+    let mut keymap = HashMap::new();
+    keymap.insert(
+        (Mode::PopUp, convert_str_to_events("<Esc>")),
+        create_plugin_action!(PluginQuit),
+    );
+    keymap.insert(
+        (Mode::PopUp, convert_str_to_events("<BS>")),
+        create_plugin_action!(PluginDropSearchChar),
+    );
+    keymap.insert(
+        (Mode::PopUp, convert_str_to_events("<CR>")),
+        create_plugin_action!(PluginConfirmResult),
+    );
+    keymap
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BasePopUp {

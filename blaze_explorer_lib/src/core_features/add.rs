@@ -1,4 +1,7 @@
-use crate::{command::file_commands::AddDir, plugin::plugin_action::PluginAction};
+use crate::{
+    command::file_commands::AddDir,
+    plugin::{base_popup::get_default_popup_keymap, plugin_action::PluginAction},
+};
 use std::{collections::HashMap, path::PathBuf};
 
 use color_eyre::eyre::Result;
@@ -33,23 +36,6 @@ pub fn open_add_popup(app: &mut App) -> Option<Action> {
     None
 }
 
-fn get_add_popup_keymap() -> HashMap<(Mode, Vec<KeyEvent>), Action> {
-    let mut keymap = HashMap::new();
-    keymap.insert(
-        (Mode::PopUp, convert_str_to_events("<Esc>")),
-        create_plugin_action!(PluginQuit),
-    );
-    keymap.insert(
-        (Mode::PopUp, convert_str_to_events("<BS>")),
-        create_plugin_action!(PluginDropSearchChar),
-    );
-    keymap.insert(
-        (Mode::PopUp, convert_str_to_events("<CR>")),
-        create_plugin_action!(PluginConfirmResult),
-    );
-    keymap
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct AddPopUp {
     pub should_quit: bool,
@@ -65,7 +51,7 @@ impl AddPopUp {
             should_quit: false,
             query,
             current_dir: dir,
-            keymap: get_add_popup_keymap(),
+            keymap: get_default_popup_keymap(),
         }
     }
 }
