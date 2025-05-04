@@ -1,13 +1,10 @@
-use crate::plugin::plugin_action::PluginAction;
+use crate::plugin::{
+    base_popup::{BasePopUp, GenericPopUp, Popupbehaviour},
+    plugin_action::PluginAction,
+};
 use std::{collections::HashMap, path::PathBuf};
 
-use color_eyre::eyre::Result;
-use ratatui::{
-    Frame,
-    crossterm::event::KeyEvent,
-    layout::{Constraint, Rect},
-    widgets::{Block, Borders, Clear, Paragraph},
-};
+use ratatui::crossterm::event::KeyEvent;
 
 use crate::{
     action::Action,
@@ -15,28 +12,46 @@ use crate::{
     command::file_commands::RenameActive,
     create_plugin_action,
     input_machine::input_machine_helpers::convert_str_to_events,
-    line_entry::LineEntry,
     mode::Mode,
     plugin::{
         plugin_commands::{PluginConfirmResult, PluginDropSearchChar, PluginQuit},
-        plugin_helpers::get_push_on_char_action,
         plugin_popup::PluginPopUp,
     },
     query::Query,
-    tools::center_rect,
 };
 pub fn open_rename_popup(app: &mut App) -> Option<Action> {
     let mut ctx = app.get_app_context();
-    let dir = match ctx.explorer_manager.select_directory() {
-        Some(dir) => dir.clone(),
-        //Unable to set the selected to None
-        None => {
-            panic!("Could not get the starting directory from the explorer manager")
-        }
-    };
-    let popup = Box::new(RenamePopUp::new(dir));
-    app.attach_popup(popup);
+    let dir = ctx.explorer_manager.select_directory().unwrap().clone();
 
+    let initial_name = dir
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .split('.')
+        .next()
+        .unwrap()
+        .to_string();
+    let extension = dir
+        .extension()
+        .map_or("".to_string(), |e| format!(".{}", e.to_str().unwrap()));
+
+    let query = Query::new_with_contents("".to_string(), initial_name.clone(), extension.clone());
+    let keymap = get_rename_popup_keymap();
+
+    let base = BasePopUp {
+        should_quit: false,
+        query,
+        keymap,
+    };
+
+    let behaviour = RenameBehaviour {
+        initial_path: dir,
+        initial_name,
+        extension,
+    };
+
+    app.attach_popup(Box::new(GenericPopUp { base, behaviour }));
     None
 }
 
@@ -58,123 +73,57 @@ fn get_rename_popup_keymap() -> HashMap<(Mode, Vec<KeyEvent>), Action> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct RenamePopUp {
-    pub should_quit: bool,
-    query: Query,
+struct RenameBehaviour {
     initial_path: PathBuf,
     initial_name: String,
     extension: String,
-    keymap: HashMap<(Mode, Vec<KeyEvent>), Action>,
 }
 
-impl RenamePopUp {
-    pub fn new(dir: PathBuf) -> Self {
-        let extension = match dir.extension() {
-            Some(path) => format!(".{}", path.to_str().unwrap()),
-            None => "".to_string(),
-        };
-        let initial_name = dir.file_name().unwrap().to_str().unwrap().to_string();
-        let initial_name_without_extension = initial_name.split(".").next().unwrap();
-        let query = Query::new_with_contents(
-            "".to_string(),
-            initial_name_without_extension.to_string(),
-            extension.clone(),
-        );
-        Self {
-            should_quit: false,
-            query,
-            initial_path: dir,
-            initial_name,
-            extension,
-            keymap: get_rename_popup_keymap(),
-        }
-    }
-}
-
-impl PluginPopUp for RenamePopUp {
-    fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let query_area = center_rect(
-            frame.size(),
-            Constraint::Percentage(50),
-            Constraint::Length(3),
-        );
-        let title = format!("Rename {}", self.initial_name);
-        let query_block = Block::default().borders(Borders::ALL).title(title);
-        let rename_field_output = self.get_search_query();
-        let query_paragraph = Paragraph::new(rename_field_output);
-        let query_paragraph = query_paragraph.block(query_block);
-
-        frame.render_widget(Clear, query_area);
-        frame.render_widget(query_paragraph, query_area);
-
-        Ok(())
+impl Popupbehaviour for RenameBehaviour {
+    fn popup_title(&self) -> String {
+        format!("Rename {}", self.initial_name)
     }
 
-    fn push_search_char(&mut self, ch: char) -> Option<Action> {
-        self.query.append_char(ch);
-        None
-    }
-
-    fn drop_search_char(&mut self) -> Option<Action> {
-        self.query.drop_char();
-        None
-    }
-
-    fn quit(&mut self) {
-        self.should_quit = true;
-    }
-
-    fn should_quit(&self) -> bool {
-        self.should_quit
-    }
-
-    fn erase_text(&mut self) -> Option<Action> {
-        self.query.clear_contents();
-        None
-    }
-
-    fn get_search_query(&self) -> String {
-        self.query.get_contents()
+    fn confirm_action(&self, query: String) -> Action {
+        create_plugin_action!(RenameActive, self.initial_path.clone(), query)
     }
 
     fn display_details(&self) -> String {
         format!("Rename {}{}", self.initial_name, self.extension)
     }
-
-    fn get_own_keymap(&self) -> HashMap<(Mode, Vec<KeyEvent>), Action> {
-        self.keymap.clone()
-    }
-
-    fn get_default_action(&self) -> Box<fn(KeyEvent) -> Option<Action>> {
-        Box::new(get_push_on_char_action)
-    }
-    fn confirm_result(&mut self) -> Option<Action> {
-        self.quit();
-        Some(create_plugin_action!(
-            RenameActive,
-            self.initial_path.clone(),
-            self.get_search_query()
-        ))
-    }
 }
-
 #[cfg(test)]
 mod tests {
-    use std::env;
 
     use crate::testing_utils::create_custom_testing_folder;
 
     use super::*;
+
     #[test]
     fn test_open_rename_popup() {
+        let test_folder = create_custom_testing_folder(vec!["file.txt"]).unwrap();
+        let initial_path = test_folder.root_dir.path().join("file.txt");
+
         let mut app = App::new().unwrap();
-        let test_folder = create_custom_testing_folder(vec!["folder_1/"]).unwrap();
-        let root_dir = test_folder.root_dir.path().to_path_buf();
-        app.update_path(root_dir.clone(), Some("folder_1".to_string()));
-        open_rename_popup(&mut app);
-        let expected_dir = root_dir.join("folder_1");
-        let expected_popup: Box<dyn PluginPopUp> = Box::new(RenamePopUp::new(expected_dir));
-        let actual_popup = app.popup.unwrap();
-        assert!(expected_popup == actual_popup.clone());
+        app.explorer_manager.show_in_folder(initial_path.clone());
+        let action = open_rename_popup(&mut app);
+
+        let query = Query::new_with_contents("".into(), "file".into(), ".txt".into());
+        let keymap = get_rename_popup_keymap();
+        let behaviour = RenameBehaviour {
+            initial_path: initial_path.clone(),
+            initial_name: "file".into(),
+            extension: ".txt".into(),
+        };
+        let base = BasePopUp {
+            should_quit: false,
+            query,
+            keymap,
+        };
+        let expected = Box::new(GenericPopUp { base, behaviour }) as Box<dyn PluginPopUp>;
+        let attached_popup = app.popup.unwrap();
+
+        assert!(attached_popup == expected);
+        assert!(action.is_none());
     }
 }

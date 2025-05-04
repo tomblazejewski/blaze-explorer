@@ -1,11 +1,16 @@
 use std::{collections::HashMap, fmt::Debug};
 
 use color_eyre::eyre::Result;
-use ratatui::{Frame, crossterm::event::KeyEvent, layout::Rect};
+use ratatui::{
+    Frame,
+    crossterm::event::KeyEvent,
+    layout::{Constraint, Rect},
+    widgets::{Block, Borders, Paragraph},
+};
 
-use crate::{action::Action, line_entry::LineEntry, mode::Mode, query::Query};
+use crate::{action::Action, line_entry::LineEntry, mode::Mode, query::Query, tools::center_rect};
 
-use super::plugin_popup::PluginPopUp;
+use super::{plugin_helpers::get_push_on_char_action, plugin_popup::PluginPopUp};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BasePopUp {
@@ -14,31 +19,28 @@ pub struct BasePopUp {
     pub keymap: HashMap<(Mode, Vec<KeyEvent>), Action>,
 }
 
-pub trait PopupBehavior {
+pub trait Popupbehaviour {
     fn popup_title(&self) -> String;
     fn confirm_action(&self, query: String) -> Action;
     fn display_details(&self) -> String;
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct GenericPopUp<T: PopupBehavior> {
+pub struct GenericPopUp<T: Popupbehaviour> {
     pub base: BasePopUp,
-    pub behavior: T,
+    pub behaviour: T,
 }
 
-impl<T: PopupBehavior + Clone + Debug + PartialEq + 'static> PluginPopUp for GenericPopUp<T> {
+impl<T: Popupbehaviour + Clone + Debug + PartialEq + 'static> PluginPopUp for GenericPopUp<T> {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let query_area = crate::tools::center_rect(
+        let query_area = center_rect(
             frame.size(),
-            ratatui::layout::Constraint::Percentage(50),
-            ratatui::layout::Constraint::Length(3),
+            Constraint::Percentage(50),
+            Constraint::Length(3),
         );
-        let title = self.behavior.popup_title();
-        let query_block = ratatui::widgets::Block::default()
-            .borders(ratatui::widgets::Borders::ALL)
-            .title(title);
-        let query_paragraph =
-            ratatui::widgets::Paragraph::new(self.base.query.get_contents()).block(query_block);
+        let title = self.behaviour.popup_title();
+        let query_block = Block::default().borders(Borders::ALL).title(title);
+        let query_paragraph = Paragraph::new(self.base.query.get_contents()).block(query_block);
 
         frame.render_widget(ratatui::widgets::Clear, query_area);
         frame.render_widget(query_paragraph, query_area);
@@ -73,7 +75,7 @@ impl<T: PopupBehavior + Clone + Debug + PartialEq + 'static> PluginPopUp for Gen
     }
 
     fn display_details(&self) -> String {
-        self.behavior.display_details()
+        self.behaviour.display_details()
     }
 
     fn get_own_keymap(&self) -> HashMap<(Mode, Vec<KeyEvent>), Action> {
@@ -81,11 +83,11 @@ impl<T: PopupBehavior + Clone + Debug + PartialEq + 'static> PluginPopUp for Gen
     }
 
     fn get_default_action(&self) -> Box<fn(KeyEvent) -> Option<Action>> {
-        Box::new(crate::plugin::plugin_helpers::get_push_on_char_action)
+        Box::new(get_push_on_char_action)
     }
 
     fn confirm_result(&mut self) -> Option<Action> {
         self.quit();
-        Some(self.behavior.confirm_action(self.get_search_query()))
+        Some(self.behaviour.confirm_action(self.get_search_query()))
     }
 }
