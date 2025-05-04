@@ -128,7 +128,54 @@ impl Command for RenameActive {
         self.reversible
     }
 }
+#[derive(Clone, PartialEq, Debug)]
+pub struct CopyRenameActive {
+    pub first_path: PathBuf,
+    pub second_path: PathBuf,
+    reversible: bool,
+}
 
+/// Rename currently selected file
+impl CopyRenameActive {
+    pub fn new(first_path: PathBuf, new_name: String) -> Self {
+        let second_path = first_path.parent().unwrap().join(new_name);
+        Self {
+            first_path,
+            second_path,
+            reversible: false,
+        }
+    }
+}
+
+impl Command for CopyRenameActive {
+    fn execute(&mut self, _app: &mut App) -> Option<Action> {
+        match copy_recursively(&self.first_path, &self.second_path) {
+            Ok(_) => {
+                self.reversible = true;
+                None
+            }
+            Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                "Failed to copy {}: {}",
+                self.first_path.display(),
+                e
+            )))),
+        }
+    }
+
+    fn undo(&mut self, _app: &mut App) -> Option<Action> {
+        match fs::remove_dir_all(self.second_path.clone()) {
+            Ok(_) => None,
+            Err(e) => Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                "Failed to remove the copy {}: {}",
+                self.second_path.display(),
+                e
+            )))),
+        }
+    }
+    fn is_reversible(&self) -> bool {
+        self.reversible
+    }
+}
 #[derive(Clone, PartialEq, Debug)]
 pub struct CopyToClipboard {
     affected_files: Option<Vec<PathBuf>>,
@@ -360,6 +407,27 @@ mod tests {
         assert!(!path_to_rename.exists());
         for file_path in testing_folder.file_list.iter() {
             assert!(!file_path.exists());
+        }
+        assert!(path_to_rename.parent().unwrap().join(&new_name).exists());
+        assert!(rename_active.is_reversible());
+        rename_active.undo(&mut app);
+        assert!(path_to_rename.exists());
+        for file_path in testing_folder.file_list.iter() {
+            assert!(file_path.exists());
+        }
+        assert!(!path_to_rename.parent().unwrap().join(&new_name).exists());
+    }
+    #[test]
+    fn test_copy_rename_active() {
+        let mut app = App::new().unwrap();
+        let testing_folder = create_testing_folder().unwrap();
+        let path_to_rename = testing_folder.root_dir.path().to_path_buf();
+        let new_name = "new_folder_name".to_string();
+        let mut rename_active = CopyRenameActive::new(path_to_rename.clone(), new_name.clone());
+        rename_active.execute(&mut app);
+        assert!(path_to_rename.exists());
+        for file_path in testing_folder.file_list.iter() {
+            assert!(file_path.exists());
         }
         assert!(path_to_rename.parent().unwrap().join(&new_name).exists());
         assert!(rename_active.is_reversible());
