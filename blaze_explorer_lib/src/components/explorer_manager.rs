@@ -207,93 +207,57 @@ impl ExplorerManager {
         }
     }
 
-    pub fn move_focus(&mut self, focus: SplitDirection) {
-        let current_node = self.explorers.get_mut(&self.focused_id).unwrap();
-        let node_areas = self.last_layout.clone();
-        let rect = node_areas.get(&self.focused_id).unwrap();
+    pub fn move_focus(&mut self, direction: SplitDirection) {
+        if let Some(target_id) = self.get_neighbouring_node(direction) {
+            let current_node = self.explorers.get_mut(&self.focused_id).unwrap();
+            if let Split::Single(table) = &mut current_node.split {
+                table.unfocus();
+            }
+            current_node.focused = false;
+
+            let focused_node = self.explorers.get_mut(&target_id).unwrap();
+            if let Split::Single(table) = &mut focused_node.split {
+                table.focus();
+            }
+            focused_node.focused = true;
+            self.focused_id = target_id;
+        }
+    }
+
+    fn get_neighbouring_node(&self, direction: SplitDirection) -> Option<usize> {
+        let rect = self.last_layout.get(&self.focused_id)?;
         let (current_x, current_y) = (rect.x, rect.y);
-        let focusable = match focus {
-            SplitDirection::Up => node_areas
-                .iter()
-                .filter(|(_, rect)| rect.y < current_y)
-                .map(|(id, rect)| {
-                    (
-                        *id,
-                        calculate_distance(
-                            current_x.into(),
-                            current_y.into(),
-                            rect.x.into(),
-                            rect.y.into(),
-                        ),
-                    )
-                })
-                .collect::<HashMap<usize, f32>>(),
-            SplitDirection::Down => node_areas
-                .iter()
-                .filter(|(_, rect)| rect.y > current_y)
-                .map(|(id, rect)| {
-                    (
-                        *id,
-                        calculate_distance(
-                            current_x.into(),
-                            current_y.into(),
-                            rect.x.into(),
-                            rect.y.into(),
-                        ),
-                    )
-                })
-                .collect::<HashMap<usize, f32>>(),
-            SplitDirection::Left => node_areas
-                .iter()
-                .filter(|(_, rect)| rect.x < current_x)
-                .map(|(id, rect)| {
-                    (
-                        *id,
-                        calculate_distance(
-                            current_x.into(),
-                            current_y.into(),
-                            rect.x.into(),
-                            rect.y.into(),
-                        ),
-                    )
-                })
-                .collect::<HashMap<usize, f32>>(),
-            SplitDirection::Right => node_areas
-                .iter()
-                .filter(|(_, rect)| rect.x > current_x)
-                .map(|(id, rect)| {
-                    (
-                        *id,
-                        calculate_distance(
-                            current_x.into(),
-                            current_y.into(),
-                            rect.x.into(),
-                            rect.y.into(),
-                        ),
-                    )
-                })
-                .collect::<HashMap<usize, f32>>(),
-        };
 
-        if focusable.is_empty() {
-            return;
-        }
-
-        let id = *focusable
+        let candidates: HashMap<usize, f32> = self
+            .last_layout
             .iter()
-            .min_by(|a, b| a.1.partial_cmp(b.1).unwrap())
-            .unwrap()
-            .0;
-        if let Split::Single(table) = &mut current_node.split {
-            table.unfocus();
-        }
-        current_node.focused = false;
-        let focused_node = self.explorers.get_mut(&id).unwrap();
-        if let Split::Single(table) = &mut focused_node.split {
-            table.focus();
-        }
-        focused_node.focused = true;
-        self.focused_id = id;
+            .filter_map(|(id, r)| {
+                let relevant = match direction {
+                    SplitDirection::Up => r.y < current_y,
+                    SplitDirection::Down => r.y > current_y,
+                    SplitDirection::Left => r.x < current_x,
+                    SplitDirection::Right => r.x > current_x,
+                };
+                if relevant {
+                    Some((
+                        *id,
+                        calculate_distance(
+                            current_x.into(),
+                            current_y.into(),
+                            r.x.into(),
+                            r.y.into(),
+                        ),
+                    ))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        candidates
+            .into_iter()
+            .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+            .map(|(id, _)| id)
     }
 
     pub fn update_path(&mut self, path: PathBuf, filename: Option<String>) {
@@ -448,5 +412,64 @@ impl ExplorerNode {
         let mut node_1 = ExplorerNode::new_with_explorer(id_1, explorer_table);
         node_1.parent = ParentRelationship::SomeParent(self.id, 1);
         (node_0, node_1)
+    }
+}
+
+mod tests {
+    use super::*;
+
+    use ratatui::Frame;
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+    use ratatui::layout::Rect;
+    use ratatui::prelude::*;
+
+    /// Trait to allow ExplorerManager to draw itself in a test environment
+    pub trait DrawableTest {
+        fn draw_test(&mut self, width: u16, height: u16);
+    }
+    impl DrawableTest for ExplorerManager {
+        fn draw_test(&mut self, width: u16, height: u16) {
+            let backend = TestBackend::new(width, height);
+            let mut terminal = Terminal::new(backend).unwrap();
+            terminal
+                .draw(|frame: &mut Frame| {
+                    let area = Rect::new(0, 0, width, height);
+                    self.draw(frame, area, vec![]);
+                })
+                .unwrap();
+        }
+    }
+    #[test]
+    fn test_get_neighbouring_node() {
+        let mut manager = ExplorerManager::new();
+        manager.split_horizontally_action();
+        // should be split in top and bottom now and focused on bottom
+        // ids: 1, 2, focused on 2
+        manager.split_vertically_action();
+        // should be split in three now - top, bottom left, bottom right, and focused on bottom right
+        // ids: 1, 3, 4, focused on 4
+        manager.split_horizontally_action();
+        // should be split in four now - top, bottom left, bottom right top, bottom right
+        // bottom
+        // ids: 1, 3, 5, 6 focused on 6
+        // Need to call manager.draw() here - in order to create layout
+        manager.draw_test(80, 24);
+        assert_eq!(manager.focused_id, 6);
+        assert_eq!(manager.get_neighbouring_node(SplitDirection::Up), Some(5));
+        assert_eq!(manager.get_neighbouring_node(SplitDirection::Down), None);
+        assert_eq!(manager.get_neighbouring_node(SplitDirection::Left), Some(3));
+        assert_eq!(manager.get_neighbouring_node(SplitDirection::Right), None);
+    }
+
+    #[test]
+    fn test_move_focus_right() {
+        let mut manager = ExplorerManager::new();
+        manager.split_vertically_action(); // now IDs 1 and 2, focused on 2
+        manager.draw_test(80, 24); // ensures last_layout is populated
+
+        assert_eq!(manager.focused_id, 2);
+        manager.move_focus(SplitDirection::Left);
+        assert_eq!(manager.focused_id, 1);
     }
 }
