@@ -6,7 +6,10 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::{
     action::{Action, AppAction, CommandAction, ExplorerAction, TextAction},
-    core_features::rename::open_rename_popup,
+    core_features::{
+        add::open_add_popup,
+        rename::{open_copy_rename_popup, open_rename_popup},
+    },
     custom_action,
     function_helpers::{pull_current_branch, push_current_branch},
     input_machine::{InputMachine, KeyMapNode, KeyProcessingResult},
@@ -175,6 +178,14 @@ pub fn default_key_map() -> KeyMapNode<Action> {
     root.add_sequence(
         vec![KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)],
         custom_action!(open_rename_popup),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('R'), KeyModifiers::NONE)],
+        custom_action!(open_copy_rename_popup),
+    );
+    root.add_sequence(
+        vec![KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE)],
+        custom_action!(open_add_popup),
     );
     root.add_sequence(
         vec![

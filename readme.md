@@ -20,7 +20,9 @@ Currently under development and unstable.
 | `dd`          | Delete selected item                                                          |
 | `yy`          | Copy selected item to clipboard                                               |
 | `p`           | Paste from clipboard                                                          |
+| `a`           | Add new item                                                                  |
 | `r`           | Rename selected item                                                          |
+| `R`           | Copy and rename selected item                                                 |
 | `u`           | Undo last action (delete/rename)                                              |
 | `<C-r>`       | Redo last action (delete/rename)                                              |
 | `n`           | Next search result                                                            |
