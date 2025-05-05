@@ -5,15 +5,23 @@ use crate::{
         plugin_action::PluginAction,
     },
 };
-use std::{collections::HashMap, path::PathBuf};
-
-use ratatui::crossterm::event::KeyEvent;
+use std::path::PathBuf;
 
 use crate::{
     action::Action, app::App, command::file_commands::RenameActive, create_plugin_action,
     query::Query,
 };
 
+/// Open a popup for renaming a file
+///
+/// # Arguments
+///
+/// * `app` - The app to attach the popup to
+/// * `copy` - Whether to copy the file or rename in place
+///
+/// # Returns
+///
+/// * `Option<Action>`
 pub fn open_generic_rename_popup(app: &mut App, copy: bool) -> Option<Action> {
     let mut ctx = app.get_app_context();
     let dir = ctx.explorer_manager.select_directory().unwrap().clone();
@@ -50,14 +58,18 @@ pub fn open_generic_rename_popup(app: &mut App, copy: bool) -> Option<Action> {
     app.attach_popup(Box::new(GenericPopUp { base, behaviour }));
     None
 }
+
+/// Open a popup for renaming a file. Renames in place
 pub fn open_rename_popup(app: &mut App) -> Option<Action> {
     open_generic_rename_popup(app, false)
 }
 
+/// Open a popup for renaming a file. Renames a new copy
 pub fn open_copy_rename_popup(app: &mut App) -> Option<Action> {
     open_generic_rename_popup(app, true)
 }
 
+/// Behaviour for the rename popup
 #[derive(Debug, Clone, PartialEq)]
 struct RenameBehaviour {
     initial_path: PathBuf,

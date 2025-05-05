@@ -38,6 +38,14 @@ pub fn get_default_popup_keymap() -> HashMap<(Mode, Vec<KeyEvent>), Action> {
     keymap
 }
 
+/// Represents the base functionality of a popup or a plugin/functionality
+///
+/// # Fields
+///
+/// - should_quit: bool
+/// - query: Query
+/// - keymap: HashMap<(Mode, Vec<KeyEvent>), Action>
+///
 #[derive(Debug, Clone, PartialEq)]
 pub struct BasePopUp {
     pub should_quit: bool,
@@ -45,12 +53,14 @@ pub struct BasePopUp {
     pub keymap: HashMap<(Mode, Vec<KeyEvent>), Action>,
 }
 
+/// Represents the behaviour of a popup - its resulting action and how it's displayed.
 pub trait Popupbehaviour {
     fn popup_title(&self) -> String;
     fn confirm_action(&self, query: String) -> Action;
     fn display_details(&self) -> String;
 }
 
+/// Generic popup encapsulating a popup behaviour and display details.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GenericPopUp<T: Popupbehaviour> {
     pub base: BasePopUp,

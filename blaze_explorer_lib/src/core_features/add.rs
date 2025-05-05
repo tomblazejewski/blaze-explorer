@@ -16,14 +16,9 @@ use crate::{
     action::Action,
     app::App,
     create_plugin_action,
-    input_machine::input_machine_helpers::convert_str_to_events,
     line_entry::LineEntry,
     mode::Mode,
-    plugin::{
-        plugin_commands::{PluginConfirmResult, PluginDropSearchChar, PluginQuit},
-        plugin_helpers::get_push_on_char_action,
-        plugin_popup::PluginPopUp,
-    },
+    plugin::{plugin_helpers::get_push_on_char_action, plugin_popup::PluginPopUp},
     query::Query,
     tools::center_rect,
 };
@@ -36,6 +31,7 @@ pub fn open_add_popup(app: &mut App) -> Option<Action> {
     None
 }
 
+/// Popup for adding a new directory
 #[derive(Debug, Clone, PartialEq)]
 pub struct AddPopUp {
     pub should_quit: bool,
