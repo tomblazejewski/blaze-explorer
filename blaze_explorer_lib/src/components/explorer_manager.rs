@@ -26,6 +26,7 @@ pub enum Split {
     Single(ExplorerTable),
 }
 
+#[derive(Debug, Clone, PartialEq, Hash, Eq)]
 pub enum SplitDirection {
     Up,
     Down,
@@ -224,7 +225,7 @@ impl ExplorerManager {
         }
     }
 
-    fn get_neighbouring_node(&self, direction: SplitDirection) -> Option<usize> {
+    pub fn get_neighbouring_node(&self, direction: SplitDirection) -> Option<usize> {
         let rect = self.last_layout.get(&self.focused_id)?;
         let (current_x, current_y) = (rect.x, rect.y);
 
