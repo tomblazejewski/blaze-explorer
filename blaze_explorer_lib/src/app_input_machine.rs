@@ -283,6 +283,15 @@ pub fn default_key_map() -> KeyMapNode<Action> {
         Action::AppAct(AppAction::ExecuteFunction(Box::new(pull_current_branch))),
     );
 
+    root.add_sequence(
+        vec![
+            KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE),
+        ],
+        Action::ExplorerAct(ExplorerAction::ToggleToFavourites),
+    );
+
     root
 }
 
