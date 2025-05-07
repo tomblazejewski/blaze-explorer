@@ -1,5 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 use std::env::set_current_dir;
+use std::error::Error;
 use std::fs;
 use std::io::{Stdout, stdout};
 use std::path::{self, PathBuf};
@@ -56,6 +57,20 @@ fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
     areas
 }
 
+/// Create a folder dedicated for app cache
+fn create_project_dirs() -> Result<PathBuf, Box<dyn Error>> {
+    //FIXME: test
+    let project_dir = get_project_dir();
+    let cache_dir = project_dir.cache_dir();
+    let data_dir = project_dir.data_dir();
+    if !cache_dir.exists() {
+        fs::create_dir_all(&cache_dir)?;
+    }
+    if !data_dir.exists() {
+        fs::create_dir_all(&data_dir)?;
+    }
+    Ok(cache_dir.to_path_buf())
+}
 #[derive(Debug)]
 pub struct App {
     pub terminal: Terminal<CrosstermBackend<Stdout>>,
@@ -77,6 +92,12 @@ pub struct App {
 }
 impl App {
     pub fn new() -> Result<Self> {
+        match create_project_dirs() {
+            Ok(_) => {}
+            Err(e) => {
+                println!("Error creating cache directory: {}", e);
+            }
+        }
         Ok(Self {
             terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
             action_list: VecDeque::new(),
@@ -435,14 +456,24 @@ impl App {
         }
     }
 
-    /// Executed only when the app really intends to quit
-    pub fn destruct(&self) -> Option<String> {
+    pub fn remove_cache(&self) -> Option<String> {
         let project_dir = get_project_dir();
         let cache_dir = project_dir.cache_dir();
-        match fs::remove_dir_all(cache_dir) {
-            Ok(_) => None,
-            Err(e) => Some(format!("Failed to delete cache dir: {}", e)),
+        if cache_dir.exists() {
+            match fs::remove_dir_all(cache_dir) {
+                Ok(_) => None,
+                Err(e) => Some(format!("Failed to delete cache dir: {}", e)),
+            }
+        } else {
+            None
         }
+    }
+
+    /// Executed only when the app really intends to quit
+    pub fn destruct(&self) -> Option<String> {
+        //FIXME: return all errors
+        self.config.save_to_default_location().unwrap();
+        self.remove_cache()
     }
 }
 
@@ -532,12 +563,24 @@ mod tests {
 
     #[ignore]
     #[test]
-    fn test_destruct_app() {
+    fn test_remove_cache() {
+        let app = App::new().unwrap();
         let project_dir = get_project_dir();
         let cache_dir = project_dir.cache_dir();
         let random_file = cache_dir.join("test.txt");
         fs::File::create(random_file).unwrap();
+        let _ = app.remove_cache();
+        assert!(!cache_dir.exists());
+    }
+
+    #[ignore]
+    #[test]
+    fn test_destruct_app() {
         let app = App::new().unwrap();
+        let project_dir = get_project_dir();
+        let cache_dir = project_dir.cache_dir();
+        let random_file = cache_dir.join("test.txt");
+        fs::File::create(random_file).unwrap();
         let _ = app.destruct();
         assert!(!cache_dir.exists());
     }

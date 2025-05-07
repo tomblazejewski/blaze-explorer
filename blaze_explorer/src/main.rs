@@ -56,18 +56,10 @@ fn collect_libs() -> HashMap<String, Rc<Library>> {
     lib_map
 }
 
-/// Create a folder dedicated for app cache
-fn create_cache_dir() -> Result<PathBuf, Box<dyn Error>> {
-    let project_dir = get_project_dir();
-    let cache_dir = project_dir.cache_dir();
-    let _ = fs::create_dir_all(&cache_dir);
-    Ok(cache_dir.to_path_buf())
-}
 fn main() -> Result<(), Box<dyn Error>> {
     initialize_logging()?;
     let lib_map = collect_libs();
     {
-        let _ = create_cache_dir()?;
         let mut app = App::new().unwrap();
         let plugins = fetch_plugins(&lib_map);
         app.attach_plugins(&plugins);

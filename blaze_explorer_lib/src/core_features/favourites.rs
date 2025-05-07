@@ -51,6 +51,10 @@ impl Config {
             self.add_favourite(path);
         }
     }
+    pub fn save_to_default_location(&self) -> std::io::Result<()> {
+        let config_dir = get_project_dir().data_dir().join("config.json");
+        self.save_to_file(config_dir)
+    }
 }
 
 impl Default for Config {
