@@ -38,7 +38,7 @@ pub fn create_backup_map(files: Vec<PathBuf>) -> HashMap<PathBuf, PathBuf> {
         .map(|file_path| (file_path, get_backup_dir(false)))
         .collect::<HashMap<PathBuf, PathBuf>>()
 }
-pub fn join_paths(path_list: Vec<PathBuf>, new_base: &PathBuf) -> Vec<PathBuf> {
+pub fn join_paths(path_list: Vec<PathBuf>, new_base: &Path) -> Vec<PathBuf> {
     path_list
         .iter()
         .map(|path| {
@@ -178,7 +178,7 @@ mod tests {
             target_dir.path().join("file2.txt"),
             target_dir.path().join("file3.txt"),
         ];
-        let resulting_file_list = join_paths(file_list, &target_dir.path().to_path_buf());
+        let resulting_file_list = join_paths(file_list, &target_dir.path());
         assert_eq!(resulting_file_list, expected_file_list);
         Ok(())
     }

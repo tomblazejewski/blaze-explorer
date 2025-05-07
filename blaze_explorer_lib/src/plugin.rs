@@ -6,11 +6,11 @@ use ratatui::crossterm::event::KeyEvent;
 
 use crate::{action::Action, app::App};
 
+pub mod base_popup;
 pub mod plugin_action;
 pub mod plugin_commands;
 pub mod plugin_helpers;
 pub mod plugin_popup;
-
 fn build_keymap(
     functionality_map: HashMap<String, Action>,
     bindings_map: HashMap<(Mode, Vec<KeyEvent>), String>,
