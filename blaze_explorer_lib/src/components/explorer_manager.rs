@@ -60,6 +60,15 @@ impl ExplorerManager {
         }
     }
 
+    pub fn get_table_by_id(&self, id: usize) -> Option<&ExplorerTable> {
+        let node = self.explorers.get(&id)?;
+        if let Split::Single(table) = &node.split {
+            Some(table)
+        } else {
+            None
+        }
+    }
+
     pub fn get_new_id(&mut self) -> usize {
         let new_id = self.next_id;
         self.next_id += 1;
@@ -472,5 +481,20 @@ mod tests {
         assert_eq!(manager.focused_id, 2);
         manager.move_focus(SplitDirection::Left);
         assert_eq!(manager.focused_id, 1);
+    }
+
+    #[test]
+    fn test_get_table_by_id() {
+        let mut manager = ExplorerManager::new();
+        manager.split_horizontally_action(); // now IDs 1 and 2, focused on 2
+        let table_0 = manager.get_table_by_id(0);
+        let table_1 = manager.get_table_by_id(1);
+        let table_2 = manager.get_table_by_id(2);
+        let table_3 = manager.get_table_by_id(3);
+
+        assert!(table_0.is_none());
+        assert!(table_1.is_some());
+        assert!(table_2.is_some());
+        assert!(table_3.is_none());
     }
 }
