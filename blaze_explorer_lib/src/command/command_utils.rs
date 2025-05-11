@@ -32,6 +32,47 @@ pub fn get_backup_dir(create: bool) -> PathBuf {
     path
 }
 
+pub fn create_file_move_map(
+    paths_to_copy: &Vec<PathBuf>,
+    new_base: &Path,
+) -> HashMap<PathBuf, PathBuf> {
+    paths_to_copy
+        .clone()
+        .into_iter()
+        .zip(join_paths(paths_to_copy.clone(), new_base))
+        .collect::<HashMap<PathBuf, PathBuf>>()
+}
+
+/// Move the files from the source directory to the target directory according to the input HashMap
+/// containing source and target address.
+pub fn move_recursively_from_map(
+    move_map: &HashMap<PathBuf, PathBuf>,
+    should_delete: bool,
+) -> io::Result<()> {
+    for (source_path, target_path) in move_map.iter() {
+        match copy_recursively(source_path, target_path) {
+            Ok(_) => {
+                if should_delete {
+                    let func = match source_path.is_dir() {
+                        true => fs::remove_dir_all,
+                        false => fs::remove_file,
+                    };
+                    match func(source_path) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            return Err(e);
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
+    }
+    Ok(())
+}
+
 pub fn create_backup_map(files: Vec<PathBuf>) -> HashMap<PathBuf, PathBuf> {
     files
         .into_iter()
@@ -113,7 +154,9 @@ mod tests {
 
     use tempdir::TempDir;
 
-    use crate::testing_utils::create_testing_folder;
+    use crate::testing_utils::{
+        TestingFolder, create_custom_testing_folder, create_testing_folder,
+    };
 
     use super::*;
     #[test]
@@ -122,6 +165,57 @@ mod tests {
         assert!(backup_dir.exists());
         let backup_dir = get_backup_dir(false);
         assert!(!backup_dir.exists());
+    }
+
+    fn create_file_move_map_testing() -> (TestingFolder, TestingFolder, HashMap<PathBuf, PathBuf>) {
+        let original_dir = create_custom_testing_folder(vec!["a.txt", "b/", "b/c.csv"]).unwrap();
+
+        let new_dir = create_custom_testing_folder(vec!["d.txt"]).unwrap();
+        let original_root_dir = original_dir.root_dir.path().to_path_buf();
+        let to_move = vec![
+            original_root_dir.join("a.txt"),
+            original_root_dir.join("b/c.csv"),
+        ];
+
+        let file_move_map = create_file_move_map(&to_move, new_dir.root_dir.path());
+
+        (original_dir, new_dir, file_move_map)
+    }
+
+    #[test]
+    fn test_create_file_move_map() {
+        let (original_dir, new_dir, file_move_map) = create_file_move_map_testing();
+        let original_root_dir = original_dir.root_dir.path().to_path_buf();
+        let expected_file_move_map = HashMap::from([
+            (
+                original_root_dir.join("a.txt"),
+                new_dir.root_dir.path().join("a.txt"),
+            ),
+            (
+                original_root_dir.join("b/c.csv"),
+                new_dir.root_dir.path().join("c.csv"),
+            ),
+        ]);
+        assert_eq!(file_move_map, expected_file_move_map);
+    }
+
+    #[test]
+    pub fn test_move_recursively_from_map_delete() {
+        let (original_dir, new_dir, file_move_map) = create_file_move_map_testing();
+        move_recursively_from_map(&file_move_map, true).unwrap();
+        for (original_path, new_path) in file_move_map {
+            assert!(!original_path.exists());
+            assert!(new_path.exists());
+        }
+    }
+    #[test]
+    pub fn test_move_recursively_from_map_delete_false() {
+        let (original_dir, new_dir, file_move_map) = create_file_move_map_testing();
+        move_recursively_from_map(&file_move_map, false).unwrap();
+        for (original_path, new_path) in file_move_map {
+            assert!(original_path.exists());
+            assert!(new_path.exists());
+        }
     }
 
     #[test]

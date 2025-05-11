@@ -1,6 +1,9 @@
 use itertools::Itertools;
 
-use super::command_utils::{copy_recursively, copy_to_clipboard, read_from_clipboard};
+use super::command_utils::{
+    copy_recursively, copy_to_clipboard, create_file_move_map, move_recursively_from_map,
+    read_from_clipboard,
+};
 use crate::command::Command;
 
 use super::command_utils::{create_backup_map, get_backup_dir, join_paths};
@@ -242,6 +245,7 @@ impl Command for PasteFromClipboard {
         // 2. Pasting again - take the paths from [source_files] field of the struct
 
         let (copy_map, should_delete) = match &self.source_files_map {
+            // if the files are taken from backup, they can be removed (use true)
             Some(map) => (map.to_owned(), true),
             None => {
                 //Read from clipboard and join paths
@@ -255,27 +259,18 @@ impl Command for PasteFromClipboard {
                     }
                 };
                 // represents the source file and target file
-                let map = paths_to_copy
-                    .clone()
-                    .into_iter()
-                    .zip(join_paths(paths_to_copy.clone(), &self.current_directory))
-                    .collect::<HashMap<PathBuf, PathBuf>>();
+                let map = create_file_move_map(&paths_to_copy, &self.current_directory);
+                // if these are the original source paths, don't remove them
                 (map, false)
             }
         };
-        for (source_path, target_path) in copy_map.iter() {
-            match copy_recursively(source_path, target_path) {
-                Ok(_) => {
-                    if should_delete {
-                        let _ = fs::remove_dir_all(source_path);
-                    }
-                }
-                Err(e) => {
-                    return Some(Action::AppAct(AppAction::DisplayMessage(format!(
-                        "Error while copying: {:?}",
-                        e
-                    ))));
-                }
+        match move_recursively_from_map(&copy_map, should_delete) {
+            Ok(_) => {}
+            Err(e) => {
+                return Some(Action::AppAct(AppAction::DisplayMessage(format!(
+                    "Error while copying: {:?}",
+                    e
+                ))));
             }
         }
 
