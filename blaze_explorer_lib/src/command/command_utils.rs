@@ -89,16 +89,6 @@ pub fn join_paths(path_list: Vec<PathBuf>, new_base: &Path) -> Vec<PathBuf> {
         .collect::<Vec<PathBuf>>()
 }
 
-pub fn move_recursively(
-    files_to_move: Vec<PathBuf>,
-    destination_path: &PathBuf,
-) -> io::Result<Vec<PathBuf>> {
-    let options = fs_extra::dir::CopyOptions::new();
-    fs_extra::move_items(&files_to_move, &destination_path, &options)
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
-    Ok(join_paths(files_to_move, destination_path))
-}
-
 pub fn copy_to_clipboard(file_paths: Vec<&str>) -> Result<(), clipboard_win::ErrorCode> {
     let _clip = Clipboard::new_attempts(10).expect("Open clipboard");
     empty()?;
@@ -216,38 +206,6 @@ mod tests {
             assert!(original_path.exists());
             assert!(new_path.exists());
         }
-    }
-
-    #[test]
-    fn test_move_recursively() -> io::Result<()> {
-        //test nested folder
-        let original_dir = TempDir::new("original_directory").unwrap();
-        let folder_1 = original_dir.path().join("folder_1");
-        let folder_2 = folder_1.join("folder_2");
-        create_dir_all(folder_2.clone())?;
-        let file_list = vec![
-            original_dir.path().join("file1.txt"),
-            original_dir.path().join("file2.txt"),
-            folder_2.join("file3.txt"),
-        ];
-        for file in &file_list {
-            let mut f = File::create(file)?;
-            f.write_all(b"Hello, world!")?;
-            f.sync_all()?;
-        }
-        let target_dir = TempDir::new("target_dir").unwrap();
-        let expected_file_list = vec![
-            target_dir.path().join("file1.txt"),
-            target_dir.path().join("file2.txt"),
-            target_dir.path().join("file3.txt"),
-        ];
-        let resulting_file_list =
-            move_recursively(file_list, &target_dir.path().to_path_buf()).unwrap();
-        assert_eq!(resulting_file_list, expected_file_list);
-        for file in resulting_file_list.iter() {
-            assert!(file.exists());
-        }
-        Ok(())
     }
 
     #[test]
