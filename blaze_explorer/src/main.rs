@@ -1,5 +1,4 @@
 use blaze_explorer_lib::app::{App, ExitResult};
-use blaze_explorer_lib::command::command_utils::get_project_dir;
 use blaze_explorer_lib::logging::initialize_logging;
 mod plugin_manifest;
 use libloading::Library;
@@ -73,12 +72,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             disable_raw_mode()?;
             match result {
                 Ok(ExitResult::Quit) => {
-                    match app.destruct() {
-                        None => {}
-                        Some(msg) => {
-                            println!("{}", msg);
-                        }
-                    }
+                    let output_message = app.destruct();
+                    println!("{}", output_message);
                     break;
                 }
                 Ok(ExitResult::OpenNeovim(path)) => {

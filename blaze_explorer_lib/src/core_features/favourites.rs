@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use crate::command::command_utils::get_project_dir;
 use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
@@ -50,17 +49,6 @@ impl Config {
         } else {
             self.add_favourite(path);
         }
-    }
-    pub fn save_to_default_location(&self) -> std::io::Result<()> {
-        let config_dir = get_project_dir().data_dir().join("config.json");
-        self.save_to_file(config_dir)
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        let config_dir = get_project_dir().data_dir().join("config.json");
-        Config::load_from_file(config_dir).unwrap_or_else(|_| Config { favourites: vec![] })
     }
 }
 

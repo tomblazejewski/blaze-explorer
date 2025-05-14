@@ -6,6 +6,8 @@ use std::io::{Stdout, stdout};
 use std::path::{self, PathBuf};
 
 use color_eyre::Result;
+use directories::ProjectDirs;
+use fs_extra::dir::create;
 use ratatui::Frame;
 use ratatui::crossterm::event::{Event, KeyEvent};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
@@ -19,7 +21,6 @@ use crate::action::{AppAction, CommandAction, ExplorerAction, get_command};
 use crate::app_context::AppContext;
 use crate::app_input_machine::AppInputMachine;
 use crate::command::Command;
-use crate::command::command_utils::get_project_dir;
 use crate::components::command_line::CommandLine;
 use crate::components::explorer_manager::ExplorerManager;
 use crate::components::explorer_table::explorer_utils::FileConfig;
@@ -56,21 +57,6 @@ fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
 
     areas
 }
-
-/// Create a folder dedicated for app cache
-fn create_project_dirs() -> Result<PathBuf, Box<dyn Error>> {
-    //FIXME: test
-    let project_dir = get_project_dir();
-    let cache_dir = project_dir.cache_dir();
-    let data_dir = project_dir.data_dir();
-    if !cache_dir.exists() {
-        fs::create_dir_all(&cache_dir)?;
-    }
-    if !data_dir.exists() {
-        fs::create_dir_all(&data_dir)?;
-    }
-    Ok(cache_dir.to_path_buf())
-}
 #[derive(Debug)]
 pub struct App {
     pub terminal: Terminal<CrosstermBackend<Stdout>>,
@@ -89,16 +75,11 @@ pub struct App {
     pub key_queue: VecDeque<KeyEvent>,
     pub plugins: HashMap<String, Box<dyn Plugin>>,
     pub config: Config,
+    pub project_dir: ProjectDirs,
 }
 impl App {
-    pub fn new() -> Result<Self> {
-        match create_project_dirs() {
-            Ok(_) => {}
-            Err(e) => {
-                println!("Error creating cache directory: {}", e);
-            }
-        }
-        Ok(Self {
+    pub fn new_with_name(name: String) -> Result<Self, Box<dyn Error>> {
+        let app = Self {
             terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
             action_list: VecDeque::new(),
             should_quit: false,
@@ -114,8 +95,39 @@ impl App {
             current_path: PathBuf::new(),
             key_queue: VecDeque::new(),
             plugins: HashMap::new(),
-            config: Config::default(),
-        })
+            config: Config::new(vec![]),
+            project_dir: ProjectDirs::from("", "", &name).unwrap(),
+        };
+        let mut app = match app.create_project_dirs() {
+            Ok(_) => app,
+            Err(e) => return Err(e),
+        };
+        app.config = Config::load_from_file(app.get_config_path())?;
+        Ok(app)
+    }
+    pub fn new() -> Result<Self, Box<dyn Error>> {
+        Self::new_with_name("blaze_explorer".to_string())
+    }
+
+    pub fn new_test() -> Result<Self, Box<dyn Error>> {
+        Self::new_with_name("blaze_explorer_test".to_string())
+    }
+
+    pub fn get_config_path(&self) -> PathBuf {
+        let config_path = self.project_dir.data_dir().join("config.json");
+        config_path
+    }
+
+    pub fn create_project_dirs(&self) -> Result<PathBuf, Box<dyn Error>> {
+        let cache_dir = self.project_dir.cache_dir();
+        let data_dir = self.project_dir.data_dir();
+        if !cache_dir.exists() {
+            fs::create_dir_all(&cache_dir)?;
+        }
+        if !data_dir.exists() {
+            fs::create_dir_all(&data_dir)?;
+        }
+        Ok(cache_dir.to_path_buf())
     }
 
     pub fn attach_plugins(&mut self, plugins: &HashMap<String, Box<dyn Plugin>>) {
@@ -457,8 +469,7 @@ impl App {
     }
 
     pub fn remove_cache(&self) -> Option<String> {
-        let project_dir = get_project_dir();
-        let cache_dir = project_dir.cache_dir();
+        let cache_dir = self.project_dir.cache_dir();
         if cache_dir.exists() {
             match fs::remove_dir_all(cache_dir) {
                 Ok(_) => None,
@@ -469,11 +480,25 @@ impl App {
         }
     }
 
+    pub fn save_config(&self) -> Option<String> {
+        let config_path = self.get_config_path();
+        match self.config.save_to_file(config_path) {
+            Ok(_) => None,
+            Err(e) => Some(format!("Failed to save config: {}", e)),
+        }
+    }
+
     /// Executed only when the app really intends to quit
-    pub fn destruct(&self) -> Option<String> {
-        //FIXME: return all errors
-        self.config.save_to_default_location().unwrap();
-        self.remove_cache()
+    pub fn destruct(&self) -> String {
+        let funcs = vec![
+            Box::new(App::remove_cache),
+            Box::new(App::save_config) as Box<dyn Fn(&App) -> Option<String>>,
+        ];
+        funcs
+            .into_iter()
+            .filter_map(|f| f(self))
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 }
 
@@ -496,6 +521,7 @@ impl Clone for App {
             key_queue: self.key_queue.clone(),
             plugins: self.plugins.clone(),
             config: self.config.clone(),
+            project_dir: self.project_dir.clone(),
         }
     }
 }
@@ -565,7 +591,7 @@ mod tests {
     #[test]
     fn test_remove_cache() {
         let app = App::new().unwrap();
-        let project_dir = get_project_dir();
+        let project_dir = &app.project_dir;
         let cache_dir = project_dir.cache_dir();
         let random_file = cache_dir.join("test.txt");
         fs::File::create(random_file).unwrap();
@@ -577,7 +603,7 @@ mod tests {
     #[test]
     fn test_destruct_app() {
         let app = App::new().unwrap();
-        let project_dir = get_project_dir();
+        let project_dir = &app.project_dir;
         let cache_dir = project_dir.cache_dir();
         let random_file = cache_dir.join("test.txt");
         fs::File::create(random_file).unwrap();
@@ -596,5 +622,16 @@ mod tests {
         let file_config = app.get_file_config();
         assert_eq!(file_config.favourites, app.config.favourites);
         assert_eq!(file_config.string_sequence, "<cr>a".to_string());
+    }
+
+    #[test]
+    fn test_create_project_dirs() {
+        let app = App::new_test().unwrap();
+        let cache_dir = &app.project_dir.cache_dir();
+        let data_dir = &app.project_dir.data_dir();
+        assert!(cache_dir.exists());
+        assert!(data_dir.exists());
+        fs::remove_dir_all(cache_dir).unwrap();
+        fs::remove_dir_all(data_dir).unwrap();
     }
 }
