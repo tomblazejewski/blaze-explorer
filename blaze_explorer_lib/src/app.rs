@@ -490,6 +490,7 @@ impl App {
 
     /// Executed only when the app really intends to quit
     pub fn destruct(&self) -> String {
+        //TODO: test thsi
         let funcs = vec![
             Box::new(App::remove_cache),
             Box::new(App::save_config) as Box<dyn Fn(&App) -> Option<String>>,
