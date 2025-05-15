@@ -14,12 +14,17 @@ impl Config {
     pub fn new(favourites: Vec<PathBuf>) -> Self {
         Config { favourites }
     }
-    pub fn load_from_file<P: AsRef<Path>>(path: P) -> std::io::Result<Self> {
-        let mut file = File::open(path)?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
-        let config: Config = serde_json::from_str(&contents)?;
-        Ok(config)
+    pub fn try_load_from_file<P: AsRef<Path>>(path: P) -> std::io::Result<Self> {
+        let file = File::open(path);
+        match file {
+            Ok(mut file) => {
+                let mut contents = String::new();
+                file.read_to_string(&mut contents)?;
+                let config: Config = serde_json::from_str(&contents)?;
+                Ok(config)
+            }
+            Err(_) => Ok(Config::new(vec![])),
+        }
     }
 
     pub fn save_to_file<P: AsRef<Path>>(&self, path: P) -> std::io::Result<()> {
@@ -65,7 +70,7 @@ mod tests {
         let config_path = root.join("config.json");
         config.save_to_file(&config_path).unwrap();
 
-        let new_config = Config::load_from_file(&config_path).unwrap();
+        let new_config = Config::try_load_from_file(&config_path).unwrap();
         assert_eq!(new_config.favourites, config.favourites);
     }
 
@@ -83,5 +88,21 @@ mod tests {
         config.remove_favourite("test".into());
         assert_eq!(config.favourites.len(), 1);
         assert!(!config.favourites.contains(&"test".into()));
+    }
+
+    #[test]
+    fn test_try_load_from_file() {
+        let test_dir = create_custom_testing_folder(vec![]).unwrap();
+        let root = test_dir.root_dir.path();
+        let config_path = root.join("config.json");
+        let config = Config::new(vec![]);
+
+        let loaded_config = Config::try_load_from_file(&config_path).unwrap();
+        assert_eq!(loaded_config.favourites, config.favourites);
+
+        let config = Config::new(vec!["test".into(), "test2".into()]);
+        config.save_to_file(&config_path).unwrap();
+        let loaded_config = Config::try_load_from_file(&config_path).unwrap();
+        assert_eq!(loaded_config.favourites, config.favourites);
     }
 }

@@ -102,7 +102,7 @@ impl App {
             Ok(_) => app,
             Err(e) => return Err(e),
         };
-        app.config = Config::load_from_file(app.get_config_path())?;
+        app.config = Config::try_load_from_file(app.get_config_path())?;
         Ok(app)
     }
     pub fn new() -> Result<Self, Box<dyn Error>> {
@@ -122,10 +122,10 @@ impl App {
         let cache_dir = self.project_dir.cache_dir();
         let data_dir = self.project_dir.data_dir();
         if !cache_dir.exists() {
-            fs::create_dir_all(&cache_dir)?;
+            fs::create_dir_all(cache_dir)?;
         }
         if !data_dir.exists() {
-            fs::create_dir_all(&data_dir)?;
+            fs::create_dir_all(data_dir)?;
         }
         Ok(cache_dir.to_path_buf())
     }
