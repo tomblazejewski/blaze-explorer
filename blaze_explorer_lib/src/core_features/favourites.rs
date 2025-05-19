@@ -5,6 +5,7 @@ use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::Path;
 
+/// A struct representing the configuration for the application.
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Config {
     pub favourites: Vec<PathBuf>,
@@ -48,6 +49,7 @@ impl Config {
         self.favourites.retain(|f| *f != path);
     }
 
+    /// Toggle adds/removes a given path from favourites.
     pub fn toggle_favourite(&mut self, path: PathBuf) {
         if self.favourites.contains(&path) {
             self.remove_favourite(path);

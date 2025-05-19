@@ -118,6 +118,7 @@ impl App {
         config_path
     }
 
+    /// Create the project directories if they do not exist
     pub fn create_project_dirs(&self) -> Result<PathBuf, Box<dyn Error>> {
         let cache_dir = self.project_dir.cache_dir();
         let data_dir = self.project_dir.data_dir();
@@ -401,6 +402,7 @@ impl App {
         self.update_path(path, selected);
     }
 
+    /// Get the current snapshot of configuration - dynamic w.r.t. the current sequence
     pub fn get_file_config(&self) -> FileConfig {
         FileConfig::new(
             self.config.favourites.clone(),
