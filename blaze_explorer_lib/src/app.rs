@@ -105,11 +105,11 @@ impl App {
         app.config = Config::try_load_from_file(app.get_config_path())?;
         Ok(app)
     }
-    pub fn new() -> Result<Self, Box<dyn Error>> {
+    pub fn new() -> Result<App, Box<dyn Error>> {
         Self::new_with_name("blaze_explorer".to_string())
     }
 
-    pub fn new_test() -> Result<Self, Box<dyn Error>> {
+    pub fn new_test() -> Result<App, Box<dyn Error>> {
         Self::new_with_name("blaze_explorer_test".to_string())
     }
 
@@ -490,7 +490,6 @@ impl App {
 
     /// Executed only when the app really intends to quit
     pub fn destruct(&self) -> String {
-        //TODO: test thsi
         let funcs = vec![
             Box::new(App::remove_cache),
             Box::new(App::save_config) as Box<dyn Fn(&App) -> Option<String>>,
@@ -547,7 +546,7 @@ impl PartialEq for App {
 
 #[cfg(test)]
 mod tests {
-    use std::env;
+    use std::{env, fs::remove_dir_all};
 
     use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
@@ -600,15 +599,15 @@ mod tests {
         assert!(!cache_dir.exists());
     }
 
-    #[ignore]
     #[test]
     fn test_destruct_app() {
-        let app = App::new().unwrap();
+        let app = App::new_test().unwrap();
         let project_dir = &app.project_dir;
         let cache_dir = project_dir.cache_dir();
         let random_file = cache_dir.join("test.txt");
         fs::File::create(random_file).unwrap();
-        let _ = app.destruct();
+        let msg = app.destruct();
+        assert!(msg.is_empty());
         assert!(!cache_dir.exists());
     }
 
