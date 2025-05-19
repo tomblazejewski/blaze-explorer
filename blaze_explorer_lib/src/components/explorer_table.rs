@@ -658,7 +658,7 @@ impl ExplorerTable {
                     Cell::from(Text::from(sequence_line)),
                 ])],
                 vec![
-                    Constraint::Length(10),
+                    Constraint::Length(1),
                     Constraint::Fill(1),
                     Constraint::Length(10),
                 ],
