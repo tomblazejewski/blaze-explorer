@@ -1,5 +1,4 @@
 use blaze_explorer_lib::app::{App, ExitResult};
-use blaze_explorer_lib::command::command_utils::get_project_dir;
 use blaze_explorer_lib::logging::initialize_logging;
 mod plugin_manifest;
 use libloading::Library;
@@ -56,18 +55,10 @@ fn collect_libs() -> HashMap<String, Rc<Library>> {
     lib_map
 }
 
-/// Create a folder dedicated for app cache
-fn create_cache_dir() -> Result<PathBuf, Box<dyn Error>> {
-    let project_dir = get_project_dir();
-    let cache_dir = project_dir.cache_dir();
-    let _ = fs::create_dir_all(&cache_dir);
-    Ok(cache_dir.to_path_buf())
-}
 fn main() -> Result<(), Box<dyn Error>> {
     initialize_logging()?;
     let lib_map = collect_libs();
     {
-        let _ = create_cache_dir()?;
         let mut app = App::new().unwrap();
         let plugins = fetch_plugins(&lib_map);
         app.attach_plugins(&plugins);
@@ -81,12 +72,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             disable_raw_mode()?;
             match result {
                 Ok(ExitResult::Quit) => {
-                    match app.destruct() {
-                        None => {}
-                        Some(msg) => {
-                            println!("{}", msg);
-                        }
-                    }
+                    let output_message = app.destruct();
+                    println!("{}", output_message);
                     break;
                 }
                 Ok(ExitResult::OpenNeovim(path)) => {

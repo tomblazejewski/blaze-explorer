@@ -3,6 +3,7 @@ use crate::{
         DeleteSplit, DisplayMessage, ExecuteFunction, FocusDown, FocusLeft, FocusRight, FocusUp,
         OpenNeovimHere, ParseCommand, ParseKeyStrokes, RedoDirectory, SplitHorizontally,
         SplitVertically, TerminalCommand, ToggleMark, UndoDirectory, UpdatePlugin, UpdatePopup,
+        explorer_commands::ToggleToFavourites,
         file_commands::{CopyToClipboard, PasteFromClipboard},
         navigation_commands::{
             ChangeDirectory, JumpToEnd, JumpToId, JumpToStart, ParentDirectory, SelectDirectory,
@@ -44,6 +45,7 @@ pub enum ExplorerAction {
     DeleteSplit,
     JumpToId(usize),
     ToggleMark,
+    ToggleToFavourites,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -136,6 +138,9 @@ pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
         Action::ExplorerAct(ExplorerAction::DeleteSplit) => Box::new(DeleteSplit::new(ctx)),
         Action::ExplorerAct(ExplorerAction::JumpToId(id)) => Box::new(JumpToId::new(ctx, id)),
         Action::ExplorerAct(ExplorerAction::ToggleMark) => Box::new(ToggleMark::new(ctx)),
+        Action::ExplorerAct(ExplorerAction::ToggleToFavourites) => {
+            Box::new(ToggleToFavourites::new(ctx))
+        }
         Action::AppAct(AppAction::Quit) => Box::new(Quit::new()),
         Action::AppAct(AppAction::SwitchMode(mode)) => Box::new(SwitchMode::new(ctx, mode)),
         Action::AppAct(AppAction::ConfirmSearchQuery) => Box::new(ConfirmSearchQuery::new()),

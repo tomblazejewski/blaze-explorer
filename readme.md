@@ -37,6 +37,7 @@ Currently under development and unstable.
 | `:`           | Enter command mode                                                            |
 | `v`           | Enter visual mode                                                             |
 | `<space>on`   | Open neovim in current directory (comes back to the app after closing neovim) |
+| `<space>ff`   | Add current folder to favourites                                              |
 
 ## Visual mode
 
