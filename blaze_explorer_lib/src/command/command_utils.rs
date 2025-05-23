@@ -53,11 +53,7 @@ pub fn move_recursively_from_map(
         match copy_recursively(source_path, target_path) {
             Ok(_) => {
                 if should_delete {
-                    let func = match source_path.is_dir() {
-                        true => fs::remove_dir_all,
-                        false => fs::remove_file,
-                    };
-                    match func(source_path) {
+                    match remove_dir_or_file(source_path) {
                         Ok(_) => (),
                         Err(e) => {
                             return Err(e);
@@ -106,6 +102,14 @@ pub fn read_from_clipboard() -> Result<Vec<PathBuf>, clipboard_win::ErrorCode> {
         .map(PathBuf::from)
         .collect::<Vec<PathBuf>>();
     Ok(paths)
+}
+
+pub fn remove_dir_or_file(path: &Path) -> io::Result<()> {
+    if path.is_dir() {
+        fs::remove_dir_all(path)
+    } else {
+        fs::remove_file(path)
+    }
 }
 pub fn copy_recursively(src: &Path, dest: &Path) -> io::Result<()> {
     if src.is_file() {
