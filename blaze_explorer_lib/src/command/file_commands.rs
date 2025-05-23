@@ -36,13 +36,13 @@ impl DeleteSelection {
 impl Command for DeleteSelection {
     /// Assign a backup path for each individual entry selected
     /// Move each of the entries to their designated backup path
-    fn execute(&mut self, _app: &mut App) -> Option<Action> {
+    fn execute(&mut self, app: &mut App) -> Option<Action> {
         if let Some(contents) = &self.affected_files {
             match &self.backup_path {
                 None => {
                     let contents_map = contents
                         .iter()
-                        .map(|f| (f.to_owned(), get_backup_dir(false)))
+                        .map(|f| (f.to_owned(), get_backup_dir(&app.project_dir, false)))
                         .collect::<HashMap<PathBuf, PathBuf>>();
                     self.backup_path = Some(contents_map);
                 }
@@ -275,8 +275,10 @@ impl Command for PasteFromClipboard {
         }
 
         if self.source_files_map.is_none() {
-            let backup_path =
-                create_backup_map(copy_map.values().cloned().collect::<Vec<PathBuf>>());
+            let backup_path = create_backup_map(
+                &app.project_dir,
+                copy_map.values().cloned().collect::<Vec<PathBuf>>(),
+            );
             let inverted_map = backup_path
                 .iter()
                 .map(|(k, v)| (v.to_owned(), k.to_owned()))

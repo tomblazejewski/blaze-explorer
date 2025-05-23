@@ -11,19 +11,16 @@ use clipboard_win::Clipboard;
 
 use directories::ProjectDirs;
 
-pub fn get_project_dir() -> ProjectDirs {
-    ProjectDirs::from("", "", "blaze_explorer").unwrap()
-}
+use crate::app::App;
 
 ///Obtain the backup directory name to be used for storing the data. This is based on the time of
 ///calling the func.
-pub fn get_backup_dir(create: bool) -> PathBuf {
+pub fn get_backup_dir(proj_dir: &ProjectDirs, create: bool) -> PathBuf {
     let mut backup_name = format!(
         "backup_{}",
         Alphanumeric.sample_string(&mut rand::thread_rng(), 16)
     );
     backup_name += ".blzbkp";
-    let proj_dir = get_project_dir();
     let path = proj_dir.cache_dir().join(backup_name);
     //create this directory
     if create {
@@ -69,10 +66,10 @@ pub fn move_recursively_from_map(
     Ok(())
 }
 
-pub fn create_backup_map(files: Vec<PathBuf>) -> HashMap<PathBuf, PathBuf> {
+pub fn create_backup_map(proj_dir: &ProjectDirs, files: Vec<PathBuf>) -> HashMap<PathBuf, PathBuf> {
     files
         .into_iter()
-        .map(|file_path| (file_path, get_backup_dir(false)))
+        .map(|file_path| (file_path, get_backup_dir(&proj_dir, false)))
         .collect::<HashMap<PathBuf, PathBuf>>()
 }
 pub fn join_paths(path_list: Vec<PathBuf>, new_base: &Path) -> Vec<PathBuf> {
@@ -155,9 +152,11 @@ mod tests {
     use super::*;
     #[test]
     fn test_get_backup_dir() {
-        let backup_dir = get_backup_dir(true);
+        let app = App::new_with_name("test_app".to_string()).unwrap();
+        let proj_dir = &app.project_dir;
+        let backup_dir = get_backup_dir(&proj_dir, true);
         assert!(backup_dir.exists());
-        let backup_dir = get_backup_dir(false);
+        let backup_dir = get_backup_dir(&proj_dir, false);
         assert!(!backup_dir.exists());
     }
 

@@ -1,10 +1,13 @@
 use std::collections::{HashMap, VecDeque};
 use std::env::set_current_dir;
+use std::error::Error;
 use std::fs;
 use std::io::{Stdout, stdout};
 use std::path::{self, PathBuf};
 
 use color_eyre::Result;
+use directories::ProjectDirs;
+use fs_extra::dir::create;
 use ratatui::Frame;
 use ratatui::crossterm::event::{Event, KeyEvent};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
@@ -18,9 +21,11 @@ use crate::action::{AppAction, CommandAction, ExplorerAction, get_command};
 use crate::app_context::AppContext;
 use crate::app_input_machine::AppInputMachine;
 use crate::command::Command;
-use crate::command::command_utils::get_project_dir;
 use crate::components::command_line::CommandLine;
 use crate::components::explorer_manager::ExplorerManager;
+use crate::components::explorer_table::explorer_utils::FileConfig;
+use crate::core_features::favourites::Config;
+use crate::explorer_helpers::convert_sequence_to_string;
 use crate::history_stack::directory_history::DirectoryDetails;
 use crate::history_stack::{HistoryStack, command_history::CommandHistory};
 use crate::input_machine::{InputMachine, KeyProcessingResult};
@@ -52,7 +57,6 @@ fn get_component_areas(frame: &mut Frame) -> HashMap<String, Rect> {
 
     areas
 }
-
 #[derive(Debug)]
 pub struct App {
     pub terminal: Terminal<CrosstermBackend<Stdout>>,
@@ -70,10 +74,12 @@ pub struct App {
     pub current_path: PathBuf,
     pub key_queue: VecDeque<KeyEvent>,
     pub plugins: HashMap<String, Box<dyn Plugin>>,
+    pub config: Config,
+    pub project_dir: ProjectDirs,
 }
 impl App {
-    pub fn new() -> Result<Self> {
-        Ok(Self {
+    pub fn new_with_name(name: String) -> Result<Self, Box<dyn Error>> {
+        let app = Self {
             terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
             action_list: VecDeque::new(),
             should_quit: false,
@@ -89,7 +95,40 @@ impl App {
             current_path: PathBuf::new(),
             key_queue: VecDeque::new(),
             plugins: HashMap::new(),
-        })
+            config: Config::new(vec![]),
+            project_dir: ProjectDirs::from("", "", &name).unwrap(),
+        };
+        let mut app = match app.create_project_dirs() {
+            Ok(_) => app,
+            Err(e) => return Err(e),
+        };
+        app.config = Config::try_load_from_file(app.get_config_path())?;
+        Ok(app)
+    }
+    pub fn new() -> Result<App, Box<dyn Error>> {
+        Self::new_with_name("blaze_explorer".to_string())
+    }
+
+    pub fn new_test() -> Result<App, Box<dyn Error>> {
+        Self::new_with_name("blaze_explorer_test".to_string())
+    }
+
+    pub fn get_config_path(&self) -> PathBuf {
+        let config_path = self.project_dir.data_dir().join("config.json");
+        config_path
+    }
+
+    /// Create the project directories if they do not exist
+    pub fn create_project_dirs(&self) -> Result<PathBuf, Box<dyn Error>> {
+        let cache_dir = self.project_dir.cache_dir();
+        let data_dir = self.project_dir.data_dir();
+        if !cache_dir.exists() {
+            fs::create_dir_all(cache_dir)?;
+        }
+        if !data_dir.exists() {
+            fs::create_dir_all(data_dir)?;
+        }
+        Ok(cache_dir.to_path_buf())
     }
 
     pub fn attach_plugins(&mut self, plugins: &HashMap<String, Box<dyn Plugin>>) {
@@ -363,14 +402,23 @@ impl App {
         self.update_path(path, selected);
     }
 
+    /// Get the current snapshot of configuration - dynamic w.r.t. the current sequence
+    pub fn get_file_config(&self) -> FileConfig {
+        FileConfig::new(
+            self.config.favourites.clone(),
+            convert_sequence_to_string(self.current_sequence.clone()),
+        )
+    }
+
     pub fn render(&mut self) -> Result<()> {
         self.terminal.draw(|frame| {
-            let areas = get_component_areas(frame);
-            self.explorer_manager.draw(
-                frame,
-                *areas.get("explorer_table").unwrap(),
-                self.current_sequence.clone(),
+            let file_config = FileConfig::new(
+                self.config.favourites.clone(),
+                convert_sequence_to_string(self.current_sequence.clone()),
             );
+            let areas = get_component_areas(frame);
+            self.explorer_manager
+                .draw(frame, *areas.get("explorer_table").unwrap(), &file_config);
             let _ = self
                 .command_line
                 .draw(frame, *areas.get("command_line").unwrap());
@@ -422,14 +470,37 @@ impl App {
         }
     }
 
-    /// Executed only when the app really intends to quit
-    pub fn destruct(&self) -> Option<String> {
-        let project_dir = get_project_dir();
-        let cache_dir = project_dir.cache_dir();
-        match fs::remove_dir_all(cache_dir) {
-            Ok(_) => None,
-            Err(e) => Some(format!("Failed to delete cache dir: {}", e)),
+    pub fn remove_cache(&self) -> Option<String> {
+        let cache_dir = self.project_dir.cache_dir();
+        if cache_dir.exists() {
+            match fs::remove_dir_all(cache_dir) {
+                Ok(_) => None,
+                Err(e) => Some(format!("Failed to delete cache dir: {}", e)),
+            }
+        } else {
+            None
         }
+    }
+
+    pub fn save_config(&self) -> Option<String> {
+        let config_path = self.get_config_path();
+        match self.config.save_to_file(config_path) {
+            Ok(_) => None,
+            Err(e) => Some(format!("Failed to save config: {}", e)),
+        }
+    }
+
+    /// Executed only when the app really intends to quit
+    pub fn destruct(&self) -> String {
+        let funcs = vec![
+            Box::new(App::remove_cache),
+            Box::new(App::save_config) as Box<dyn Fn(&App) -> Option<String>>,
+        ];
+        funcs
+            .into_iter()
+            .filter_map(|f| f(self))
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 }
 
@@ -451,6 +522,8 @@ impl Clone for App {
             current_path: self.current_path.clone(),
             key_queue: self.key_queue.clone(),
             plugins: self.plugins.clone(),
+            config: self.config.clone(),
+            project_dir: self.project_dir.clone(),
         }
     }
 }
@@ -475,7 +548,9 @@ impl PartialEq for App {
 
 #[cfg(test)]
 mod tests {
-    use std::env;
+    use std::{env, fs::remove_dir_all};
+
+    use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
     use super::*;
 
@@ -516,13 +591,49 @@ mod tests {
 
     #[ignore]
     #[test]
-    fn test_destruct_app() {
-        let project_dir = get_project_dir();
+    fn test_remove_cache() {
+        let app = App::new().unwrap();
+        let project_dir = &app.project_dir;
         let cache_dir = project_dir.cache_dir();
         let random_file = cache_dir.join("test.txt");
         fs::File::create(random_file).unwrap();
-        let app = App::new().unwrap();
-        let _ = app.destruct();
+        let _ = app.remove_cache();
         assert!(!cache_dir.exists());
+    }
+
+    #[test]
+    fn test_destruct_app() {
+        let app = App::new_test().unwrap();
+        let project_dir = &app.project_dir;
+        let cache_dir = project_dir.cache_dir();
+        let random_file = cache_dir.join("test.txt");
+        fs::File::create(random_file).unwrap();
+        let msg = app.destruct();
+        assert!(msg.is_empty());
+        assert!(!cache_dir.exists());
+    }
+
+    #[test]
+    fn test_get_file_config() {
+        let mut app = App::new().unwrap();
+        app.config = Config::new(vec![PathBuf::from("test.txt")]);
+        app.current_sequence = vec![
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE),
+        ];
+        let file_config = app.get_file_config();
+        assert_eq!(file_config.favourites, app.config.favourites);
+        assert_eq!(file_config.string_sequence, "<cr>a".to_string());
+    }
+
+    #[test]
+    fn test_create_project_dirs() {
+        let app = App::new_test().unwrap();
+        let cache_dir = &app.project_dir.cache_dir();
+        let data_dir = &app.project_dir.data_dir();
+        assert!(cache_dir.exists());
+        assert!(data_dir.exists());
+        fs::remove_dir_all(cache_dir).unwrap();
+        fs::remove_dir_all(data_dir).unwrap();
     }
 }

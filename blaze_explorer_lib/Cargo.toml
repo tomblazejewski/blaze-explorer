@@ -1,6 +1,6 @@
 [package]
 authors = ["tomblazejewski <tomi.blazejewski@gmail.com>"]
-version = "0.10.0"
+version = "0.11.0"
 edition = "2024"
 name = "blaze_explorer_lib"
 
@@ -19,7 +19,7 @@ open = "5.3.0"
 rand = "0.9.0"
 ratatui = "0.27.0"
 rust_search = "2.1.0"
-serde = {version="1.0.210", features = ["derive"]}
+serde = { version = "1.0.210", features = ["derive"] }
 serde_derive = "1.0.210"
 serde_json = "1.0.128"
 tempdir = "0.3.7"
