@@ -12,7 +12,7 @@ use std::io;
 use std::{collections::HashMap, path::PathBuf};
 use std::{fmt, fs};
 
-use crate::{app::App, app_context::AppContext, mode::Mode};
+use crate::{app::App, mode::Mode};
 
 #[derive(Clone, PartialEq)]
 pub struct DeleteSelection {
@@ -22,7 +22,7 @@ pub struct DeleteSelection {
 
 /// Command used to delete files. Considers all selected items at the time of creating the struct.
 impl DeleteSelection {
-    pub fn new(mut ctx: AppContext) -> Self {
+    pub fn new(mut ctx: App) -> Self {
         let affected_files = ctx.explorer_manager.get_affected_paths();
         Self {
             affected_files,
@@ -188,7 +188,7 @@ pub struct CopyToClipboard {
 }
 
 impl CopyToClipboard {
-    pub fn new(mut ctx: AppContext) -> Self {
+    pub fn new(mut ctx: App) -> Self {
         let affected_files = ctx.explorer_manager.get_affected_paths();
         Self { affected_files }
     }
@@ -224,7 +224,7 @@ pub struct PasteFromClipboard {
 /// Undoing this action removes the pasted files from the given directory, while redoing the action
 /// will paste the exact same files back (even if clipboard contents have changed)
 impl PasteFromClipboard {
-    pub fn new(mut ctx: AppContext) -> Self {
+    pub fn new(mut ctx: App) -> Self {
         let current_directory = ctx.explorer_manager.get_current_path();
         Self {
             current_directory,
@@ -466,11 +466,11 @@ mod tests {
                     .to_string(),
             ),
         );
-        let mut copy_selection = CopyToClipboard::new(app.get_app_context());
+        let mut copy_selection = CopyToClipboard::new(app.clone());
         copy_selection.execute(&mut app);
         let folder_2 = testing_folder.dir_list[2].clone();
         app.update_path(folder_2.clone(), None);
-        let mut paste_selection = PasteFromClipboard::new(app.get_app_context());
+        let mut paste_selection = PasteFromClipboard::new(app.clone());
         let paste_action = paste_selection.execute(&mut app);
         let expected_action = Some(Action::AppAct(AppAction::ShowInFolder(
             folder_2.join(file_to_copy.file_name().unwrap()),
@@ -503,11 +503,11 @@ mod tests {
                     .to_string(),
             ),
         );
-        let mut copy_selection = CopyToClipboard::new(app.get_app_context());
+        let mut copy_selection = CopyToClipboard::new(app.clone());
         copy_selection.execute(&mut app);
         let folder_to_paste = testing_folder.dir_list[0].clone();
         app.update_path(folder_to_paste.clone(), None);
-        let mut paste_selection = PasteFromClipboard::new(app.get_app_context());
+        let mut paste_selection = PasteFromClipboard::new(app.clone());
         let _ = paste_selection.execute(&mut app);
         assert!(
             folder_to_paste
@@ -532,13 +532,13 @@ mod tests {
         let current_path = env::current_dir().unwrap();
         let test_path = current_path.parent().unwrap().join("tests");
         app.update_path(test_path.clone(), Some("sheet.csv".to_string()));
-        let mut copy_selection = CopyToClipboard::new(app.get_app_context());
-        let mut delete_selection = DeleteSelection::new(app.get_app_context());
+        let mut copy_selection = CopyToClipboard::new(app.clone());
+        let mut delete_selection = DeleteSelection::new(app.clone());
         copy_selection.execute(&mut app);
         delete_selection.execute(&mut app);
         let folder_1 = test_path.join("folder_1");
         app.update_path(folder_1.clone(), None);
-        let mut paste_selection = PasteFromClipboard::new(app.get_app_context());
+        let mut paste_selection = PasteFromClipboard::new(app.clone());
         let paste_action = paste_selection.execute(&mut app);
         match paste_action {
             Some(Action::AppAct(AppAction::DisplayMessage(_))) => {}
@@ -561,7 +561,7 @@ mod tests {
                 testing_folder.root_dir.path().to_path_buf(),
             )));
         let _ = app.handle_new_actions();
-        let mut delete_selection = DeleteSelection::new(app.get_app_context());
+        let mut delete_selection = DeleteSelection::new(app.clone());
         //set files to delete
         let to_delete = vec![
             testing_folder.file_list[0].clone(),
