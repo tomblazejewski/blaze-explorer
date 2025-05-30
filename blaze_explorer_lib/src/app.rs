@@ -18,7 +18,6 @@ use ratatui::{
 };
 
 use crate::action::{AppAction, CommandAction, ExplorerAction, get_command};
-use crate::app_context::AppContext;
 use crate::app_input_machine::AppInputMachine;
 use crate::command::Command;
 use crate::components::command_line::CommandLine;
@@ -427,15 +426,6 @@ impl App {
             }
         })?;
         Ok(())
-    }
-
-    pub fn get_app_context(&mut self) -> AppContext {
-        AppContext::new(
-            self.explorer_manager.get_current_path().clone(),
-            self.explorer_manager.clone(),
-            self.command_line_contents().clone(),
-            self.mode.clone(),
-        )
     }
 
     pub fn update_path(&mut self, path: PathBuf, selected: Option<String>) {

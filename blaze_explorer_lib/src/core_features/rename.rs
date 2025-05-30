@@ -23,7 +23,7 @@ use crate::{
 ///
 /// * `Option<Action>`
 pub fn open_generic_rename_popup(app: &mut App, copy: bool) -> Option<Action> {
-    let mut ctx = app.get_app_context();
+    let mut ctx = app.clone();
     let dir = ctx.explorer_manager.select_directory().unwrap().clone();
 
     let initial_name = dir

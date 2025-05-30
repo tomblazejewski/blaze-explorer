@@ -23,7 +23,7 @@ use crate::{
     tools::center_rect,
 };
 pub fn open_add_popup(app: &mut App) -> Option<Action> {
-    let mut ctx = app.get_app_context();
+    let mut ctx = app.clone();
     let dir = ctx.explorer_manager.get_current_path();
     let popup = Box::new(AddPopUp::new(dir));
     app.attach_popup(popup);

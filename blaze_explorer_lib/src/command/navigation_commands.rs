@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::{action::Action, app::App, app_context::AppContext};
+use crate::{action::Action, app::App};
 
 use super::Command;
 
@@ -10,7 +10,7 @@ pub struct ChangeDirectory {
 }
 
 impl ChangeDirectory {
-    pub fn new(mut _ctx: AppContext, path: PathBuf) -> Self {
+    pub fn new(mut _ctx: App, path: PathBuf) -> Self {
         Self { new_path: path }
     }
 }
@@ -26,7 +26,7 @@ impl Command for ChangeDirectory {
 pub struct ParentDirectory {}
 
 impl ParentDirectory {
-    pub fn new(mut _ctx: AppContext) -> Self {
+    pub fn new(mut _ctx: App) -> Self {
         ParentDirectory {}
     }
 }
@@ -42,7 +42,7 @@ impl Command for ParentDirectory {
 pub struct SelectUp {}
 
 impl SelectUp {
-    pub fn new(_ctx: AppContext) -> Self {
+    pub fn new(_ctx: App) -> Self {
         Self {}
     }
 }
@@ -57,7 +57,7 @@ impl Command for SelectUp {
 pub struct SelectDown {}
 
 impl SelectDown {
-    pub fn new(_ctx: AppContext) -> Self {
+    pub fn new(_ctx: App) -> Self {
         Self {}
     }
 }
@@ -73,7 +73,7 @@ pub struct JumpToId {
 }
 
 impl JumpToId {
-    pub fn new(mut _ctx: AppContext, id: usize) -> Self {
+    pub fn new(mut _ctx: App, id: usize) -> Self {
         Self { id }
     }
 }
@@ -91,7 +91,7 @@ pub struct SelectDirectory {
 }
 
 impl SelectDirectory {
-    pub fn new(mut ctx: AppContext) -> Self {
+    pub fn new(mut ctx: App) -> Self {
         Self {
             path: ctx.explorer_manager.select_directory(),
         }
@@ -114,7 +114,7 @@ impl Command for SelectDirectory {
 pub struct JumpToStart {}
 
 impl JumpToStart {
-    pub fn new(_ctx: AppContext) -> Self {
+    pub fn new(_ctx: App) -> Self {
         Self {}
     }
 }
@@ -129,7 +129,7 @@ impl Command for JumpToStart {
 pub struct JumpToEnd {}
 
 impl JumpToEnd {
-    pub fn new(_ctx: AppContext) -> Self {
+    pub fn new(_ctx: App) -> Self {
         Self {}
     }
 }
@@ -248,7 +248,7 @@ mod tests {
         let starting_path = env::current_dir().unwrap();
         let root_path = testing_folder.root_dir.path().to_path_buf();
         app.move_directory(root_path.clone(), Some("file_2.txt".to_string()));
-        let mut jump_to_start = JumpToStart::new(app.get_app_context());
+        let mut jump_to_start = JumpToStart::new(app.clone());
 
         jump_to_start.execute(&mut app);
         assert_eq!(app.explorer_manager.get_selected(), Some(0));
@@ -270,7 +270,7 @@ mod tests {
         let starting_path = env::current_dir().unwrap();
         let root_path = testing_folder.root_dir.path().to_path_buf();
         app.move_directory(root_path.clone(), Some("file_2.txt".to_string()));
-        let mut jump_to_end = super::JumpToEnd::new(app.get_app_context());
+        let mut jump_to_end = super::JumpToEnd::new(app.clone());
 
         jump_to_end.execute(&mut app);
         let expected_id = 2usize;
