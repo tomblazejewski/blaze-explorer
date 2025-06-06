@@ -4,7 +4,6 @@
 #![feature(str_split_remainder)]
 pub mod action;
 pub mod app;
-pub mod app_context;
 pub mod app_input_machine;
 pub mod command;
 pub mod components;

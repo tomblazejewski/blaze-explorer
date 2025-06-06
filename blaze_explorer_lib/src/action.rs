@@ -107,7 +107,7 @@ pub enum CommandAction {
 }
 
 pub fn get_command(app: &mut App, action: Action) -> Box<dyn Command> {
-    let ctx = app.get_app_context();
+    let ctx = app.clone();
     match action {
         Action::ExplorerAct(ExplorerAction::ChangeDirectory(path)) => {
             Box::new(ChangeDirectory::new(ctx, path))

@@ -17,7 +17,7 @@ use std::fmt::Debug;
 use std::path::PathBuf;
 use std::process::Command as ProcessCommand;
 
-use crate::{app::App, app_context::AppContext, mode::Mode};
+use crate::{app::App, mode::Mode};
 
 ///A trait allowing to compare commands to each other without having to specify the concrete types
 ///explicitly
@@ -100,7 +100,7 @@ pub struct UpdateSearchQuery {
 }
 
 impl UpdateSearchQuery {
-    pub fn new(_ctx: AppContext, query: String) -> Self {
+    pub fn new(_app: App, query: String) -> Self {
         Self { query }
     }
 }
@@ -117,7 +117,7 @@ impl Command for UpdateSearchQuery {
 pub struct ClearSearchQuery {}
 
 impl ClearSearchQuery {
-    pub fn new(_ctx: AppContext) -> Self {
+    pub fn new(_app: App) -> Self {
         Self {}
     }
 }
@@ -133,7 +133,7 @@ impl Command for ClearSearchQuery {
 pub struct NextSearchResult {}
 
 impl NextSearchResult {
-    pub fn new(_ctx: AppContext) -> Self {
+    pub fn new(_app: App) -> Self {
         Self {}
     }
 }
@@ -151,9 +151,9 @@ pub struct ShowInFolder {
 }
 
 impl ShowInFolder {
-    pub fn new(mut ctx: AppContext, path: PathBuf) -> Self {
+    pub fn new(mut app: App, path: PathBuf) -> Self {
         Self {
-            current_file_path: ctx.explorer_manager.select_directory().unwrap().clone(),
+            current_file_path: app.explorer_manager.select_directory().unwrap().clone(),
             target_path: path,
         }
     }
@@ -195,7 +195,7 @@ pub struct SwitchMode {
 }
 
 impl SwitchMode {
-    pub fn new(_ctx: AppContext, mode: Mode) -> Self {
+    pub fn new(_app: App, mode: Mode) -> Self {
         Self { mode }
     }
 }
@@ -232,10 +232,9 @@ pub struct ConfirmCommand {
 }
 
 impl ConfirmCommand {
-    pub fn new(ctx: AppContext) -> Self {
-        Self {
-            command: ctx.command,
-        }
+    pub fn new(app: App) -> Self {
+        let command = app.command_line_contents();
+        Self { command }
     }
 }
 impl Command for ConfirmCommand {
@@ -256,7 +255,7 @@ pub struct ParseCommand {
 }
 
 impl ParseCommand {
-    pub fn new(_ctx: AppContext, command: String) -> Self {
+    pub fn new(_app: App, command: String) -> Self {
         Self { command }
     }
 }
@@ -273,7 +272,7 @@ pub struct ExecuteFunction {
 }
 
 impl ExecuteFunction {
-    pub fn new(_ctx: AppContext, function: Box<fn(&mut App) -> Option<Action>>) -> Self {
+    pub fn new(_app: App, function: Box<fn(&mut App) -> Option<Action>>) -> Self {
         Self { function }
     }
 }
@@ -288,7 +287,7 @@ pub struct ParseKeyStrokes {
 }
 
 impl ParseKeyStrokes {
-    pub fn new(_ctx: AppContext, command: String) -> Self {
+    pub fn new(_app: App, command: String) -> Self {
         Self { command }
     }
 }
@@ -382,8 +381,8 @@ pub struct InsertKey {
 }
 
 impl InsertKey {
-    pub fn new(ctx: AppContext, ch: char) -> Self {
-        let search = matches!(ctx.mode, Mode::Search);
+    pub fn new(app: App, ch: char) -> Self {
+        let search = matches!(app.mode, Mode::Search);
         Self { ch, search }
     }
 }
@@ -467,7 +466,7 @@ pub struct TerminalCommand {
 }
 
 impl TerminalCommand {
-    pub fn new(_ctx: AppContext, command: String) -> Self {
+    pub fn new(_app: App, command: String) -> Self {
         Self { command }
     }
 }
@@ -546,8 +545,8 @@ pub struct OpenNeovimHere {
 }
 
 impl OpenNeovimHere {
-    pub fn new(mut ctx: AppContext) -> Self {
-        let path = ctx.explorer_manager.get_current_path();
+    pub fn new(mut app: App) -> Self {
+        let path = app.explorer_manager.get_current_path();
         Self { path }
     }
 }
@@ -564,7 +563,7 @@ impl Command for OpenNeovimHere {
 pub struct SplitVertically {}
 
 impl SplitVertically {
-    pub fn new(mut _ctx: AppContext) -> Self {
+    pub fn new(mut _app: App) -> Self {
         Self {}
     }
 }
@@ -579,7 +578,7 @@ impl Command for SplitVertically {
 pub struct SplitHorizontally {}
 
 impl SplitHorizontally {
-    pub fn new(mut _ctx: AppContext) -> Self {
+    pub fn new(mut _app: App) -> Self {
         Self {}
     }
 }
@@ -595,7 +594,7 @@ impl Command for SplitHorizontally {
 pub struct DeleteSplit {}
 
 impl DeleteSplit {
-    pub fn new(mut _ctx: AppContext) -> Self {
+    pub fn new(mut _app: App) -> Self {
         Self {}
     }
 }
@@ -611,7 +610,7 @@ impl Command for DeleteSplit {
 pub struct FocusUp {}
 
 impl FocusUp {
-    pub fn new(mut _ctx: AppContext) -> Self {
+    pub fn new(mut _app: App) -> Self {
         Self {}
     }
 }
@@ -626,7 +625,7 @@ impl Command for FocusUp {
 pub struct FocusDown {}
 
 impl FocusDown {
-    pub fn new(mut _ctx: AppContext) -> Self {
+    pub fn new(mut _app: App) -> Self {
         Self {}
     }
 }
@@ -641,7 +640,7 @@ impl Command for FocusDown {
 pub struct FocusLeft {}
 
 impl FocusLeft {
-    pub fn new(mut _ctx: AppContext) -> Self {
+    pub fn new(mut _app: App) -> Self {
         Self {}
     }
 }
@@ -656,7 +655,7 @@ impl Command for FocusLeft {
 pub struct FocusRight {}
 
 impl FocusRight {
-    pub fn new(mut _ctx: AppContext) -> Self {
+    pub fn new(mut _app: App) -> Self {
         Self {}
     }
 }
@@ -672,7 +671,7 @@ impl Command for FocusRight {
 pub struct RedoDirectory {}
 
 impl RedoDirectory {
-    pub fn new(mut _ctx: AppContext) -> Self {
+    pub fn new(mut _app: App) -> Self {
         Self {}
     }
 }
@@ -688,7 +687,7 @@ impl Command for RedoDirectory {
 pub struct UndoDirectory {}
 
 impl UndoDirectory {
-    pub fn new(mut _ctx: AppContext) -> Self {
+    pub fn new(mut _app: App) -> Self {
         Self {}
     }
 }
@@ -704,7 +703,7 @@ impl Command for UndoDirectory {
 pub struct ToggleMark {}
 
 impl ToggleMark {
-    pub fn new(mut _ctx: AppContext) -> Self {
+    pub fn new(mut _app: App) -> Self {
         Self {}
     }
 }
@@ -730,12 +729,12 @@ mod tests {
     #[test]
     fn test_compare_commands() {
         let mut dummy_app = App::new().unwrap();
-        let dummy_ctx = dummy_app.get_app_context();
-        let jump_to_id = Box::new(JumpToId::new(dummy_ctx.clone(), 1)) as Box<dyn Command>;
-        let jump_to_id_same = Box::new(JumpToId::new(dummy_ctx.clone(), 1)) as Box<dyn Command>;
-        let jump_to_id_2 = Box::new(JumpToId::new(dummy_ctx.clone(), 2)) as Box<dyn Command>;
+        let dummy_app = dummy_app.clone();
+        let jump_to_id = Box::new(JumpToId::new(dummy_app.clone(), 1)) as Box<dyn Command>;
+        let jump_to_id_same = Box::new(JumpToId::new(dummy_app.clone(), 1)) as Box<dyn Command>;
+        let jump_to_id_2 = Box::new(JumpToId::new(dummy_app.clone(), 2)) as Box<dyn Command>;
         let reset_styling = Box::new(ResetStyling::new()) as Box<dyn Command>;
-        assert!(JumpToId::new(dummy_ctx.clone(), 1) == JumpToId::new(dummy_ctx.clone(), 1));
+        assert!(JumpToId::new(dummy_app.clone(), 1) == JumpToId::new(dummy_app.clone(), 1));
         assert!(jump_to_id == jump_to_id_same);
         assert!(jump_to_id != jump_to_id_2);
         assert!(jump_to_id != reset_styling);
@@ -814,7 +813,7 @@ mod tests {
     #[test]
     fn test_parse_key_strokes() {
         let mut app = App::new().unwrap();
-        let mut new_parse_command = ParseKeyStrokes::new(app.get_app_context(), "Abc123".into());
+        let mut new_parse_command = ParseKeyStrokes::new(app.clone(), "Abc123".into());
         let _ = new_parse_command.execute(&mut app);
         let key_queue = app.key_queue;
         assert_eq!(
@@ -833,7 +832,7 @@ mod tests {
     #[test]
     fn test_parse_command() {
         let mut app = App::new().unwrap();
-        let mut new_parse_command = ParseCommand::new(app.get_app_context(), "git".into());
+        let mut new_parse_command = ParseCommand::new(app.clone(), "git".into());
         new_parse_command.execute(&mut app);
         assert_eq!(app.command_line.get_contents(), "git".to_string());
     }
@@ -845,8 +844,7 @@ mod tests {
             None
         }
         let mut app = App::new().unwrap();
-        let mut new_parse_command =
-            ExecuteFunction::new(app.get_app_context(), Box::new(dummy_function));
+        let mut new_parse_command = ExecuteFunction::new(app.clone(), Box::new(dummy_function));
         new_parse_command.execute(&mut app);
         assert_eq!(
             app.command_line.get_contents(),
@@ -857,14 +855,14 @@ mod tests {
     #[test]
     fn test_switch_to_visual() {
         let mut app = App::new().unwrap();
-        let mut command = SwitchMode::new(app.get_app_context(), Mode::Visual);
+        let mut command = SwitchMode::new(app.clone(), Mode::Visual);
         command.execute(&mut app);
         assert_eq!(app.mode, Mode::Visual);
     }
     #[test]
     fn test_switch_to_visual_and_back() {
         let mut app = App::new().unwrap();
-        let mut command = SwitchMode::new(app.get_app_context(), Mode::Visual);
+        let mut command = SwitchMode::new(app.clone(), Mode::Visual);
         command.execute(&mut app);
         assert_eq!(app.mode, Mode::Visual);
         app.handle_key_event(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));

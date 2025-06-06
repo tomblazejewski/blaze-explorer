@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::{action::Action, app::App, app_context::AppContext};
+use crate::{action::Action, app::App};
 
 use super::Command;
 
@@ -10,8 +10,8 @@ pub struct ToggleToFavourites {
 }
 
 impl ToggleToFavourites {
-    pub fn new(mut ctx: AppContext) -> Self {
-        let path = ctx.explorer_manager.get_current_path();
+    pub fn new(mut app: App) -> Self {
+        let path = app.explorer_manager.get_current_path();
         Self { path }
     }
 }
@@ -30,7 +30,6 @@ mod tests {
 
     use super::ToggleToFavourites;
     use crate::app::App;
-    use crate::app_context::AppContext;
 
     #[test]
     fn test_toggle_to_favourites() {
@@ -40,8 +39,8 @@ mod tests {
 
         let path = root_dir.join("test_1");
         app.explorer_manager.show_in_folder(path.clone());
-        let ctx = app.get_app_context();
-        let mut command = ToggleToFavourites::new(ctx);
+        let app_clone = app.clone();
+        let mut command = ToggleToFavourites::new(app_clone);
         command.execute(&mut app);
 
         assert!(app.config.favourites.contains(&root_dir));
