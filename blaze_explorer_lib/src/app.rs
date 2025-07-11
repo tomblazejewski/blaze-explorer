@@ -158,6 +158,8 @@ impl App {
     }
     pub fn attach_popup(&mut self, popup: Box<dyn PluginPopUp>) {
         self.input_machine.attach_popup_bindings(popup.clone());
+        let mut popup = popup.clone();
+        popup.update_app(self);
         self.popup = Some(popup);
         self.enter_popup_mode();
     }
