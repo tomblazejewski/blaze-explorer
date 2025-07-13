@@ -552,7 +552,10 @@ impl PartialEq for App {
 mod tests {
     use std::{env, fs::remove_dir_all};
 
+    use path::Path;
     use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+
+    use crate::plugin::plugin_helpers::DummyPluginPopUp;
 
     use super::*;
 
@@ -637,5 +640,85 @@ mod tests {
         assert!(data_dir.exists());
         fs::remove_dir_all(cache_dir).unwrap();
         fs::remove_dir_all(data_dir).unwrap();
+    }
+
+    #[test]
+    fn test_attach_popup_attaches_bindings_updates() {
+        let mut app = App::new().unwrap();
+        #[derive(Debug, Clone, PartialEq)]
+        struct LocalPluginPopUp {
+            keymap: HashMap<(Mode, Vec<KeyEvent>), Action>,
+            should_quit: bool,
+        }
+        impl LocalPluginPopUp {
+            pub fn new() -> Self {
+                Self {
+                    keymap: HashMap::new(),
+                    should_quit: false,
+                }
+            }
+        }
+        impl PluginPopUp for LocalPluginPopUp {
+            fn draw(&mut self, _frame: &mut Frame, _area: Rect) -> Result<()> {
+                Ok(())
+            }
+
+            fn push_search_char(&mut self, ch: char) -> Option<Action> {
+                None
+            }
+
+            fn drop_search_char(&mut self) -> Option<Action> {
+                None
+            }
+
+            fn quit(&mut self) {
+                self.should_quit = true
+            }
+
+            fn should_quit(&self) -> bool {
+                self.should_quit
+            }
+
+            fn erase_text(&mut self) -> Option<Action> {
+                None
+            }
+
+            fn get_search_query(&self) -> String {
+                "".to_string()
+            }
+
+            fn display_details(&self) -> String {
+                "DummyPopUp".to_string()
+            }
+
+            fn update_app(&mut self, app: &mut App) {
+                let dummy_path = Path::new("dummy");
+                app.config = Config::new(vec![dummy_path.to_path_buf()]);
+            }
+
+            fn get_own_keymap(&self) -> HashMap<(Mode, Vec<KeyEvent>), Action> {
+                let mut keymap = HashMap::new();
+                let key = (Mode::PopUp, vec![KeyEvent::new(
+                    KeyCode::Char('a'),
+                    KeyModifiers::NONE,
+                )]);
+                let value = Action::ExplorerAct(ExplorerAction::FocusUp);
+                keymap.insert(key, value);
+                keymap
+            }
+        }
+
+        let popup = LocalPluginPopUp::new();
+        let boxed_popup = Box::new(popup);
+        app.attach_popup(boxed_popup.clone());
+        // assert focuses up on a
+        app.process_key_event(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE));
+        let act = app.action_list.pop_front().unwrap();
+        assert_eq!(act, Action::ExplorerAct(ExplorerAction::FocusUp));
+        // assert config is updated
+        let dummy_path = Path::new("dummy");
+        assert_eq!(app.config.favourites, vec![dummy_path.to_path_buf()]);
+        assert!(app.popup == Some(boxed_popup));
+        assert!(app.mode == Mode::PopUp);
     }
 }

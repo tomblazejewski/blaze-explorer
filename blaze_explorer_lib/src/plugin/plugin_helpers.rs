@@ -46,8 +46,8 @@ macro_rules! construct_plugin {
         }
     }};
 }
-use crate::plugin::plugin_action::PluginAction;
-use std::collections::HashMap;
+use crate::{core_features::favourites::Config, plugin::plugin_action::PluginAction};
+use std::{collections::HashMap, path::Path};
 
 use color_eyre::eyre::Result;
 pub use construct_plugin;
@@ -114,7 +114,7 @@ impl DummyPlugin {
 #[derive(Debug, Clone, PartialEq)]
 pub struct DummyPluginPopUp {
     keymap: HashMap<(Mode, Vec<KeyEvent>), Action>,
-    should_quit: bool,
+    pub should_quit: bool,
 }
 
 impl DummyPluginPopUp {
