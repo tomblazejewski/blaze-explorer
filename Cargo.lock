@@ -149,6 +149,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "blaze_explorer_macro_tests"
+version = "0.1.0"
+dependencies = [
+ "blaze_explorer_lib",
+ "blaze_explorer_macros",
+]
+
+[[package]]
+name = "blaze_explorer_macros"
+version = "0.1.0"
+dependencies = [
+ "blaze_explorer_lib",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "bstr"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

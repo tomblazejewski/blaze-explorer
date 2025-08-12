@@ -139,6 +139,7 @@ impl PluginPopUp for DummyPluginPopUp {
     }
 
     fn quit(&mut self) {
+        println!("DummyPluginPopUp: Quit called");
         self.should_quit = true
     }
 

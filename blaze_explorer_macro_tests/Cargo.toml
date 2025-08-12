@@ -1,0 +1,8 @@
+[package]
+name = "blaze_explorer_macro_tests"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+blaze_explorer_macros = { path = "../blaze_explorer_macros" }
+blaze_explorer_lib = { path = "../blaze_explorer_lib" }

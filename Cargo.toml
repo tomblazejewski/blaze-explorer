@@ -1,3 +1,3 @@
 [workspace]
-members = ["blaze_explorer", "blaze_explorer_lib"]
+members = ["blaze_explorer", "blaze_explorer_lib", "blaze_explorer_macros", "blaze_explorer_macro_tests"]
 resolver = "3"

@@ -187,8 +187,9 @@ impl App {
         }
     }
 
-    fn try_drop_popup(&mut self) {
+    pub fn try_drop_popup(&mut self) {
         if let Some(popup) = &mut self.popup {
+            println!("Trying to close popup: {}", popup.display_details());
             popup.quit();
         }
     }
