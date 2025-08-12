@@ -208,6 +208,7 @@ impl App {
         self.check_popup();
         if !test_mode {
             loop {
+                let _ = self.render();
                 if let event::Event::Key(key) = self.draw_key_event()? {
                     self.process_key_event(key);
                     self.check_popup();
@@ -663,4 +664,5 @@ mod tests {
         assert!(app.popup.is_none());
         assert_eq!(app.mode, Mode::Normal);
     }
+
 }
