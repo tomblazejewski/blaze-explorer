@@ -172,6 +172,7 @@ impl App {
             self.handle_key_event(key);
         };
     }
+    /// Check if the popup issued a quite command and wants to be dropped.
     fn check_popup(&mut self) {
         match &self.popup {
             None => {}
@@ -185,8 +186,16 @@ impl App {
             }
         }
     }
-    pub fn run(&mut self, cold_start: bool) -> Result<ExitResult> {
-        self.terminal.clear()?;
+
+    pub fn try_drop_popup(&mut self) {
+        if let Some(popup) = &mut self.popup {
+            popup.quit();
+        }
+    }
+    pub fn run(&mut self, cold_start: bool, test_mode: bool) -> Result<ExitResult> {
+        if !test_mode {
+            self.terminal.clear()?;
+        }
         if cold_start {
             let path = "./";
             let starting_path = path::absolute(path).unwrap();
@@ -194,16 +203,20 @@ impl App {
                 starting_path,
             )));
         }
+        // pricess new actions upon app start-up
         let _ = self.handle_new_actions();
-        loop {
-            let _ = self.render();
-            if let event::Event::Key(key) = self.draw_key_event()? {
-                self.process_key_event(key);
-                self.check_popup();
-                if self.should_quit {
-                    break;
+        self.check_popup();
+        if !test_mode {
+            loop {
+                let _ = self.render();
+                if let event::Event::Key(key) = self.draw_key_event()? {
+                    self.process_key_event(key);
+                    self.check_popup();
+                    if self.should_quit {
+                        break;
+                    }
+                    let _ = self.handle_new_actions();
                 }
-                let _ = self.handle_new_actions();
             }
         }
 
@@ -542,6 +555,8 @@ mod tests {
 
     use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
+    use crate::plugin::plugin_helpers::DummyPluginPopUp;
+
     use super::*;
 
     #[test]
@@ -626,4 +641,28 @@ mod tests {
         fs::remove_dir_all(cache_dir).unwrap();
         fs::remove_dir_all(data_dir).unwrap();
     }
+
+    #[test]
+    fn test_try_close_existing_popup() {
+        let mut app: App = App::new_test().unwrap();
+        let popup = DummyPluginPopUp::new();
+        app.attach_popup(Box::new(popup.clone()));
+
+        app.try_drop_popup();
+        app.run(false, true).unwrap();
+
+        assert!(app.popup.is_none());
+        assert_eq!(app.mode, Mode::Normal);
+    }
+    #[test]
+    fn test_try_close_no_popup() {
+        let mut app: App = App::new_test().unwrap();
+
+        app.try_drop_popup();
+        app.run(false, true).unwrap();
+
+        assert!(app.popup.is_none());
+        assert_eq!(app.mode, Mode::Normal);
+    }
+
 }

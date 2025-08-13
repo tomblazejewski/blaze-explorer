@@ -1,0 +1,14 @@
+[package]
+authors = ["tomblazejewski <tomi.blazejewski@gmail.com>"]
+name = "blaze_explorer_macros"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "2.0"
+quote = "1.0"
+blaze_explorer_lib = { path = "../blaze_explorer_lib" }
+

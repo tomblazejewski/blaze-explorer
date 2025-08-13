@@ -66,7 +66,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         loop {
             stdout().execute(EnterAlternateScreen)?;
             enable_raw_mode()?;
-            let result = app.run(cold_start);
+            let result = app.run(cold_start, false);
             cold_start = false;
             stdout().execute(LeaveAlternateScreen)?;
             disable_raw_mode()?;
