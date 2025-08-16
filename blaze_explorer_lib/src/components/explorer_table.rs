@@ -26,6 +26,8 @@ use crate::git_helpers::{assign_git_styling, get_repo};
 use crate::history_stack::directory_history::DirectoryHistory;
 use crate::{mode::Mode, themes::CustomTheme};
 
+use super::component_helpers::{Numbering, get_line_numbers};
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct FileData {
     pub id: usize,
@@ -86,21 +88,6 @@ pub fn get_file_data(path: &PathBuf) -> Vec<FileData> {
         })
         .collect::<Vec<FileData>>();
     data
-}
-
-fn get_line_numbers(n_lines: usize, current_line: usize) -> Vec<String> {
-    //create all string labels before the selected line
-    let before_selected = (1..current_line)
-        .rev()
-        .map(|number| number.to_string())
-        .collect::<Vec<String>>();
-    let mut current_lines = before_selected;
-    let n_lines_after = n_lines - current_line;
-    let after_selected_iter = (1..n_lines_after + 1).map(|number| number.to_string());
-    let current_line_string = format!("{} ", current_line);
-    current_lines.append(&mut vec![current_line_string]);
-    current_lines.extend(after_selected_iter);
-    current_lines
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -591,8 +578,12 @@ impl ExplorerTable {
         };
         let rows = match self.elements_list.is_empty() {
             false => {
-                let line_numbers =
-                    get_line_numbers(self.elements_list.len(), self.state.selected().unwrap() + 1);
+                let line_numbers = get_line_numbers(
+                    self.elements_list.len(),
+                    self.state.selected().unwrap() + 1,
+                    Numbering::VimLike,
+                )
+                .unwrap();
                 self.elements_list
                     .iter()
                     .zip(line_numbers)
@@ -688,24 +679,6 @@ mod tests {
     use crate::app::App;
 
     use super::*;
-
-    #[test]
-    fn test_get_line_numbers() {
-        let current_line = 3_usize;
-        let line_length = 6_usize;
-
-        let result = get_line_numbers(line_length, current_line);
-
-        let expected_result = vec![
-            String::from("2"),
-            String::from("1"),
-            String::from("3 "),
-            String::from("1"),
-            String::from("2"),
-            String::from("3"),
-        ];
-        assert_eq!(result, expected_result);
-    }
 
     #[test]
     fn test_toggle_mark() {
