@@ -1,9 +1,12 @@
+#[derive(Debug, Clone, Copy)]
 pub enum Numbering {
     None,   //don't render the numbers at all
     Simple, // label from 0 to n
     VimLike, //selected row is 0, lines are numbered according to how far they are from the
             //selected row
 }
+///Returns the line numbers to be displayed
+///current_line is 1-indexed
 pub fn get_line_numbers(
     n_lines: usize,
     current_line: usize,
