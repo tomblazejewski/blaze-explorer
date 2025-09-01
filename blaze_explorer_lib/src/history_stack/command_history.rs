@@ -1,5 +1,13 @@
+use open::commands;
+
 use super::HistoryStack;
-use crate::command::Command;
+use crate::{
+    command::Command,
+    components::{
+        component_helpers::{Numbering, get_line_numbers},
+        preview::Previewable,
+    },
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct CommandHistory {
@@ -41,5 +49,41 @@ impl HistoryStack<Box<dyn Command>> for CommandHistory {
             self.past_commands.push(boxed_command.clone());
         }
         popped_command
+    }
+}
+
+impl Previewable for CommandHistory {
+    fn collect_data(&self) -> Vec<String> {
+        let mut commands = self.future_commands.clone();
+        commands.append(&mut self.past_commands.clone());
+        commands
+            .iter()
+            .map(|x| format!("{:?}", x))
+            .collect::<Vec<String>>()
+    }
+
+    fn get_numbering(&self) -> Numbering {
+        Numbering::VimLike
+    }
+
+    fn get_line_numbers(&self) -> Option<Vec<String>> {
+        let n_lines = self.collect_data().len();
+        get_line_numbers(n_lines, self.future_commands.len(), self.get_numbering())
+    }
+}
+
+mod tests {
+    use crate::command::{Quit, ResetStyling};
+
+    use super::*;
+
+    #[test]
+    fn test_correct_collect_data() {
+        let mut command_history = CommandHistory::new();
+        let reset_styling_command = Box::new(ResetStyling::new());
+        let quit_command = Box::new(Quit::new());
+        command_history.perform(reset_styling_command);
+        command_history.perform(quit_command);
+        assert_eq!(command_history.collect_data(), vec!["ResetStyling", "Quit"]);
     }
 }
