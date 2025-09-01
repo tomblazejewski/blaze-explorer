@@ -1,5 +1,3 @@
-use open::commands;
-
 use super::HistoryStack;
 use crate::{
     command::Command,
