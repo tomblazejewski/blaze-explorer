@@ -2,7 +2,6 @@ pub mod command_line;
 pub mod component_helpers;
 pub mod explorer_manager;
 pub mod explorer_table;
-pub mod preview;
 
 use color_eyre::Result;
 use ratatui::{Frame, layout::Rect};

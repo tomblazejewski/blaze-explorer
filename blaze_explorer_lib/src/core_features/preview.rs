@@ -1,7 +1,10 @@
-use crate::tools::center_rect;
+use crate::{
+    components::component_helpers::Numbering,
+    plugin::{base_popup::get_default_popup_keymap, plugin_popup::PluginPopUp},
+    tools::center_rect,
+};
 use ratatui::{Frame, prelude::*, widgets::*};
-
-use super::{Component, component_helpers::Numbering};
+use std::fmt::Debug;
 
 ///A trait allowing the struct to display its contents in a preview component.
 pub trait Previewable {
@@ -13,17 +16,22 @@ pub trait Previewable {
     fn get_line_numbers(&self) -> Option<Vec<String>>;
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct PreviewWindow<'a, T: Previewable> {
     source: &'a T,
+    should_quit: bool,
 }
 
 impl<'a, T: Previewable> PreviewWindow<'a, T> {
     pub fn new(source: &'a T) -> Self {
-        Self { source }
+        Self {
+            source,
+            should_quit: false,
+        }
     }
 }
 
-impl<'a, T: Previewable> Component for PreviewWindow<'a, T> {
+impl<'a, T: Previewable + Clone + Debug + PartialEq> PluginPopUp for PreviewWindow<'a, T> {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> color_eyre::eyre::Result<()> {
         let rows = match self.source.get_line_numbers() {
             None => self
@@ -53,15 +61,53 @@ impl<'a, T: Previewable> Component for PreviewWindow<'a, T> {
         frame.render_widget(t, area);
         Ok(())
     }
+
+    fn push_search_char(&mut self, ch: char) -> Option<crate::action::Action> {
+        None
+    }
+
+    fn drop_search_char(&mut self) -> Option<crate::action::Action> {
+        None
+    }
+
+    fn quit(&mut self) {
+        self.should_quit = true;
+    }
+
+    fn should_quit(&self) -> bool {
+        self.should_quit
+    }
+
+    fn erase_text(&mut self) -> Option<crate::action::Action> {
+        None
+    }
+
+    fn get_search_query(&self) -> String {
+        "".to_string()
+    }
+
+    fn display_details(&self) -> String {
+        "Preview".to_string()
+    }
+
+    fn get_own_keymap(
+        &self,
+    ) -> std::collections::HashMap<
+        (crate::mode::Mode, Vec<ratatui::crossterm::event::KeyEvent>),
+        crate::action::Action,
+    > {
+        get_default_popup_keymap()
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::components::component_helpers::get_line_numbers;
+    use crate::components::component_helpers::{Numbering, get_line_numbers};
 
     use super::*;
     use ratatui::{Terminal, backend::TestBackend, buffer::Buffer};
 
+    #[derive(Debug, Clone, PartialEq)]
     struct DummyPreviewable {
         items: Vec<String>,
         numbering: Numbering,

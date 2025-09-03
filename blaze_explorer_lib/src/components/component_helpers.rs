@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Numbering {
     None,   //don't render the numbers at all
     Simple, // label from 0 to n

@@ -1,10 +1,8 @@
 use super::HistoryStack;
 use crate::{
     command::Command,
-    components::{
-        component_helpers::{Numbering, get_line_numbers},
-        preview::Previewable,
-    },
+    components::component_helpers::{Numbering, get_line_numbers},
+    core_features::preview::Previewable,
 };
 
 #[derive(Debug, Clone, PartialEq)]
